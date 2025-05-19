@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express')
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser')
@@ -5,15 +7,19 @@ const cors = require('cors')
 const openApiValidator = require('express-openapi-validator')
 const YAML = require('yamljs')
 const swaggerUi = require('swagger-ui-express');
-const trainingPlanRoutes = require('./routes/trainingPlanRoutes');
-
-const app = express()
+const trainingPlanRoutes = require('./routes/trainingPlanRoutes.js');
+const workoutRoutes = require('./routes/workoutRoutes.js');
+const authMiddleware = require('./middleware/auth.js');
+const authenticationRoutes = require('./routes/authenticationRoutes.js');
+const app = express();
 const port = process.env.PORT || 5000;
-const swaggerDocument = YAML.load('/home/avu/Downloads/fitness_tracker.yaml')
+const swaggerDocument = YAML.load('/home/avu/fitness_tracker/backend/fitness_tracker.yaml')
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/training-plans', trainingPlanRoutes);
+app.use('/training-plans', authMiddleware, trainingPlanRoutes);
+app.use('/auth', authenticationRoutes);
+app.use('/workouts', authMiddleware, workoutRoutes);
 
 mongoose.connect('mongodb://localhost:27017/fitnessTracker',{
     useNewUrlParser: true,
@@ -24,7 +30,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(
     openApiValidator.middleware({
-        apiSpec: '/home/avu/Downloads/fitness_tracker.yaml',
+        apiSpec: '/home/avu/fitness_tracker/backend/fitness_tracker.yaml',
         validatorRequests: true,
         validatorResponses: true,
     })

@@ -1,0 +1,284 @@
+openapi: 3.0.4
+info:
+  title: Fitness Tracker API
+  description: |-
+    This is a sample Fitness Tracker API based on the OpenAPI 3.0 specification.
+    It allows users to track workouts, training plans, nutrition, and user authentication.
+    Learn more at [https://swagger.io](https://swagger.io).
+  version: 1.0.12
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  contact:
+    name: API Support
+    email: support@fitnessapp.com
+    url: https://fitnessapp.com/support
+
+servers:
+  - url: https://api.fitnessapp.com
+    description: Production server
+
+tags:
+  - name: Auth
+    description: User registration and login
+  - name: Training
+    description: Manage training plans and exercises
+  - name: Nutrition
+    description: Track meals and calories
+  - name: Workouts
+    description: Log workout sessions
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterUser'
+      responses:
+        '201':
+          description: User successfully registered
+        '400':
+          description: Bad request
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate an existing user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUser'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Unauthorized
+
+  /training-plans:
+    post:
+      tags: [Training]
+      summary: Create a new training plan
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingPlan'
+      responses:
+        '201':
+          description: Training plan created successfully
+        '400':
+          description: Invalid input data
+
+  /training-plans/{planId}/exercises/{exerciseId}:
+    patch:
+      tags: [Training]
+      summary: Update exercise details for progressive overload
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExercise'
+      responses:
+        '200':
+          description: Exercise updated successfully
+        '400':
+          description: Invalid input data
+        '404':
+          description: Training plan or exercise not found
+
+  /nutrition:
+    get:
+      tags: [Nutrition]
+      summary: Retrieve logged meals
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of meals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Meal'
+
+    post:
+      tags: [Nutrition]
+      summary: Log a new meal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Meal'
+      responses:
+        '201':
+          description: Meal logged successfully
+        '400':
+          description: Bad request
+
+  /workouts:
+    get:
+      tags: [Workouts]
+      summary: Retrieve logged workouts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of workouts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Workout'
+
+    post:
+      tags: [Workouts]
+      summary: Log a new workout
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Workout'
+      responses:
+        '201':
+          description: Workout logged successfully
+        '400':
+          description: Bad request
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterUser:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+
+    LoginUser:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    Exercise:
+      type: object
+      properties:
+        name:
+          type: string
+        sets:
+          type: integer
+        repetitions:
+          type: integer
+        weight:
+          type: number
+
+    UpdateExercise:
+      type: object
+      properties:
+        sets:
+          type: integer
+        repetitions:
+          type: integer
+        weight:
+          type: number
+
+    TrainingPlan:
+      type: object
+      properties:
+        name:
+          type: string
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/Exercise'
+
+    Meal:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        calories:
+          type: integer
+        date:
+          type: string
+          format: date
+
+    Workout:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        duration:
+          type: integer
+        caloriesBurned:
+          type: integer
+        date:
+          type: string
+          format: date
