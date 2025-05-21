@@ -13,7 +13,7 @@ const authMiddleware = require('./middleware/auth.js');
 const authenticationRoutes = require('./routes/authenticationRoutes.js');
 const app = express();
 const port = process.env.PORT || 5000;
-const swaggerDocument = YAML.load('/home/avu/fitness_tracker/backend/fitness_tracker.yaml')
+const swaggerDocument = YAML.load(process.env.OPEN_API_DESIGN)
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -21,16 +21,13 @@ app.use('/training-plans', authMiddleware, trainingPlanRoutes);
 app.use('/auth', authenticationRoutes);
 app.use('/workouts', authMiddleware, workoutRoutes);
 
-mongoose.connect('mongodb://localhost:27017/fitnessTracker',{
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-});
+mongoose.connect(process.env.MONGODB_URI);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(
     openApiValidator.middleware({
-        apiSpec: '/home/avu/fitness_tracker/backend/fitness_tracker.yaml',
+        apiSpec: process.env.OPEN_API_DESIGN,
         validatorRequests: true,
         validatorResponses: true,
     })
