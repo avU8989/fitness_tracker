@@ -1,5 +1,5 @@
 {
-  "name": "fitness_tracker",
+  "name": "frontend",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
@@ -9,10 +9,17 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo-google-fonts/anton": "^0.3.0",
+    "@expo-google-fonts/ibm-plex-mono": "^0.3.0",
+    "@expo-google-fonts/press-start-2p": "^0.3.0",
     "expo": "~53.0.9",
+    "expo-font": "~13.3.1",
+    "expo-splash-screen": "~0.30.8",
     "expo-status-bar": "~2.2.3",
+    "nativewind": "^4.1.23",
     "react": "19.0.0",
-    "react-native": "0.79.2"
+    "react-native": "0.79.2",
+    "react-native-reanimated": "~3.17.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
