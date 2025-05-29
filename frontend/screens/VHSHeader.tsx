@@ -17,9 +17,9 @@ const VHSHeader = () => {
                 <View style={styles.recBox}>
                     <View style={styles.recRow}>
                         <View style={styles.recDot} />
-                        <Text style={styles.recText}>REC 00:00:00</Text>
+                        <Text style={styles.statText}>REC 00:00:00</Text>
                     </View>
-                    <Text style={styles.recText}>01/01/1996</Text>
+                    <Text style={styles.statText}>01/01/1996</Text>
                 </View>
             </View>
 
@@ -28,19 +28,20 @@ const VHSHeader = () => {
 
             {/* Stats */}
             <View style={styles.overviewRow}>
-                <Text style={styles.overviewText}>● {stats.exercisesLogged} Exercises Logged</Text>
-                <Text style={styles.overviewText}>● Volume: {stats.volume} KG</Text>
-                <Text style={styles.overviewText}>● Duration: {stats.duration}</Text>
+                <Text style={styles.statText}>● {stats.exercisesLogged} Exercises Logged</Text>
+                <Text style={styles.statText}>● Volume: {stats.volume} KG</Text>
+                <Text style={styles.statText}>● Duration: {stats.duration}</Text>
             </View>
         </View>
+
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         position: 'relative',   // <— allow its children to be absolutely positioned
-        paddingTop: 50,
         paddingHorizontal: 8,
+        paddingBottom: 20,
         backgroundColor: 'transparent',
     },
 
@@ -50,14 +51,15 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
 
+
     title: {
         fontFamily: 'Anton_400Regular',
-        fontSize: 33,
+        fontSize: 36,
         color: '#FFFFFF',
         letterSpacing: 3,
-        textShadowColor: '#B86BFF',
-        textShadowOffset: { width: 1, height: 1 },
-        textShadowRadius: 6,
+        textShadowColor: '#FFFFFF',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 8,
     },
 
     recBox: {
@@ -84,9 +86,9 @@ const styles = StyleSheet.create({
     },
 
     recText: {
-        fontFamily: 'IBMPlexMono_400Regular',
+        fontFamily: 'Anton_400Regular',
         fontSize: 12,
-        color: '#FFF',
+        color: '#FFFFFF',
         textAlign: 'right',
     },
 
@@ -96,13 +98,18 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         letterSpacing: 3,
         textShadowColor: '#B86BFF',
-        textShadowOffset: { width: 1, height: 1 },
+        textShadowOffset: { width: 0, height: 1 },
         marginTop: -10,
-        textShadowRadius: 6,
+        textShadowRadius: 16,
     },
 
     overviewRow: {
         marginVertical: 0,
+    },
+    statText: {
+        fontFamily: 'IBMPlexMono_400Regular',
+        fontSize: 15,
+        color: '#FFFFFF',
     },
 
     overviewText: {
@@ -111,6 +118,16 @@ const styles = StyleSheet.create({
         color: '#FFF',
         marginVertical: 2,
     },
+    vhsText: {
+        fontFamily: 'Anton_400Regular',
+        fontSize: 36,
+        color: '#FFF',
+        letterSpacing: 3,
+        textShadowColor: '#B86BFF', // purplish VHS glow
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 6,
+    },
+
 });
 
 export default VHSHeader;

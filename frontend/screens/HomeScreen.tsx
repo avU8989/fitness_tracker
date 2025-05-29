@@ -4,18 +4,26 @@ import {
     View,
     Text,
     StyleSheet,
+    Image,
     ImageBackground,
     ScrollView,
 } from 'react-native';
 import FlickerText from '../FlickerText';
+import ImageText from '../ImageText';
+import GlitchAnimation from '../GltichAnimation';
 import VHSHeader from './VHSHeader';
-const GRAIN_TEXTURE = require('../assets/home_bg_1.png');
-const SCANLINE_TEXTURE = require('../assets/home_bg_1.png');
+const GRAIN_TEXTURE = require('../assets/glitch-effect-black-background.jpg');
+const SCANLINE_TEXTURE = require('../assets/bg.jpg');
+const TEXTURE = require('../assets/abstract-geometric-background-shapes-texture.jpg');
 
+const BG2 = require('../assets/gray-glitch-effect-patterned-background.jpg')
+const cardBackground1 = require('../assets/test2.jpg');
 export default function HomeScreen() {
     const stats = {
+        lastWorkoutDays: '2 days ago',
         exercisesLogged: 6,
         volume: 500,
+        liftProgression: '30 %',
         duration: '01:15:43',
         lastWorkout: { date: '01/04/1996', split: 'BACK' },
         weekVolume: 1200,
@@ -40,45 +48,58 @@ export default function HomeScreen() {
         ],
     };
 
-    return (
-        <ImageBackground source={GRAIN_TEXTURE} style={styles.bg}>
-            <ImageBackground source={SCANLINE_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.15 }}>
-                <View style={styles.tintOverlay} />
 
-                <ScrollView contentContainerStyle={styles.container}>
+
+    return (
+        <ImageBackground source={SCANLINE_TEXTURE} style={styles.bg}>
+            <ImageBackground source={GRAIN_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.15 }}>
+                <ImageBackground source={BG2} style={styles.bg} imageStyle={{ opacity: 0.15 }}>
+
+                    <View style={styles.tintOverlay} />
+
                     {/* Header */}
                     <VHSHeader></VHSHeader>
 
 
                     {/* Cards */}
+
                     <View style={styles.cardsRow}>
-                        <View style={styles.card}>
-                            <Text style={styles.cardTitle}>LAST WORKOUT</Text>
-                            <Text style={styles.cardText}>{stats.lastWorkout.date}</Text>
-                            <Text style={styles.cardText}>◉ {stats.lastWorkout.split}</Text>
-                        </View>
-                        <View style={styles.card}>
-                            <Text style={styles.cardTitle}>WEEK VOLUME</Text>
-                            <Text style={styles.cardText}>{stats.weekVolume} KG</Text>
-                        </View>
+                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+                            <ImageText>SESSION LOG</ImageText>
+                            <Text style={styles.cardText}>LAST PR {stats.lastWorkout.date}</Text>
+                            <Text style={styles.cardText}>LAST ENTRY // {stats.lastWorkoutDays}</Text>
+                            <Text style={styles.cardText}>LIFT PROGRESSION // {stats.liftProgression}</Text>
+                        </ImageBackground>
+                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+
+                            <ImageText>STATUS REPORT</ImageText>
+                            <Text style={styles.cardText}>TOTAL VOL: {stats.volume}</Text>
+                            <Text style={styles.cardText}>WEEKLY VOL: {stats.weekVolume}</Text>
+                            <Text style={styles.cardText}></Text>
+
+                        </ImageBackground>
+
                     </View>
                     <View style={styles.cardsRow}>
-                        <View style={styles.card}>
-                            <Text style={styles.cardTitle}>PR ALERT</Text>
+                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+
+                            <ImageText>POWER LEVEL</ImageText>
                             {stats.pr.map((p) => (
                                 <Text key={p.name} style={styles.cardText}>
                                     {p.name}: {p.weight} KG
                                 </Text>
                             ))}
-                        </View>
-                        <View style={[styles.card, { flex: 1 }]}>
-                            <Text style={styles.cardTitle}>RECOVERY STATUS</Text>
-                            <Text style={styles.cardText}>SORE // {stats.recovery.soreness}</Text>
+                        </ImageBackground>
+
+                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+
+                            <ImageText>RECOVERY STATUS</ImageText>
+                            <Text style={styles.cardText}>SORE//{stats.recovery.soreness}</Text>
                             <Text style={[styles.cardText, styles.highlight]}>CNS LOAD: {stats.recovery.cnsLoad}</Text>
                             <Text style={[styles.cardText, styles.highlight]}>
                                 MENTAL STATE: {stats.recovery.mental}
                             </Text>
-                        </View>
+                        </ImageBackground>
                     </View>
 
                     {/* Split table */}
@@ -97,19 +118,43 @@ export default function HomeScreen() {
                     <View style={styles.ticker}>
                         <Text style={styles.tickerText}>›› NO PAIN // NO REWIND // STAY STRONG // ‹‹</Text>
                     </View>
-                </ScrollView>
+                </ImageBackground>
+
             </ImageBackground>
-        </ImageBackground>
+        </ImageBackground >
     );
 }
 
 const styles = StyleSheet.create({
-    bg: { flex: 1, resizeMode: 'cover' },
+
+    cardWrapper: {
+        flex: 1,
+        marginHorizontal: 4,
+        aspectRatio: 1, // adjust based on your card layout
+    },
+
+    cardBackground: {
+        flex: 1,
+        padding: 12,
+        justifyContent: 'center',
+
+    },
+
+    cardImage: {
+        resizeMode: 'stretch', // or 'cover', depending on your design
+        borderRadius: 6,
+        transform: [{ scale: 1.04 }], // Increase glow box size
+        opacity: 0.35, // Optional for blending
+    },
+
+
+    bg: { flex: 1, resizeMode: 'repeat' },
     container: { padding: 16, paddingBottom: 32 },
     header: { marginBottom: 12 },
     title: {
         fontFamily: 'Anton_400Regular',
         fontSize: 24,
+        paddingTop: 30,
         color: '#FFF',
         textShadowColor: '#00F',
         textShadowOffset: { width: 0, height: 0 },
@@ -149,25 +194,36 @@ const styles = StyleSheet.create({
         marginVertical: 2,
     },
 
-    cardsRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 8 },
+    cardsRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 6 },
     card: {
         flex: 1,
         borderWidth: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)', // Optional, for deeper contrast
         borderColor: '#AAA',
         padding: 8,
+        borderRadius: 6,
+
         marginHorizontal: 4,
     },
     cardTitle: {
         fontFamily: 'Anton_400Regular',
-        fontSize: 14,
+        fontSize: 22,
         color: '#FFF',
         marginBottom: 4,
+        textShadowColor: '#0ff',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 8,
     },
+    containerWrapper: {
+        flexGrow: 1,
+    },
+
     cardText: {
         fontFamily: 'IBMPlexMono_400Regular',
-        fontSize: 12,
+        fontSize: 11,
+        marginTop: -5,
         color: '#FFF',
-        marginVertical: 1,
+        marginVertical: 6,
     },
     highlight: { color: '#0F0' },
 
@@ -191,4 +247,19 @@ const styles = StyleSheet.create({
         letterSpacing: 1.5,
         textAlign: 'center',
     },
+    scanlineOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        resizeMode: 'repeat',
+        opacity: 0.07,
+        zIndex: 10,
+    },
+
+
+    noiseOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        resizeMode: 'repeat',
+        opacity: 0.08,
+        zIndex: 11,
+    },
+
 });
