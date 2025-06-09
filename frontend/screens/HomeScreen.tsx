@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import FlickerText from '../FlickerText';
 import ImageText from '../ImageText';
-import GlitchAnimation from '../GltichAnimation';
 import VHSHeader from './VHSHeader';
+
+
 const GRAIN_TEXTURE = require('../assets/glitch-effect-black-background.jpg');
 const SCANLINE_TEXTURE = require('../assets/bg.jpg');
 const TEXTURE = require('../assets/abstract-geometric-background-shapes-texture.jpg');
@@ -51,82 +52,103 @@ export default function HomeScreen() {
 
 
     return (
-        <ImageBackground source={SCANLINE_TEXTURE} style={styles.bg}>
-            <ImageBackground source={GRAIN_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.15 }}>
-                <ImageBackground source={BG2} style={styles.bg} imageStyle={{ opacity: 0.15 }}>
+        <View style={{ flex: 1 }}>
+            <ImageBackground source={SCANLINE_TEXTURE} style={styles.bg}>
+                <ImageBackground source={GRAIN_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.15 }}>
+                    <ImageBackground source={BG2} style={styles.bg} imageStyle={{ opacity: 0.15 }}>
 
-                    <View style={styles.tintOverlay} />
+                        <View style={styles.tintOverlay} />
 
-                    {/* Header */}
-                    <VHSHeader></VHSHeader>
+                        {/* Header */}
+                        <View style={styles.content}>
+                            <VHSHeader></VHSHeader>
 
+                            {/* Cards */}
+                            <ScrollView contentContainerStyle={styles.scrollContainer}>
+                                <View style={styles.overviewRow}>
+                                    <Text style={styles.statText}>● {stats.exercisesLogged} Exercises Logged</Text>
+                                    <Text style={styles.statText}>● Volume: {stats.volume} KG</Text>
+                                    <Text style={styles.statText}>● Duration: {stats.duration}</Text>
+                                </View>
+                                <View style={styles.cardsRow}>
+                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+                                        <ImageText>SESSION LOG</ImageText>
+                                        <Text style={[styles.cardText, styles.highlight]}>LAST PR {stats.lastWorkout.date}</Text>
+                                        <Text style={[styles.cardText, styles.highlight]}>LAST ENTRY // {stats.lastWorkoutDays}</Text>
+                                        <Text style={[styles.cardText, styles.highlight]}>LIFT PROGRESSION // {stats.liftProgression}</Text>
+                                    </ImageBackground>
+                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
 
-                    {/* Cards */}
+                                        <ImageText>STATUS REPORT</ImageText>
+                                        <Text style={[styles.cardText, styles.highlight]}>TOTAL VOL: {stats.volume}</Text>
+                                        <Text style={[styles.cardText, styles.highlight]}>WEEKLY VOL: {stats.weekVolume}</Text>
+                                        <Text style={[styles.cardText, styles.highlight]}></Text>
 
-                    <View style={styles.cardsRow}>
-                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
-                            <ImageText>SESSION LOG</ImageText>
-                            <Text style={styles.cardText}>LAST PR {stats.lastWorkout.date}</Text>
-                            <Text style={styles.cardText}>LAST ENTRY // {stats.lastWorkoutDays}</Text>
-                            <Text style={styles.cardText}>LIFT PROGRESSION // {stats.liftProgression}</Text>
-                        </ImageBackground>
-                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+                                    </ImageBackground>
 
-                            <ImageText>STATUS REPORT</ImageText>
-                            <Text style={styles.cardText}>TOTAL VOL: {stats.volume}</Text>
-                            <Text style={styles.cardText}>WEEKLY VOL: {stats.weekVolume}</Text>
-                            <Text style={styles.cardText}></Text>
+                                </View>
+                                <View style={styles.cardsRow}>
+                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
 
-                        </ImageBackground>
+                                        <ImageText>POWER LEVEL</ImageText>
+                                        {stats.pr.map((p) => (
+                                            <Text key={p.name} style={[styles.cardText, styles.highlight]}>
+                                                {p.name}: {p.weight} KG
+                                            </Text>
+                                        ))}
+                                    </ImageBackground>
 
-                    </View>
-                    <View style={styles.cardsRow}>
-                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
 
-                            <ImageText>POWER LEVEL</ImageText>
-                            {stats.pr.map((p) => (
-                                <Text key={p.name} style={styles.cardText}>
-                                    {p.name}: {p.weight} KG
-                                </Text>
-                            ))}
-                        </ImageBackground>
+                                        <ImageText>RECOVERY STATUS</ImageText>
+                                        <Text style={[styles.cardText, styles.highlight]}>SORE//{stats.recovery.soreness}</Text>
+                                        <Text style={[styles.cardText, styles.highlight]}>CNS LOAD: {stats.recovery.cnsLoad}</Text>
+                                        <Text style={[styles.cardText, styles.highlight]}>
+                                            MENTAL STATE: {stats.recovery.mental}
+                                        </Text>
+                                    </ImageBackground>
+                                </View>
 
-                        <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
+                                {/* Split table */}
+                                <View style={styles.splitContainer}>
+                                    <Text style={styles.splitHeader}>› CURRENT SPLIT (PPL)</Text>
+                                    {stats.split.map((s) => (
+                                        <View key={s.day} style={styles.splitRow}>
+                                            <Text style={styles.splitDay}>{s.day}</Text>
+                                            <Text style={styles.splitType}>{s.type}</Text>
+                                            <Text style={styles.splitStatus}>{s.status}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                                {/* Footer Ticker */}
+                                <View style={styles.ticker}>
+                                    <Text style={styles.tickerText}>›› NO PAIN // NO REWIND // STAY STRONG // ‹‹</Text>
+                                </View>
 
-                            <ImageText>RECOVERY STATUS</ImageText>
-                            <Text style={styles.cardText}>SORE//{stats.recovery.soreness}</Text>
-                            <Text style={[styles.cardText, styles.highlight]}>CNS LOAD: {stats.recovery.cnsLoad}</Text>
-                            <Text style={[styles.cardText, styles.highlight]}>
-                                MENTAL STATE: {stats.recovery.mental}
-                            </Text>
-                        </ImageBackground>
-                    </View>
+                            </ScrollView>
+                        </View>
+                    </ImageBackground>
 
-                    {/* Split table */}
-                    <View style={styles.splitContainer}>
-                        <Text style={styles.splitHeader}>› CURRENT SPLIT (PPL)</Text>
-                        {stats.split.map((s) => (
-                            <View key={s.day} style={styles.splitRow}>
-                                <Text style={styles.splitDay}>{s.day}</Text>
-                                <Text style={styles.splitType}>{s.type}</Text>
-                                <Text style={styles.splitStatus}>{s.status}</Text>
-                            </View>
-                        ))}
-                    </View>
-
-                    {/* Footer Ticker */}
-                    <View style={styles.ticker}>
-                        <Text style={styles.tickerText}>›› NO PAIN // NO REWIND // STAY STRONG // ‹‹</Text>
-                    </View>
                 </ImageBackground>
-
-            </ImageBackground>
-        </ImageBackground >
+            </ImageBackground >
+        </View >
     );
 }
 
 const styles = StyleSheet.create({
-
+    overviewRow: {
+        marginVertical: 0,
+    },
+    statText: {
+        fontFamily: 'IBMPlexMono_400Regular',
+        fontSize: 15,
+        textShadowColor: 'rgb(4, 235, 73)',
+        textShadowOffset: { width: 0, height: 0 },
+        color: 'rgba(219, 224, 225, 0.94)',
+        marginVertical: 3,
+        letterSpacing: 3,
+        textShadowRadius: 16,
+    },
     cardWrapper: {
         flex: 1,
         marginHorizontal: 4,
@@ -139,6 +161,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
 
     },
+    scrollContainer: {
+
+        paddingBottom: 100, // enough bottom padding to scroll past nav
+        flexGrow: 1,
+    },
+
 
     cardImage: {
         resizeMode: 'stretch', // or 'cover', depending on your design
@@ -146,7 +174,9 @@ const styles = StyleSheet.create({
         transform: [{ scale: 1.04 }], // Increase glow box size
         opacity: 0.35, // Optional for blending
     },
-
+    scrollView: {
+        flex: 1,                // ← fill the remaining space under the header
+    },
 
     bg: { flex: 1, resizeMode: 'repeat' },
     container: { padding: 16, paddingBottom: 32 },
@@ -171,6 +201,10 @@ const styles = StyleSheet.create({
         color: '#FFF',
         marginRight: 12,
     },
+    content: {
+        flex: 1,        // take up the whole screen on top of the bg
+        zIndex: 1,      // sit above the backgrounds
+    },
     recDot: {
         width: 8,
         height: 8,
@@ -186,7 +220,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(89, 9, 123, 0.1)', // VHS purple (low opacity)
         zIndex: 1,
     },
-    overviewRow: { marginVertical: 12 },
     overviewText: {
         fontFamily: 'IBMPlexMono_400Regular',
         fontSize: 14,
@@ -207,7 +240,7 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         fontFamily: 'Anton_400Regular',
-        fontSize: 22,
+        fontSize: 20,
         color: '#FFF',
         marginBottom: 4,
         textShadowColor: '#0ff',
@@ -220,12 +253,23 @@ const styles = StyleSheet.create({
 
     cardText: {
         fontFamily: 'IBMPlexMono_400Regular',
-        fontSize: 11,
-        marginTop: -5,
-        color: '#FFF',
-        marginVertical: 6,
+        fontSize: 11,                   // bump up slightly for legibility
+        color: 'rgba(219, 224, 225, 0.94)',
+        marginVertical: 4,              // tighter vertical rhythm
+
+        // soft white glow
+        textShadowColor: 'rgba(4, 235, 73, 0.94)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 4,
     },
-    highlight: { color: '#0F0' },
+
+
+    highlight: {
+        // green glow
+        textShadowColor: 'rgba(0, 247, 255, 0.94)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 8,
+    },
 
     splitContainer: { marginTop: 16, borderTopWidth: 1, borderColor: '#666', paddingTop: 8 },
     splitHeader: {

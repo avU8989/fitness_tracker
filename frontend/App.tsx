@@ -1,8 +1,8 @@
-// App.tsx
 import React, { useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import HomeScreen from './screens/HomeScreen';
 import Font from 'expo-font'
+import AppTabs from './AppTabs';
 // Google Fonts
 import {
   useFonts as useAnton,
@@ -20,6 +20,7 @@ import {
   useFonts as useVT323,
   VT323_400Regular,
 } from '@expo-google-fonts/vt323';
+import { NavigationContainer } from '@react-navigation/native';
 
 
 SplashScreen.preventAutoHideAsync(); // Keeps splash screen up while fonts load
@@ -45,7 +46,11 @@ export default function App() {
     }
   }, [fontsReady]);
 
-  if (!fontsReady) return null; // or your custom loading screen
+  if (!fontsReady) return null;
 
-  return <HomeScreen />;
+  return (
+    <NavigationContainer>
+      <AppTabs />
+    </NavigationContainer>
+  );
 }

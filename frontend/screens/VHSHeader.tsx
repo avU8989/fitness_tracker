@@ -1,7 +1,7 @@
 // src/components/VHSHeader.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-
+import ImageTitleText from '../ImageTitleText';
 const VHSHeader = () => {
     const stats = {
         exercisesLogged: 6,
@@ -13,7 +13,7 @@ const VHSHeader = () => {
         <View style={styles.container}>
             {/* Top Row: Title + REC */}
             <View style={styles.headerRow}>
-                <Text style={styles.title}>TODAY’S GRIND</Text>
+                <ImageTitleText>TODAY’S GRIND</ImageTitleText>
                 <View style={styles.recBox}>
                     <View style={styles.recRow}>
                         <View style={styles.recDot} />
@@ -24,14 +24,9 @@ const VHSHeader = () => {
             </View>
 
             {/* Subtitle */}
-            <Text style={styles.subtitle}>PUSH DAY</Text>
+            <ImageTitleText>PUSH DAY</ImageTitleText>
 
-            {/* Stats */}
-            <View style={styles.overviewRow}>
-                <Text style={styles.statText}>● {stats.exercisesLogged} Exercises Logged</Text>
-                <Text style={styles.statText}>● Volume: {stats.volume} KG</Text>
-                <Text style={styles.statText}>● Duration: {stats.duration}</Text>
-            </View>
+
         </View>
 
     );
@@ -41,6 +36,7 @@ const styles = StyleSheet.create({
     container: {
         position: 'relative',   // <— allow its children to be absolutely positioned
         paddingHorizontal: 8,
+        paddingTop: 40,
         paddingBottom: 20,
         backgroundColor: 'transparent',
     },
@@ -55,6 +51,7 @@ const styles = StyleSheet.create({
     title: {
         fontFamily: 'Anton_400Regular',
         fontSize: 36,
+        paddingTop: 50,
         color: '#FFFFFF',
         letterSpacing: 3,
         textShadowColor: '#FFFFFF',
@@ -64,7 +61,7 @@ const styles = StyleSheet.create({
 
     recBox: {
         position: 'absolute',    // <— remove from normal flow
-        top: 15,                 // tweak this until it sits just beneath your title
+        top: 65,                 // tweak this until it sits just beneath your title
         right: 0,
         alignItems: 'flex-end',
     },

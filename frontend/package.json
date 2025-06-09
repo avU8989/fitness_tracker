@@ -14,6 +14,8 @@
     "@expo-google-fonts/press-start-2p": "^0.3.0",
     "@expo-google-fonts/vt323": "^0.3.0",
     "@react-native-masked-view/masked-view": "^0.3.2",
+    "@react-navigation/bottom-tabs": "^7.3.13",
+    "@react-navigation/native": "^7.1.9",
     "expo": "~53.0.9",
     "expo-font": "~13.3.1",
     "expo-splash-screen": "~0.30.8",
@@ -21,13 +23,18 @@
     "nativewind": "^4.1.23",
     "react": "19.0.0",
     "react-native": "0.79.2",
+    "react-native-gesture-handler": "^2.25.0",
     "react-native-reanimated": "~3.17.4",
+    "react-native-safe-area-context": "^5.4.1",
+    "react-native-screens": "^4.11.1",
     "react-native-skia": "^0.0.1",
-    "react-native-svg": "^15.12.0"
+    "react-native-svg": "^15.12.0",
+    "react-native-vector-icons": "^10.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
+    "@types/react-native-vector-icons": "^6.4.18",
     "typescript": "~5.8.3"
   },
   "private": true

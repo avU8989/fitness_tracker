@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Anton_400Regular',
         color: 'rgba(254, 252, 237, 0.6)', // faint base color
         textAlign: 'center',
-        textShadowColor: 'rgba(12, 202, 255, 0.5)', // soft glow color
+        textShadowColor: 'rgb(12, 198, 255)', // soft glow color
         textShadowOffset: { width: 0, height: 0 }, // centered glow
         textShadowRadius: 8, // higher = blurrier
         zIndex: 1,
