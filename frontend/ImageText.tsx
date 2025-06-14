@@ -10,28 +10,26 @@ type ImageTextProps = {
 export default function ImageText({ children, textStyle }: ImageTextProps) {
     return (
         <View style={styles.wrapper}>
-            {/* Glow Text Behind */}
-            <Text style={[styles.glowText, textStyle]}>{children}</Text>
+            {/* Glow text AND mask text use same layout and styles */}
+            <View style={styles.textWrapper}>
+                <Text style={[styles.glowText, textStyle]}>{children}</Text>
+            </View>
 
-            {/* Image-filled masked text */}
             <MaskedView
                 style={styles.maskedView}
                 maskElement={
-                    <View style={styles.maskWrapper}>
+                    <View style={styles.textWrapper}>
                         <Text style={[styles.maskedText, textStyle]}>{children}</Text>
                     </View>
                 }
             >
-                {/* 1. Solid color */}
                 <View style={{ flex: 1, backgroundColor: '#f5f5f5' }} />
 
-                {/* 2. Texture overlay */}
                 <Image
                     source={require('./assets/test6.jpg')}
                     style={[StyleSheet.absoluteFillObject, { opacity: 1 }]}
                 />
 
-                {/* 3. Optional tint */}
                 <View
                     style={[
                         StyleSheet.absoluteFillObject,
@@ -44,38 +42,38 @@ export default function ImageText({ children, textStyle }: ImageTextProps) {
 }
 
 
-
 const styles = StyleSheet.create({
     wrapper: {
         height: 50,
         width: '100%',
         justifyContent: 'center',
+        alignItems: 'flex-start', // Align to the left
+        position: 'relative',
     },
-    container: {
-        ...StyleSheet.absoluteFillObject,
+    textWrapper: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'flex-start', // Left-align text in wrapper
     },
     maskedView: {
         ...StyleSheet.absoluteFillObject,
     },
-    maskWrapper: {
-        flex: 1,
-        justifyContent: 'center',
-    },
     maskedText: {
-        fontSize: 23,
+        fontSize: 36,
         fontFamily: 'Anton_400Regular',
-        color: 'black',
+        textAlign: 'left', // Left-align text content
+        color: 'white',
+        letterSpacing: 8, // 👈 Add this
     },
     glowText: {
-        position: 'absolute',
-        fontSize: 23,
+        fontSize: 36,
         fontFamily: 'Anton_400Regular',
-        color: 'rgba(254, 252, 237, 0.6)', // faint base color
-        textAlign: 'center',
-        textShadowColor: 'rgb(12, 198, 255)', // soft glow color
-        textShadowOffset: { width: 0, height: 0 }, // centered glow
-        textShadowRadius: 8, // higher = blurrier
-        zIndex: 1,
+        color: 'rgba(254, 252, 237, 0.6)',
+        textAlign: 'left',
+        textShadowColor: 'rgb(12, 198, 255)',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 8,
+        letterSpacing: 8, // 👈 Add this too
     },
-
 });
+

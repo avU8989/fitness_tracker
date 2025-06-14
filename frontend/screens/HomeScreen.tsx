@@ -1,6 +1,9 @@
 // src/screens/HomeScreen.tsx
 import React from 'react';
+import { useEffect, useRef } from 'react';
 import {
+    Animated,
+    Dimensions,
     View,
     Text,
     StyleSheet,
@@ -11,7 +14,8 @@ import {
 import FlickerText from '../FlickerText';
 import ImageText from '../ImageText';
 import VHSHeader from './VHSHeader';
-
+import Carousel from 'react-native-reanimated-carousel';
+import Ticker from './Ticker';
 
 const GRAIN_TEXTURE = require('../assets/glitch-effect-black-background.jpg');
 const SCANLINE_TEXTURE = require('../assets/bg.jpg');
@@ -21,7 +25,7 @@ const BG2 = require('../assets/gray-glitch-effect-patterned-background.jpg')
 const cardBackground1 = require('../assets/test2.jpg');
 export default function HomeScreen() {
     const stats = {
-        lastWorkoutDays: '2 days ago',
+        lastWorkoutDays: '01/04/1996',
         exercisesLogged: 6,
         volume: 500,
         liftProgression: '30 %',
@@ -49,6 +53,71 @@ export default function HomeScreen() {
         ],
     };
 
+    const recoveryCards = [
+        {
+            title: 'RECOVERY STATUS',
+            lines: [
+                `SORE//${stats.recovery.soreness}`,
+                `CNS LOAD: ${stats.recovery.cnsLoad}`,
+                `MENTAL STATE: ${stats.recovery.mental}`,
+            ],
+        },
+        {
+            title: 'MOCK STATS',
+            lines: ['HRV // NORMAL', 'SLEEP // 7.5 HRS', 'FATIGUE // LOW'],
+        },
+        {
+            title: 'SUPPLEMENT STACK',
+            lines: ['CREATINE // ✓', 'OMEGA-3 // ✓', 'MAGNESIUM // ✓'],
+        },
+        {
+            title: 'NUTRITION',
+            lines: ['CALORIES // 2450', 'PROTEIN // 170G', 'CARBS // 230G'],
+        },
+        {
+            title: 'HYDRATION STATUS',
+            lines: ['WATER // 3.2L', 'ELECTROLYTES // BALANCED', 'CAFFEINE // 150mg'],
+        },
+        {
+            title: 'STRESS LEVELS',
+            lines: ['MOOD // CALM', 'FOCUS // HIGH', 'IRRITABILITY // LOW'],
+        },
+        {
+            title: 'SLEEP QUALITY',
+            lines: ['DEEP SLEEP // 2.3H', 'REM SLEEP // 1.8H', 'EFFICIENCY // 91%'],
+        },
+        {
+            title: 'READINESS SCORE',
+            lines: ['OVERALL // 82%', 'ENERGY // HIGH', 'MOTIVATION // PEAK'],
+        },
+        {
+            title: 'SESSION LOG',
+            lines: [
+                `LAST PR // ${stats.lastWorkout}`,
+                `LAST ENTRY //  2 days ago`,
+                `MENTAL STATE: ${stats.liftProgression}`,
+            ],
+        },
+        {
+            title: 'POWER LEVEL',
+            render: () =>
+                Array.isArray(stats?.pr) && stats.pr.length > 0
+                    ? stats.pr.map((p) => (
+                        <Text key={p.name} style={[styles.cardText, styles.highlight]}>
+                            {p.name}: {p.weight} KG
+                        </Text>
+                    ))
+                    : <Text style={styles.cardText}>No PRs logged</Text>,
+        },
+        {
+            title: 'STATUS REPORT',
+            lines: [
+                `TOTAL VOL // ${stats.volume}`,
+                `WEEKLY VOL //  ${stats.weekVolume}`,
+                `VOLUME INCREASMENT // ${stats.liftProgression}`,
+            ],
+        },
+    ];
 
 
     return (
@@ -60,54 +129,69 @@ export default function HomeScreen() {
                         <View style={styles.tintOverlay} />
 
                         {/* Header */}
-                        <View style={styles.content}>
-                            <VHSHeader></VHSHeader>
+                        <View style={styles.container1}></View>
 
-                            {/* Cards */}
+                        <View style={styles.content}>
                             <ScrollView contentContainerStyle={styles.scrollContainer}>
+                                <VHSHeader></VHSHeader>
+
+                                {/* Cards */}
+
                                 <View style={styles.overviewRow}>
                                     <Text style={styles.statText}>● {stats.exercisesLogged} Exercises Logged</Text>
                                     <Text style={styles.statText}>● Volume: {stats.volume} KG</Text>
                                     <Text style={styles.statText}>● Duration: {stats.duration}</Text>
                                 </View>
-                                <View style={styles.cardsRow}>
-                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
-                                        <ImageText>SESSION LOG</ImageText>
-                                        <Text style={[styles.cardText, styles.highlight]}>LAST PR {stats.lastWorkout.date}</Text>
-                                        <Text style={[styles.cardText, styles.highlight]}>LAST ENTRY // {stats.lastWorkoutDays}</Text>
-                                        <Text style={[styles.cardText, styles.highlight]}>LIFT PROGRESSION // {stats.liftProgression}</Text>
-                                    </ImageBackground>
-                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
 
-                                        <ImageText>STATUS REPORT</ImageText>
-                                        <Text style={[styles.cardText, styles.highlight]}>TOTAL VOL: {stats.volume}</Text>
-                                        <Text style={[styles.cardText, styles.highlight]}>WEEKLY VOL: {stats.weekVolume}</Text>
-                                        <Text style={[styles.cardText, styles.highlight]}></Text>
+                                <View style={{ marginVertical: 20 }}>
+                                    <Carousel
+                                        width={Dimensions.get('window').width * 1.2}
+                                        height={260}
+                                        mode="parallax"
+                                        modeConfig={{ parallaxScrollingOffset: 60 }}
+                                        autoPlay={false}
+                                        data={recoveryCards}
+                                        style={{ left: -(Dimensions.get('window').width * 0.1) }} // shift left by 5%
+                                        scrollAnimationDuration={800}
+                                        renderItem={({ item }) => (
+                                            <ImageBackground
+                                                source={cardBackground1}
+                                                style={styles.cardBackground}
+                                                imageStyle={styles.cardImage}
+                                            >
+                                                <View style={{ flex: 1 }}>
+                                                    {/* Title Area: pinned to top */}
+                                                    <View style={{ height: 40, justifyContent: 'flex-start' }}>
+                                                        <ImageText textStyle={{ paddingBottom: 0 }}>{item.title}</ImageText>
+                                                    </View>
 
-                                    </ImageBackground>
+                                                    {/* Content Area: fixed space to avoid shifting */}
+                                                    <View style={{ flex: 1, justifyContent: 'space-evenly', paddingTop: 20 }}>
+                                                        {Array.isArray(item.lines) &&
+                                                            item.lines.map((line, idx) => (
+                                                                <Text
+                                                                    key={idx}
+                                                                    numberOfLines={1}
+                                                                    adjustsFontSizeToFit
+                                                                    style={[styles.cardText, styles.highlight]}
+                                                                >
+                                                                    {line}
+                                                                </Text>
+                                                            ))}
 
+                                                        {typeof item.render === 'function' && item.render()}
+                                                    </View>
+                                                </View>
+                                            </ImageBackground>
+                                        )}
+
+
+
+                                    />
                                 </View>
-                                <View style={styles.cardsRow}>
-                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
 
-                                        <ImageText>POWER LEVEL</ImageText>
-                                        {stats.pr.map((p) => (
-                                            <Text key={p.name} style={[styles.cardText, styles.highlight]}>
-                                                {p.name}: {p.weight} KG
-                                            </Text>
-                                        ))}
-                                    </ImageBackground>
+                                <Ticker></Ticker>
 
-                                    <ImageBackground source={cardBackground1} style={styles.cardBackground} imageStyle={styles.cardImage}>
-
-                                        <ImageText>RECOVERY STATUS</ImageText>
-                                        <Text style={[styles.cardText, styles.highlight]}>SORE//{stats.recovery.soreness}</Text>
-                                        <Text style={[styles.cardText, styles.highlight]}>CNS LOAD: {stats.recovery.cnsLoad}</Text>
-                                        <Text style={[styles.cardText, styles.highlight]}>
-                                            MENTAL STATE: {stats.recovery.mental}
-                                        </Text>
-                                    </ImageBackground>
-                                </View>
 
                                 {/* Split table */}
                                 <View style={styles.splitContainer}>
@@ -137,12 +221,12 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
     overviewRow: {
-        marginVertical: 0,
+        marginBottom: -30,
     },
     statText: {
         fontFamily: 'IBMPlexMono_400Regular',
         fontSize: 15,
-        textShadowColor: 'rgb(4, 235, 73)',
+        textShadowColor: 'rgb(0, 215, 253)',
         textShadowOffset: { width: 0, height: 0 },
         color: 'rgba(219, 224, 225, 0.94)',
         marginVertical: 3,
@@ -157,7 +241,7 @@ const styles = StyleSheet.create({
 
     cardBackground: {
         flex: 1,
-        padding: 12,
+        padding: 20,
         justifyContent: 'center',
 
     },
@@ -238,6 +322,10 @@ const styles = StyleSheet.create({
 
         marginHorizontal: 4,
     },
+    container1: {
+        width: 10,
+        height: 25,
+    },
     cardTitle: {
         fontFamily: 'Anton_400Regular',
         fontSize: 20,
@@ -246,6 +334,8 @@ const styles = StyleSheet.create({
         textShadowColor: '#0ff',
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 8,
+        letterSpacing: 6,
+
     },
     containerWrapper: {
         flexGrow: 1,
@@ -253,9 +343,11 @@ const styles = StyleSheet.create({
 
     cardText: {
         fontFamily: 'IBMPlexMono_400Regular',
-        fontSize: 11,                   // bump up slightly for legibility
-        color: 'rgba(219, 224, 225, 0.94)',
+        fontSize: 20,                   // bump up slightly for legibility
+        color: 'rgba(255, 255, 255, 0.94)',
         marginVertical: 4,              // tighter vertical rhythm
+        textAlign: 'left',
+        letterSpacing: 6,
 
         // soft white glow
         textShadowColor: 'rgba(4, 235, 73, 0.94)',
@@ -282,7 +374,7 @@ const styles = StyleSheet.create({
     splitDay: { width: 40, fontFamily: 'IBMPlexMono_400Regular', color: '#888' },
     splitType: { width: 80, fontFamily: 'IBMPlexMono_400Regular', color: '#0CF' },
     splitStatus: { flex: 1, fontFamily: 'IBMPlexMono_400Regular', color: '#FFF' },
-
+    ticker2: { marginTop: -20, alignItems: 'center' },
     ticker: { marginTop: 24, alignItems: 'center' },
     tickerText: {
         fontFamily: 'PressStart2P_400Regular',

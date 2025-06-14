@@ -12,19 +12,23 @@ const VHSHeader = () => {
     return (
         <View style={styles.container}>
             {/* Top Row: Title + REC */}
+            <Text style={styles.header}>HARDLOGGER</Text>
+
             <View style={styles.headerRow}>
-                <ImageTitleText>TODAY’S GRIND</ImageTitleText>
+
+                <Text style={styles.title}>TODAY’S GRIND</Text>
                 <View style={styles.recBox}>
                     <View style={styles.recRow}>
                         <View style={styles.recDot} />
-                        <Text style={styles.statText}>REC 00:00:00</Text>
+                        <Text style={styles.recText}>REC 00:00:00</Text>
                     </View>
-                    <Text style={styles.statText}>01/01/1996</Text>
+                    <Text style={styles.recText}>01/01/1996</Text>
                 </View>
             </View>
 
             {/* Subtitle */}
-            <ImageTitleText>PUSH DAY</ImageTitleText>
+            <Text style={styles.subtitle}>PUSH DAY</Text>
+            <View style={styles.divider} />
 
 
         </View>
@@ -35,33 +39,44 @@ const VHSHeader = () => {
 const styles = StyleSheet.create({
     container: {
         position: 'relative',   // <— allow its children to be absolutely positioned
-        paddingHorizontal: 8,
         paddingTop: 40,
-        paddingBottom: 20,
         backgroundColor: 'transparent',
     },
 
     headerRow: {
+        paddingLeft: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
     },
 
+    divider: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#2A2F3C',
+        marginVertical: 20,
+    },
+
 
     title: {
-        fontFamily: 'Anton_400Regular',
-        fontSize: 36,
-        paddingTop: 50,
-        color: '#FFFFFF',
+        color: '#BFC7D5',
+        fontSize: 24,
+        fontWeight: 'bold',
+        fontFamily: 'monospace',
         letterSpacing: 3,
-        textShadowColor: '#FFFFFF',
-        textShadowOffset: { width: 0, height: 1 },
-        textShadowRadius: 8,
+    },
+
+    header: {
+        color: '#BFC7D5',
+        fontSize: 36,
+        fontWeight: 'bold',
+        letterSpacing: 6,
+
+        fontFamily: 'monospace',
     },
 
     recBox: {
         position: 'absolute',    // <— remove from normal flow
-        top: 65,                 // tweak this until it sits just beneath your title
+        top: 10,                 // tweak this until it sits just beneath your title
         right: 0,
         alignItems: 'flex-end',
     },
@@ -69,6 +84,7 @@ const styles = StyleSheet.create({
     recRow: {
         flexDirection: 'row',
         alignItems: 'center',
+
     },
 
     recDot: {
@@ -78,26 +94,26 @@ const styles = StyleSheet.create({
         borderRadius: 4,
         marginRight: 6,
         shadowColor: 'red',
-        shadowOpacity: 0.9,
+        shadowOpacity: 1,
         shadowRadius: 4,
+        textShadowColor: '#F5F5F5',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 30,
     },
 
     recText: {
-        fontFamily: 'Anton_400Regular',
+        fontFamily: 'mono',
         fontSize: 12,
-        color: '#FFFFFF',
+        color: '#BFC7D5',
         textAlign: 'right',
     },
 
     subtitle: {
-        fontFamily: 'Anton_400Regular',
-        fontSize: 38,
-        color: '#FFFFFF',
+        color: '#BFC7D5',
+        fontSize: 26,
+        fontWeight: 'semibold',
+        fontFamily: 'monospace',
         letterSpacing: 3,
-        textShadowColor: '#B86BFF',
-        textShadowOffset: { width: 0, height: 1 },
-        marginTop: -10,
-        textShadowRadius: 16,
     },
 
     overviewRow: {
