@@ -1,11 +1,13 @@
+import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { StyleSheet, Text } from 'react-native';
+
+import StatsScreen from './screens/StatsScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import HomeScreen from './screens/HomeScreen2';
 
 const Tab = createBottomTabNavigator();
-import StatsScreen from './screens/StatsScreen'
-import ProfileScreen from './screens/ProfileScreen'
-import HomeScreen from './screens/HomeScreen2';
-import { StyleSheet } from 'react-native';
 
 export default function AppTabs() {
     return (
@@ -16,34 +18,37 @@ export default function AppTabs() {
 
                     switch (route.name) {
                         case 'DASH':
-                            iconName = focused ? 'home' : 'home-outline';
+                            iconName = focused ? 'speedometer' : 'speedometer-outline';
                             break;
                         case 'LOG':
-                            iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+                            iconName = focused ? 'barbell' : 'barbell-outline';
                             break;
                         case 'GAINS':
-                            iconName = focused ? 'person' : 'person-outline';
+                            iconName = focused ? 'trending-up' : 'trending-up-outline';
                             break;
                         case 'SETUP':
-                            iconName = focused ? 'person' : 'person-outline';
+                            iconName = focused ? 'settings' : 'settings-outline';
                             break;
                         default:
                             iconName = 'help';
                     }
 
-                    return <Ionicons name={iconName} size={size} color={color} />;
+                    return (
+                        <Ionicons
+                            name={iconName}
+                            size={focused ? size + 4 : size}
+                            color={color}
+                            style={focused ? styles.iconGlow : undefined}
+                        />
+                    );
                 },
-                tabBarLabelStyle: styles.bodyText, // ✅ apply font style to all tabs
-                tabBarStyle: {
-                    backgroundColor: '#0A0F1C',
-
-                    elevation: 0,                    // Android: remove shadow
-                    marginTop: 10,
-                    borderTopWidth: 0,              // iOS: remove top border
-                    flexDirection: 'row',
-                    justifyContent: 'space-around',
-                },
-                tabBarActiveTintColor: '#00ffff',
+                tabBarLabel: ({ focused, color }) => (
+                    <Text style={[styles.tabLabel, { color }, focused && styles.textGlow]}>
+                        {route.name}
+                    </Text>
+                ),
+                tabBarStyle: styles.tabBar,
+                tabBarActiveTintColor: '#E0E0E0',
                 tabBarInactiveTintColor: '#555',
                 headerShown: false,
             })}
@@ -52,15 +57,32 @@ export default function AppTabs() {
             <Tab.Screen name="LOG" component={StatsScreen} />
             <Tab.Screen name="GAINS" component={ProfileScreen} />
             <Tab.Screen name="SETUP" component={ProfileScreen} />
-
-        </Tab.Navigator >
+        </Tab.Navigator>
     );
 }
 
 const styles = StyleSheet.create({
-    bodyText: {
-        fontSize: 18,
-        color: '#BFC7D5',
+    tabBar: {
+        backgroundColor: '#0A0F1C',
+        elevation: 0,
+        borderTopWidth: 0,
+        height: 70,
+        paddingBottom: 10,
+        paddingTop: 5,
+    },
+    tabLabel: {
+        fontSize: 12,
         fontFamily: 'monospace',
+        letterSpacing: 2,
+    },
+    textGlow: {
+        textShadowColor: '#E0E0E0', // light grey glow
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 8,
+    },
+    iconGlow: {
+        textShadowColor: '#E0E0E0', // light grey glow
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 6,
     },
 });
