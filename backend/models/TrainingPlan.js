@@ -20,7 +20,6 @@ const daySchema = new mongoose.Schema({
   },
   splitType: {
     type: String,
-    enum: ["PUSH", "PULL", "LEGS", "REST", "FULL BODY", "RECOVERY"],
     required: true,
   },
   exercises: [exerciseSchema],

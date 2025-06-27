@@ -6,6 +6,7 @@ import { StyleSheet, Text } from 'react-native';
 import StatsScreen from './screens/StatsScreen';
 import LogScreen from './screens/LogScreen.tsx';
 import HomeScreen from './screens/HomeScreen';
+import TrainingPlansScreen from './screens/TrainingPlansScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,6 +23,9 @@ export default function AppTabs() {
                             break;
                         case 'LOG':
                             iconName = focused ? 'barbell' : 'barbell-outline';
+                            break;
+                        case 'SPLIT':
+                            iconName = focused ? 'calendar' : 'calendar-outline';
                             break;
                         case 'GAINS':
                             iconName = focused ? 'trending-up' : 'trending-up-outline';
@@ -54,8 +58,9 @@ export default function AppTabs() {
             })}
         >
             <Tab.Screen name="DASH" component={HomeScreen} />
-            <Tab.Screen name="LOG" component={StatsScreen} />
-            <Tab.Screen name="GAINS" component={LogScreen} />
+            <Tab.Screen name="LOG" component={LogScreen} />
+            <Tab.Screen name="SPLIT" component={TrainingPlansScreen} />
+            <Tab.Screen name="GAINS" component={StatsScreen} />
             <Tab.Screen name="SETUP" component={LogScreen} />
         </Tab.Navigator>
     );

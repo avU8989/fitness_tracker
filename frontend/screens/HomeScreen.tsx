@@ -11,6 +11,7 @@ import VHSHeader from '../components/VHSHeader';
 import { useState, useEffect } from 'react';
 import WeeklySplitLog from '../components/WeeklySplitLog';
 import Icon from 'react-native-vector-icons/Ionicons'; // at top
+import VHSGlowDivider from '../components/VHSGlowDivider';
 
 export default function HardloggerUI() {
     const stats = {
@@ -161,7 +162,7 @@ export default function HardloggerUI() {
 
     return (
         <View style={styles.root}>
-            <ImageBackground source={GRAIN_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.3 }}>
+            <ImageBackground source={GRAIN_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.1 }}>
                 <ImageBackground source={SCANLINE_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.1 }}>
 
                     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -233,6 +234,7 @@ export default function HardloggerUI() {
                                 <Text style={styles.bodyText}>CNS ▸ NOMINAL</Text>
                             </View>
                         </View>
+                        <VHSGlowDivider></VHSGlowDivider>
 
                         <Text style={styles.vhsHudTitle}>▓CHANNEL 02 — VITAL FEED▓</Text>
 
@@ -550,8 +552,7 @@ const styles = StyleSheet.create({
     },
     doubleRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 10,
+        justifyContent: 'space-between'
     },
     halfBox: {
         backgroundColor: '#111622',

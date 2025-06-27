@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import ExerciseLogModal from '../components/ExerciseLogModal';
+import VHSGlowDivider from '../components/VHSGlowDivider';
 
 const initialSets = [
   { exercise: 'BENCH PRESS', reps: '8', weight: '100', rpe: '7' },
@@ -73,8 +74,10 @@ const LogPage = ({ navigation }) => {
           <Text style={styles.sessionStatusText}>SESSION STATUS: ACTIVE</Text>
         </View>
 
-        <Text style={styles.vhsHudTitle}>▓CHANNEL 03 — SESSION LOG▓</Text>
+        <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — SESSION LOG▓</Text>
         <Text style={styles.vhsSubHeader}>▐▐ SPLIT: PUSH_A1 ▐▐</Text>
+
+        <VHSGlowDivider></VHSGlowDivider>
 
         <View style={styles.trainingPlanTable}>
           <ScrollView style={styles.scrollArea}>
@@ -101,6 +104,8 @@ const LogPage = ({ navigation }) => {
             })}
           </ScrollView>
         </View>
+
+        <VHSGlowDivider></VHSGlowDivider>
       </View>
 
       {selectedExercise && (
@@ -191,24 +196,7 @@ const styles = StyleSheet.create({
   setLogRow: {
     marginBottom: 10,
   },
-  dotRpeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  rpeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-    backgroundColor: '#00ffcc', // default color, customize with your rpeColor fn
-  },
-  feedText: {
-    fontFamily: 'monospace',
-    color: '#BFC7D5',
-    fontSize: 12,
-    letterSpacing: 1,
-  },
+
   volumeBarTrack: {
     height: 6,
     backgroundColor: '#1A1F2C',
@@ -286,11 +274,11 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   exerciseStatsBox: {
-    marginTop: 24,
     padding: 12,
     borderWidth: 1,
     borderColor: '#00ffcc',
     borderRadius: 6,
+    marginBottom: 20,
     backgroundColor: 'rgba(0,255,204,0.05)',
   },
   exerciseStatsHeader: {
@@ -308,7 +296,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   logFeed: {
-    marginTop: 30,
+    marginTop: 0,
   },
   feedHeader: {
     color: '#00ffcc',
@@ -376,7 +364,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#00ffcc',
     borderRadius: 10,
-    opacity: 0.15,
+    opacity: 1,
     backgroundColor: 'transparent',
     height: 180,
     overflow: 'hidden',

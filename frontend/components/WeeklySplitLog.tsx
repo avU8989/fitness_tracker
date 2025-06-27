@@ -23,7 +23,7 @@ const WeeklySplitLog: React.FC = () => {
     <View >
       <VHSGlowDivider></VHSGlowDivider>
 
-      <Text style={styles.vhsHudTitle}>▓CHANNEL 02 — WEEK SPLIT▓</Text>
+      <Text style={styles.vhsHudTitle}>▓CHANNEL 03 — WEEK SPLIT▓</Text>
       <View style={styles.container}>
         {splitData.map((entry, i) => (
           <View key={i} style={styles.row}>
