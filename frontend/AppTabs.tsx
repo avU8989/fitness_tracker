@@ -4,8 +4,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StyleSheet, Text } from 'react-native';
 
 import StatsScreen from './screens/StatsScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import HomeScreen from './screens/HomeScreen2';
+import LogScreen from './screens/LogScreen.tsx';
+import HomeScreen from './screens/HomeScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -55,8 +55,8 @@ export default function AppTabs() {
         >
             <Tab.Screen name="DASH" component={HomeScreen} />
             <Tab.Screen name="LOG" component={StatsScreen} />
-            <Tab.Screen name="GAINS" component={ProfileScreen} />
-            <Tab.Screen name="SETUP" component={ProfileScreen} />
+            <Tab.Screen name="GAINS" component={LogScreen} />
+            <Tab.Screen name="SETUP" component={LogScreen} />
         </Tab.Navigator>
     );
 }

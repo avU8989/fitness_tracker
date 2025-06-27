@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import VHSGlowDivider from '../components/VHSGlowDivider';
+import VHSGlowDivider from './VHSGlowDivider';
 const VHSHeader = () => {
     const [recTime, setRecTime] = useState('00:00:00');
     const [pulseAnim] = useState(new Animated.Value(1));

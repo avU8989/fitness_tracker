@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
-import HomeScreen from './screens/HomeScreen';
 import * as Font from 'expo-font';
 import AppTabs from './AppTabs';
 import { View, StyleSheet } from 'react-native';
