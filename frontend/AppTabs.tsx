@@ -4,7 +4,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StyleSheet, Text } from 'react-native';
 
 import StatsScreen from './screens/StatsScreen';
-import LogScreen from './screens/LogScreen.tsx';
+import LogScreen from './screens/LogScreen';
+import GainScreen from './screens/GainScreen';
 import HomeScreen from './screens/HomeScreen';
 import TrainingPlansScreen from './screens/TrainingPlansScreen';
 
@@ -60,7 +61,7 @@ export default function AppTabs() {
             <Tab.Screen name="DASH" component={HomeScreen} />
             <Tab.Screen name="LOG" component={LogScreen} />
             <Tab.Screen name="SPLIT" component={TrainingPlansScreen} />
-            <Tab.Screen name="GAINS" component={StatsScreen} />
+            <Tab.Screen name="GAINS" component={GainScreen} />
             <Tab.Screen name="SETUP" component={LogScreen} />
         </Tab.Navigator>
     );

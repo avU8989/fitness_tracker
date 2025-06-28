@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import ExerciseLogModal from '../components/ExerciseLogModal';
 import VHSGlowDivider from '../components/VHSGlowDivider';
+import DaySelectorCarousel from '../components/DaySelectorCarousel';
 
 const initialSets = [
   { exercise: 'BENCH PRESS', reps: '8', weight: '100', rpe: '7' },
