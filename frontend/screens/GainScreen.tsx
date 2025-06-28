@@ -228,7 +228,7 @@ export default function DashboardScreen() {
             {/* Upcoming Workout Card */}
             <View style={[styles.upcomingContainer, { borderColor: colors.primary, backgroundColor: colors.cardBg }]}>
                 <Text style={[styles.upcomingTitle, { color: colors.primary }]}>NEXT WORKOUT</Text>
-                <Text style={[styles.upcomingWorkout, { color: colors.primary }]}>Chest PUSH 4x10 @ 80kg</Text>
+                <Text style={[styles.upcomingWorkout, { color: colors.primary }]}>Chest PUSH 4x10 @ 90kg</Text>
                 <Text style={[styles.upcomingCountdown, { color: colors.primary }]}>Starts in: {timeLeft}</Text>
             </View>
 
