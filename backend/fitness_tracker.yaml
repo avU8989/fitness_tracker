@@ -249,6 +249,9 @@ components:
           type: integer
         weight:
           type: number
+        unit:
+        type: string
+        enum: [kg, lbs]
 
     UpdateExercise:
       type: object
@@ -265,11 +268,23 @@ components:
       properties:
         name:
           type: string
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/Day'
+
+    Day:
+      type: object
+      properties:
+        dayOfWeek:
+          type: string
+          enum: [MON, TUE, WED, THU, FRI, SAT, SUN]
+        splitType:
+          type: string
         exercises:
           type: array
           items:
             $ref: '#/components/schemas/Exercise'
-
     Meal:
       type: object
       properties:
