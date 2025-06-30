@@ -45,8 +45,9 @@ export const loginUser = async (
     const { email, password } = req.body;
 
     //find user
-    const user = await User.findOne(email);
+    const user = await User.findOne({ email });
     if (!user) {
+      console.log("Request body:", req.body);
       res.status(401).json({ message: "Invalid email or password" });
       return;
     }
@@ -54,6 +55,7 @@ export const loginUser = async (
     //compare password
     const isMatch = await user.comparePasswords(password);
     if (!isMatch) {
+      console.log("Request body:", req.body);
       res.status(401).json({ message: "Invalid email or password" });
       return;
     }

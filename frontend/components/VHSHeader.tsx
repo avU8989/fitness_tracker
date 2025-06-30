@@ -6,22 +6,9 @@ const VHSHeader = () => {
     const [recTime, setRecTime] = useState('00:00:00');
     const [pulseAnim] = useState(new Animated.Value(1));
     const [blinkAnim] = useState(new Animated.Value(1));
-    const [glitchAnim] = useState(new Animated.Value(0));
     const [scanFlicker] = useState(new Animated.Value(0.95));
 
-    const glitchTranslate = glitchAnim.interpolate({
-        inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1],
-        outputRange: [0, -1, 1.5, -1, 1, 0],
-    });
-
-    const glitchScale = glitchAnim.interpolate({
-        inputRange: [0, 0.5, 1],
-        outputRange: [1, 1.02, 1],
-    });
-
     useEffect(() => {
-
-
         Animated.loop(
             Animated.sequence([
                 Animated.timing(pulseAnim, {
@@ -108,11 +95,6 @@ const VHSHeader = () => {
                 </View>
             </View>
 
-            {/* TAPE TIME REMAINING 
-            <Animated.Text style={[styles.tapeRemaining, { opacity: blinkAnim }]}>
-                ▓ TAPE TIME REMAINING
-            </Animated.Text>
-*/}
             <VHSGlowDivider></VHSGlowDivider>
 
 

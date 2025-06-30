@@ -4,64 +4,37 @@ import * as Font from 'expo-font';
 import AppTabs from './AppTabs';
 import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
+import { AuthContext, AuthProvider } from './context/AuthContext';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import LoginScreen from './screens/LoginScreen';
+import { useContext } from 'react';
 
+const Stack = createNativeStackNavigator();
 
-// Google Fonts
-import {
-  useFonts as useAnton,
-  Anton_400Regular,
-} from '@expo-google-fonts/anton';
-import {
-  useFonts as usePressStart2P,
-  PressStart2P_400Regular,
-} from '@expo-google-fonts/press-start-2p';
-import {
-  useFonts as useIBMPlexMono,
-  IBMPlexMono_400Regular,
-} from '@expo-google-fonts/ibm-plex-mono';
-import {
-  useFonts as useVT323,
-  VT323_400Regular,
-} from '@expo-google-fonts/vt323';
-
-SplashScreen.preventAutoHideAsync(); // Keeps splash screen up while fonts load
-
-const fetchFonts = () => {
-  return Font.loadAsync({
-    'KindlyRewind-BOon': require('./assets/KindlyRewind-BOon.ttf'),
-    'RealVhsFontRegular-WyV0z': require('./assets/RealVhsFontRegular-WyV0z.ttf'),
-  });
-}
-
-export default function App() {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
-  useEffect(() => {
-    Font.loadAsync({
-      'ShareTechMono': require('./assets/fonts/ShareTechMono-Regular.ttf'),
-    }).then(() => setFontsLoaded(true));
-  }, []);
-
-  const [antonLoaded] = useAnton({ Anton_400Regular });
-  const [pressLoaded] = usePressStart2P({ PressStart2P_400Regular });
-  const [monoLoaded] = useIBMPlexMono({ IBMPlexMono_400Regular });
-  const [vtLoaded] = useVT323({ VT323_400Regular });
-
-  const fontsReady = antonLoaded && pressLoaded && monoLoaded && vtLoaded;
-
-  useEffect(() => {
-    if (fontsReady) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsReady]);
-
-  if (!fontsReady) return null;
+function RootNavigator() {
+  const { isLoggedIn } = useContext(AuthContext);
 
   return (
-    <NavigationContainer>
-      <View style={styles.appWrapper}> { }
-        <AppTabs />
-      </View>
-    </NavigationContainer>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {!isLoggedIn ? (
+        <Stack.Screen name="Login" component={LoginScreen} />
+      ) : (
+        <Stack.Screen name="Main" component={AppTabs} />
+      )}
+    </Stack.Navigator >
+  )
+
+}
+export default function App() {
+
+  return (
+    <AuthProvider>
+      <NavigationContainer>
+        <View style={styles.appWrapper}>
+          <RootNavigator />
+        </View>
+      </NavigationContainer>
+    </AuthProvider>
   );
 
 }

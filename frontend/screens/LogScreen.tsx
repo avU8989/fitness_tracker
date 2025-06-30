@@ -6,7 +6,7 @@ import {
   Pressable,
   ScrollView,
 } from 'react-native';
-import ExerciseLogModal from '../components/ExerciseLogModal';
+import ExerciseLogModal from '../components/modals/ExerciseLogModal';
 import VHSGlowDivider from '../components/VHSGlowDivider';
 import DaySelectorCarousel from '../components/DaySelectorCarousel';
 

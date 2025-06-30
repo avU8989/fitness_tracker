@@ -7,11 +7,11 @@ import {
     Pressable,
     Platform,
 } from 'react-native';
-import TrainingPlanModal from '../components/TrainingPlanModal';
+import TrainingPlanModal from '../components/modals/TrainingPlanModal';
 import Ticker from '../components/Ticker';
 import VHSGlowDivider from '../components/VHSGlowDivider';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import CustomDatePickerModal from '../components/CustomDatePickerModal'; // import custom picker
+import CustomDatePickerModal from '../components/modals/CustomDatePickerModal'; // import custom picker
 import VHSButton from '../components/VHSButton';
 const splitsInitial = [
     {
