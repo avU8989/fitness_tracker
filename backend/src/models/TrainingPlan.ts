@@ -1,5 +1,4 @@
 import mongoose, { Document, Model, Types, Schema } from "mongoose";
-import { IWorkout } from "./Workout";
 
 export interface IExercise extends Document {
   name: string;
@@ -64,8 +63,8 @@ const trainingPlanSchema = new Schema<ITrainingPlan>(
   { timestamps: true }
 );
 
-const TrainingPlan: Model<ITrainingPlan> = mongoose.model<ITrainingPlan>(
-  "TraningPlan",
+const Trainingplan: Model<ITrainingPlan> = mongoose.model<ITrainingPlan>(
+  "Trainingplan",
   trainingPlanSchema
 );
-export default TrainingPlan;
+export default Trainingplan;

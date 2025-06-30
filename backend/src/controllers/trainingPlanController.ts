@@ -169,3 +169,37 @@ export const updateWorkoutDay = async (
     });
   }
 };
+
+//Delete trainingplan
+export const deleteTrainingPlan = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const { planId } = req.params;
+
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ messge: "Unauthorized: User id missing" });
+      return;
+    }
+
+    const deleted = await TrainingPlan.findOneAndDelete({
+      _id: planId,
+      user: req.user.id,
+    });
+
+    if (!deleted) {
+      res
+        .status(404)
+        .json({ message: "Training plan not found or unauthorized" });
+      return;
+    }
+
+    res.status(200).json({ message: "Training plan deleted successfully" });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+};

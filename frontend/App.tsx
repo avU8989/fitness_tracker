@@ -58,8 +58,7 @@ export default function App() {
 
   return (
     <NavigationContainer>
-      <View style={styles.appWrapper}> {/* ✅ Add wrapper with background */}
-
+      <View style={styles.appWrapper}> { }
         <AppTabs />
       </View>
     </NavigationContainer>
