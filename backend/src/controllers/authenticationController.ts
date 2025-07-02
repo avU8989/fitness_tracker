@@ -46,11 +46,14 @@ export const loginUser = async (
 
     //find user
     const user = await User.findOne({ email });
+
     if (!user) {
       console.log("Request body:", req.body);
       res.status(401).json({ message: "Invalid email or password" });
       return;
     }
+
+    console.log(`Logging in user ${user.id} with ${email}`);
 
     //compare password
     const isMatch = await user.comparePasswords(password);

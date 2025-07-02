@@ -8,6 +8,7 @@ import LogScreen from './screens/LogScreen';
 import GainScreen from './screens/GainScreen';
 import HomeScreen from './screens/HomeScreen';
 import TrainingPlansScreen from './screens/TrainingPlansScreen';
+import SetupScreen from './screens/SetupScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -62,7 +63,7 @@ export default function AppTabs() {
             <Tab.Screen name="LOG" component={LogScreen} />
             <Tab.Screen name="SPLIT" component={TrainingPlansScreen} />
             <Tab.Screen name="GAINS" component={GainScreen} />
-            <Tab.Screen name="SETUP" component={LogScreen} />
+            <Tab.Screen name="SETUP" component={SetupScreen} />
         </Tab.Navigator>
     );
 }

@@ -30,6 +30,10 @@ mongoose
   .connect(process.env.MONGODB_URI || "", {})
   .then(() => {
     console.log("Connected to MongoDB");
+
+    app.listen(port, () => {
+      console.log(`Server running on ${port}`);
+    });
   })
   .catch((err) => {
     console.error("MongoDB connection error:", err);
@@ -55,8 +59,4 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   }
   console.error(err);
   res.status(500).json({ message: "Internal Server Error" });
-});
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
 });

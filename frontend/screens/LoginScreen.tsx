@@ -8,14 +8,13 @@ import {
     ActivityIndicator,
     Animated,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
 
 export default function LoginScreen({ navigation }) {
     const { login } = useContext(AuthContext);
+    const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
     const glitchAnim = useRef(new Animated.Value(0)).current;
@@ -37,7 +36,7 @@ export default function LoginScreen({ navigation }) {
         setError('');
         try {
             //because we are running the app on the phone, cant just write localhost 
-            const response = await fetch('http://YOUR-IP:5000/auth/login', {
+            const response = await fetch('https://e90f-81-3-204-36.ngrok-free.app/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
@@ -51,7 +50,6 @@ export default function LoginScreen({ navigation }) {
             }
 
             const data = await response.json();
-            await AsyncStorage.setItem('authToken', data.token);
             login(data.token);
             console.log(data.token);
         } catch (err: any) {
