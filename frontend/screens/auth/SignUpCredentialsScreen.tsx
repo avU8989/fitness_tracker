@@ -4,7 +4,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 type RootStackParamList = {
     SignUpCredentials: undefined;
-    SignUpProfile: { email: string; password: string };
+    SignUpProfile: { email: string; password: string, username: string };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpCredentials'>;
@@ -13,6 +13,7 @@ export default function SignUpCredentialsScreen({ navigation }: Props) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [username, setUsername] = useState('');
 
     const handleNext = () => {
         if (!email || !password) {
@@ -23,12 +24,16 @@ export default function SignUpCredentialsScreen({ navigation }: Props) {
             Alert.alert('Error', 'Passwords do not match');
             return;
         }
-        navigation.navigate('SignUpProfile', { email, password });
+        navigation.navigate('SignUpProfile', { email, password, username });
     };
 
     return (
         <View style={styles.container}>
             <Text style={[styles.title, { color: '#00ffcc' }]}>SIGN UP</Text>
+
+            <Text style={styles.label}>USERNAME</Text>
+            <TextInput style={styles.input} value={username} onChangeText={setUsername} autoCapitalize="none" placeholder="Enter your username" placeholderTextColor="#5599AA" />
+
             <Text style={styles.label}>EMAIL</Text>
             <TextInput style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="Enter your email" placeholderTextColor="#5599AA" />
 

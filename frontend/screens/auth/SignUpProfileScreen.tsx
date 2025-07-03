@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Animated } from 'react-native';
+import { AuthContext } from '../../context/AuthContext';
 
 
 type RootStackParamList = {
     SignUpCredentials: undefined;
-    SignUpProfile: { email: string; password: string };
+    SignUpProfile: { email: string; password: string, username: string };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUpProfile'>;
@@ -18,15 +19,16 @@ const trainingFrequency = ['1–2 days/week', '3–4 days/week', '5+ days/week']
 const experienceLevels = ['Beginner', 'Intermediate', 'Advanced'];
 
 export default function SignUpProfileScreen({ route, navigation }: Props) {
-    const { email, password } = route.params;
-
-    const [username, setUsername] = useState('');
+    const { username, email, password } = route.params;
+    const { login } = useContext(AuthContext);
     const [age, setAge] = useState('');
     const [weight, setWeight] = useState('');
     const [frequency, setFrequency] = useState(trainingFrequency[0]);
     const [experience, setExperience] = useState(experienceLevels[0]);
     const [preference, setPreference] = useState('');
     const glitchAnim = useRef(new Animated.Value(0)).current;
+    const [height, setHeight] = useState('');
+    const [error, setError] = useState('');
 
     useEffect(() => {
         Animated.loop(
@@ -48,18 +50,46 @@ export default function SignUpProfileScreen({ route, navigation }: Props) {
         weight: Number(weight),
     }
 
-    const handleSignUp = () => {
+    const handleSignUp = async () => {
         // Pass collected data or navigate forward
         // e.g. navigation.navigate('NextScreen', { age, weight, style, frequency, experience });
         console.log({ age, weight, preference, frequency, experience });
 
         //TO-DO LOGIC IMPLEMENTATION
+        console.log(username);
+        console.log(email);
+        console.log(password);
+        console.log(age);
+        console.log(height);
+        console.log(weight);
+
+        setError('');
+        try {
+            const response = await fetch('https://eb2b-81-3-204-36.ngrok-free.app/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password, age, height, weight }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                setError(errorData.message || 'Registration failed');
+                return
+            }
+
+            const data = await response.json();
+            login(data.token);
+            console.log(data.message);
+        } catch (err: any) {
+            setError('Network error. Please try again');
+        }
     };
 
     return (
         <View style={styles.container}>
             <View style={styles.glitchContainer}>
                 <Text style={[styles.title, { color: '#00ffcc' }]}>PROFILE SETUP</Text>
+                {!!error && <Text style={styles.errorText}>{error}</Text>}
 
                 <Animated.Text
                     style={[
@@ -118,6 +148,16 @@ export default function SignUpProfileScreen({ route, navigation }: Props) {
                 onChangeText={setWeight}
             />
 
+            <Text style={styles.label}>HEIGHT (cm)</Text>
+            <TextInput
+                style={styles.input}
+                placeholder="Enter your height"
+                placeholderTextColor="#5599AA"
+                keyboardType="numeric"
+                value={height}
+                onChangeText={setHeight}
+            />
+
             <Text style={styles.label}>PREFERRED TRAINING STYLE</Text>
             <View style={styles.pickerWrapper}>
                 <Picker
@@ -163,11 +203,24 @@ export default function SignUpProfileScreen({ route, navigation }: Props) {
             <Pressable style={styles.button} onPress={handleSignUp}>
                 <Text style={styles.buttonText}>SIGN UP</Text>
             </Pressable>
-        </View>
+        </View >
     );
 }
 
 const styles = StyleSheet.create({
+
+    errorText: {
+        color: '#ff4444',           // bright red neon color for errors
+        fontFamily: 'monospace',    // match your monospace theme
+        fontSize: 14,               // readable size
+        marginTop: 8,               // space above error message
+        marginBottom: 8,            // space below error message
+        textAlign: 'center',        // center aligned for better look
+        textShadowColor: '#880000', // subtle shadow for neon glow effect
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 5,
+    },
+
     container: { flex: 1, backgroundColor: '#0A0F1C', padding: 20, justifyContent: 'center' },
 
     glitchContainer: {

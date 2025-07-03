@@ -13,6 +13,14 @@ export const createUser = async (
   try {
     const { username, email, age, height, password, weight } = req.body;
 
+    const checkUser = await User.findOne({ email });
+
+    if (checkUser) {
+      // User already exists - handle error
+      res.status(400).json({ message: "User with this email already exists" });
+      return;
+    }
+
     const newUser = new User({
       username,
       email,
@@ -25,9 +33,18 @@ export const createUser = async (
     const savedUser = await newUser.save();
     console.log(savedUser);
 
-    res.status(201).json({
-      message: "User successfully registered",
-    });
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error("JWT_SECRET is not defined in environment variables");
+    }
+
+    const token = jwt.sign(
+      { id: savedUser._id }, //payload with user id
+      secret, //secret key (set in your environment variables)
+      { expiresIn: "1d" }
+    );
+
+    res.status(201).json({ token, message: "User successfully registered" });
   } catch (err: any) {
     res.status(400).json({
       message: "Bad request",
