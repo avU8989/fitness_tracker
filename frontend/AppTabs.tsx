@@ -4,11 +4,11 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StyleSheet, Text } from 'react-native';
 
 import StatsScreen from './screens/StatsScreen';
-import LogScreen from './screens/LogScreen';
-import GainScreen from './screens/GainScreen';
-import HomeScreen from './screens/HomeScreen';
-import TrainingPlansScreen from './screens/TrainingPlansScreen';
-import SetupScreen from './screens/SetupScreen';
+import LogScreen from './screens/tabs/LogScreen';
+import GainScreen from './screens/tabs/GainScreen';
+import HomeScreen from './screens/tabs/HomeScreen';
+import TrainingPlansScreen from './screens/tabs/TrainingPlansScreen';
+import SetupScreen from './screens/tabs/SetupScreen';
 
 const Tab = createBottomTabNavigator();
 

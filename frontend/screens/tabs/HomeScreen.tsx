@@ -7,11 +7,11 @@ import {
     StyleSheet,
     ImageBackground, Image
 } from 'react-native';
-import VHSHeader from '../components/VHSHeader';
+import VHSHeader from '../../components/VHSHeader';
 import { useState, useEffect } from 'react';
-import WeeklySplitLog from '../components/WeeklySplitLog';
+import WeeklySplitLog from '../../components/WeeklySplitLog';
 import Icon from 'react-native-vector-icons/Ionicons'; // at top
-import VHSGlowDivider from '../components/VHSGlowDivider';
+import VHSGlowDivider from '../../components/VHSGlowDivider';
 
 export default function HardloggerUI() {
     const stats = {
@@ -43,8 +43,8 @@ export default function HardloggerUI() {
         ],
     };
 
-    const GRAIN_TEXTURE = require('../assets/home_bg_2.png');
-    const SCANLINE_TEXTURE = require('../assets/abstract-geometric-background-shapes-texture.jpg');
+    const GRAIN_TEXTURE = require('../../assets/home_bg_2.png');
+    const SCANLINE_TEXTURE = require('../../assets/abstract-geometric-background-shapes-texture.jpg');
     const useTapeLoader = () => {
         const [tapeAnim, setTapeAnim] = useState('▓▓░░░░░░');
         useEffect(() => {
@@ -92,7 +92,7 @@ export default function HardloggerUI() {
         {
             title: 'TAPE LOADER',
             render: () => (
-                <Text style={styles.cardText}>TAPE LOAD >> {useTapeLoader()}</Text>
+                <Text style={styles.cardText}>TAPE LOAD {'>>'} {useTapeLoader()}</Text>
             ),
         },
         {
@@ -167,7 +167,7 @@ export default function HardloggerUI() {
 
                     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
                         <Image
-                            source={require('../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
+                            source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
                             style={{
                                 position: 'absolute',
                                 top: 0,
@@ -179,7 +179,7 @@ export default function HardloggerUI() {
                             resizeMode="contain"
                         />
                         <Image
-                            source={require('../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
+                            source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
                             style={{
                                 position: 'absolute',
                                 bottom: 0,

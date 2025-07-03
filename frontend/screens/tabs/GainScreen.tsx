@@ -13,12 +13,12 @@ import {
     Platform,
     TouchableOpacity,
 } from 'react-native';
-import StatsCarousel from '../components/StatsCarousel';
-import Ticker from '../components/Ticker'; // Your ticker component
+import StatsCarousel from '../../components/StatsCarousel';
+import Ticker from '../../components/Ticker'; // Your ticker component
 import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
-import NotificationTicker from '../components/NotificationTicker';
-import Badge from '../components/Badge';
+import NotificationTicker from '../../components/NotificationTicker';
+import Badge from '../../components/Badge';
 const { width } = Dimensions.get('window');
 
 const stats = [

@@ -6,8 +6,10 @@ import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import LoginScreen from './screens/LoginScreen';
+import LoginScreen from './screens/auth/LoginScreen';
 import { useContext } from 'react';
+import SignUpCredentialsScreen from './screens/auth/SignUpCredentialsScreen';
+import SignUpProfileScreen from './screens/auth/SignUpProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,7 +21,11 @@ function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!isLoggedIn ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="SignUpCredentials" component={SignUpCredentialsScreen} />
+          <Stack.Screen name="SignUpProfile" component={SignUpProfileScreen} />
+        </>
       ) : (
         <Stack.Screen name="Main" component={AppTabs} />
       )}

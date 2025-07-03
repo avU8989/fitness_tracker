@@ -8,7 +8,7 @@ import {
     ActivityIndicator,
     Animated,
 } from 'react-native';
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../../context/AuthContext';
 
 export default function LoginScreen({ navigation }) {
     const { login } = useContext(AuthContext);
@@ -62,7 +62,7 @@ export default function LoginScreen({ navigation }) {
     const handleSignUp = () => {
         // Navigate to SignUp screen or show signup modal
         if (navigation) {
-            navigation.navigate('SignUp'); // Make sure you have SignUp screen in your navigator
+            navigation.navigate('SignUpCredentials');
         } else {
             alert('Sign Up action not implemented yet.');
         }
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     },
 
     title: {
-        fontSize: 48,
+        fontSize: 46,
         fontWeight: 'bold',
         fontFamily: 'monospace',
         letterSpacing: 6,
