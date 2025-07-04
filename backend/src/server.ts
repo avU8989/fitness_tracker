@@ -41,6 +41,7 @@ mongoose
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+/*
 app.use(
   OpenApiValidator.middleware({
     apiSpec: process.env.OPEN_API_DESIGN || "",
@@ -48,7 +49,7 @@ app.use(
     validateResponses: true,
   })
 );
-
+*/
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   if (err.status && err.errors) {
     res.status(err.status).json({

@@ -92,6 +92,7 @@ export const loginUser = async (
     );
 
     res.status(200).json({ token });
+    console.log("User successfully logged in");
   } catch (err: any) {
     res.status(401).json({ message: "Unauthorized", error: err.message });
   }
