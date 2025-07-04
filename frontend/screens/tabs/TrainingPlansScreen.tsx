@@ -13,6 +13,7 @@ import VHSGlowDivider from '../../components/VHSGlowDivider';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CustomDatePickerModal from '../../components/modals/CustomDatePickerModal'; // import custom picker
 import VHSButton from '../../components/VHSButton';
+import Ionicons from 'react-native-vector-icons/Ionicons'; // import icon library
 const splitsInitial = [
     {
         name: 'Hypertrophy Focus',
@@ -182,12 +183,24 @@ export default function TrainingPlansScreen() {
                 <Text style={styles.splitName}>{currentSplit.name}</Text>
 
                 <View style={styles.dateContainer}>
-                    <Pressable onPress={() => setDatePickerVisible(true)}>
-                        <Text style={styles.dateRangeText}>{rangeLine}</Text>
+                    <Pressable
+                        onPress={() => setDatePickerVisible(true)}
+                        style={({ pressed }) => [
+                            styles.datePressable,
+                            pressed && { opacity: 0.6, backgroundColor: 'rgba(0,255,204,0.1)', borderRadius: 8 },
+                        ]}
+                        hitSlop={10}
+                        android_ripple={{ color: 'rgba(0,255,204,0.2)', borderless: false }}
+                    >
+                        <View style={styles.dateRow}>
+                            <Text style={styles.dateRangeText}>{rangeLine}</Text>
+                            <Ionicons name="calendar-outline" size={24} color="#00ffcc" style={styles.calendarIcon} />
+                        </View>
                         <Text style={styles.dateYearText}>{yearLine}</Text>
-
                     </Pressable>
+
                 </View>
+
             </View>
 
             {/* Date Picker Modal */}
@@ -263,6 +276,16 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
 
+    datePressable: {
+        alignItems: 'center',
+    },
+
+    dateRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
     dateRangeText: {
         fontFamily: 'monospace',
         color: '#00ffcc',
@@ -270,11 +293,11 @@ const styles = StyleSheet.create({
         letterSpacing: 3,
         textShadowColor: '#00ffcc',
         textShadowRadius: 8,
-        textAlign: 'center',
         textTransform: 'uppercase',
         fontWeight: 'bold',
-        textDecorationLine: 'underline',
+        textDecorationLine: 'underline',  // <-- underline here
     },
+
 
     dateYearText: {
         fontFamily: 'monospace',
@@ -286,6 +309,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         textTransform: 'uppercase',
         fontWeight: 'bold',
+        marginTop: 2,
+    },
+
+    calendarIcon: {
+        marginLeft: 8,
+        textShadowColor: '#00ffcc',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 6,
     },
 
     root: {

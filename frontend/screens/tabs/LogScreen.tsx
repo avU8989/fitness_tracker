@@ -3,124 +3,121 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   ScrollView,
+  Pressable,
 } from 'react-native';
 import ExerciseLogModal from '../../components/modals/ExerciseLogModal';
 import VHSGlowDivider from '../../components/VHSGlowDivider';
-import DaySelectorCarousel from '../../components/DaySelectorCarousel';
 
 const initialSets = [
   { exercise: 'BENCH PRESS', reps: '8', weight: '100', rpe: '7' },
   { exercise: 'DEADLIFT', reps: '5', weight: '140', rpe: '8' },
 ];
 
-const LogPage = ({ navigation }) => {
+const trainingPlan = [
+  {
+    name: 'INCLINE BENCH PRESS',
+    sets: [
+      { reps: 10, weight: 80 },
+      { reps: 8, weight: 85 },
+      { reps: 6, weight: 90 },
+    ],
+  },
+  {
+    name: 'DUMBBELL PRESS',
+    sets: [
+      { reps: 12, weight: 26 },
+      { reps: 10, weight: 28 },
+    ],
+  },
+  // Add more exercises as needed
+];
+
+const LogPage = () => {
   const [sets, setSets] = useState(initialSets);
-  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [blinkVisible, setBlinkVisible] = useState(true);
 
-  const trainingPlan = [
-    {
-      name: 'INCLINE BENCH PRESS',
-      sets: [
-        { reps: 10, weight: 80 },
-        { reps: 8, weight: 85 },
-        { reps: 6, weight: 90 },
-      ],
-    },
-    {
-      name: 'DUMBBELL PRESS',
-      sets: [
-        { reps: 12, weight: 26 },
-        { reps: 10, weight: 28 },
-      ],
-    },
-    // Add more exercises as needed
-  ];
-
-  const handleSelectExercise = (exercise) => {
-    setSelectedExercise({ name: exercise });
-  };
-
+  // Blink animation for session status
   useEffect(() => {
     const interval = setInterval(() => {
-      setBlinkVisible((prev) => !prev);
+      setBlinkVisible((v) => !v);
     }, 600);
-
     return () => clearInterval(interval);
   }, []);
 
-  // Helpers for RPE dot color and load bar width
-  const rpeColor = (rpe) => {
+  // RPE dot color helper
+  const rpeColor = (rpe?: string) => {
     if (!rpe) return { backgroundColor: '#555' };
-    const num = parseFloat(rpe);
-    if (num <= 5) return { backgroundColor: '#33FF66' }; // green
-    if (num <= 7) return { backgroundColor: '#FFCC00' }; // yellow
+    const val = parseFloat(rpe);
+    if (val <= 5) return { backgroundColor: '#33FF66' }; // green
+    if (val <= 7) return { backgroundColor: '#FFCC00' }; // yellow
     return { backgroundColor: '#FF3333' }; // red
   };
 
-  const loadWidth = (set) => {
+  // Calculate progress percent for volume bar
+  const progressPercent = (set: typeof sets[0]) => {
     const maxLoad = 3000;
     const load = parseFloat(set.weight) * parseInt(set.reps);
-    const percent = Math.min((load / maxLoad) * 100, 100);
-    return `${percent}%`;
+    return Math.min((load / maxLoad) * 100, 100);
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.trainingPlanWrapper}>
-        <View style={styles.sessionStatusContainer}>
-          <View style={[styles.recIndicator, { opacity: blinkVisible ? 1 : 0.2 }]} />
-          <Text style={styles.sessionStatusText}>SESSION STATUS: ACTIVE</Text>
-        </View>
-
-        <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — SESSION LOG▓</Text>
-        <Text style={styles.vhsSubHeader}>▐▐ SPLIT: PUSH_A1 ▐▐</Text>
-
-        <VHSGlowDivider></VHSGlowDivider>
-
-        <View style={styles.trainingPlanTable}>
-          <ScrollView style={styles.scrollArea}>
-            {trainingPlan.map((exerciseObj, index) => {
-              const isSelected = selectedExercise?.name === exerciseObj.name;
-              return (
-                <Pressable
-                  key={index}
-                  onPress={() => handleSelectExercise(exerciseObj.name)}
-                  style={[
-                    styles.trainingPlanItem,
-                    isSelected && styles.selectedExercise,
-                    selectedExercise && !isSelected && styles.dimmedExercise,
-                  ]}
-                >
-                  <Text style={styles.exerciseTitle}>▌ {exerciseObj.name}</Text>
-                  {exerciseObj.sets.map((set, i) => (
-                    <Text key={i} style={styles.exerciseMeta}>
-                      ▍Set {i + 1}: {set.reps} reps @ {set.weight}kg
-                    </Text>
-                  ))}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <VHSGlowDivider></VHSGlowDivider>
+      {/* Session Status */}
+      <View style={styles.sessionStatusContainer}>
+        <View style={[styles.recIndicator, { opacity: blinkVisible ? 1 : 0.3 }]} />
+        <Text style={styles.sessionStatusText}>SESSION STATUS: ACTIVE</Text>
       </View>
 
+      {/* Header */}
+      <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — SESSION LOG▓</Text>
+      <Text style={styles.vhsSubHeader}>▐▐ SPLIT: PUSH_A1 ▐▐</Text>
+
+      <VHSGlowDivider />
+
+      {/* Training Plan List */}
+      <View style={styles.trainingPlanTable}>
+        <ScrollView style={styles.scrollArea} nestedScrollEnabled>
+          {trainingPlan.map((exercise, i) => {
+            const isSelected = selectedExercise === exercise.name;
+            return (
+              <Pressable
+                key={i}
+                onPress={() => setSelectedExercise(exercise.name)}
+                style={[
+                  styles.trainingPlanItem,
+                  isSelected ? styles.selectedExercise : styles.dimmedExercise,
+                ]}
+              >
+                <Text style={styles.exerciseTitle}>▌ {exercise.name}</Text>
+                {exercise.sets.map((set, idx) => (
+                  <Text key={idx} style={styles.exerciseMeta}>
+                    ▍Set {idx + 1}: {set.reps} reps @ {set.weight}kg
+                  </Text>
+                ))}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <VHSGlowDivider />
+
+      {/* Exercise Log Modal */}
       {selectedExercise && (
         <ExerciseLogModal
           visible={!!selectedExercise}
           onClose={() => setSelectedExercise(null)}
-          exerciseName={selectedExercise.name}
-          plannedSets={trainingPlan.find(e => e.name === selectedExercise.name)?.sets}
+          exerciseName={selectedExercise}
+          plannedSets={trainingPlan.find(e => e.name === selectedExercise)?.sets}
           onSave={(exerciseName, logs) => {
             console.log('Saved logs for', exerciseName, logs);
           }}
         />
       )}
 
+      {/* Previous Session Snapshot */}
       {selectedExercise && (
         <View style={styles.exerciseStatsBox}>
           <Text style={styles.exerciseStatsHeader}>▚ PREVIOUS SESSION SNAPSHOT ▞</Text>
@@ -129,13 +126,16 @@ const LogPage = ({ navigation }) => {
         </View>
       )}
 
+      {/* Log Feed */}
       <View style={styles.logFeed}>
         <Text style={styles.feedHeader}>▓ LOG FEED ▓</Text>
-        {sets.slice(-5).reverse().map((set, i) => {
+        {sets.slice(-3).reverse().map((set, i) => {
           const exercisePlan = trainingPlan.find(e => e.name === set.exercise);
-          const plannedVolume = exercisePlan ? exercisePlan.sets.reduce((acc, s) => acc + s.weight * s.reps, 0) : 0;
+          const plannedVolume = exercisePlan
+            ? exercisePlan.sets.reduce((acc, s) => acc + s.weight * s.reps, 0)
+            : 0;
           const actualVolume = (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
-          const progressPercent = plannedVolume ? Math.min((actualVolume / plannedVolume) * 100, 100) : 0;
+          const percent = plannedVolume ? Math.min((actualVolume / plannedVolume) * 100, 100) : 0;
 
           return (
             <View key={i} style={styles.setLogRow}>
@@ -146,7 +146,7 @@ const LogPage = ({ navigation }) => {
                 </Text>
               </View>
               <View style={styles.volumeBarTrack}>
-                <View style={[styles.volumeBarFill, { width: `${progressPercent}%` }]} />
+                <View style={[styles.volumeBarFill, { width: `${percent}%` }]} />
               </View>
               <Text style={styles.volumeBarLabel}>
                 {actualVolume} kg lifted / {plannedVolume} planned
@@ -156,34 +156,13 @@ const LogPage = ({ navigation }) => {
         })}
       </View>
 
-      <View style={styles.carouselContainer}>
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>▚ LAST SESSION ▞</Text>
-            <Text style={styles.cardContent}>6 reps @ 92.5kg ▸ RPE 8</Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>▚ TARGET ZONE ▞</Text>
-            <Text style={styles.cardContent}>3 sets of 8–10 reps ▸ RPE 7–8</Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>▚ FORM TIP ▞</Text>
-            <Text style={styles.cardContent}>“Keep scapulae retracted. Full ROM.”</Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>▚ PERSONAL RECORD ▞</Text>
-            <Text style={styles.cardContent}>110kg x 6 (3 weeks ago)</Text>
-          </View>
-        </ScrollView>
-      </View>
-
+      {/* Tape Stats */}
       <View style={styles.tapeStatRow}>
         <Text style={styles.tapeStat}>▌SETS LOGGED: {sets.length}</Text>
-        <Text style={styles.tapeStat}>
-          ▌TOTAL LOAD: {sets.reduce((acc, s) => acc + parseFloat(s.weight || 0), 0)} kg
-        </Text>
+        <Text style={styles.tapeStat}>▌TOTAL LOAD: {sets.reduce((acc, s) => acc + parseFloat(s.weight || '0'), 0)} kg</Text>
       </View>
 
+      {/* Finalize Button */}
       <Pressable style={styles.endButton}>
         <Text style={styles.endButtonText}>■ FINALIZE & ENCODE SESSION</Text>
       </Pressable>
@@ -194,58 +173,14 @@ const LogPage = ({ navigation }) => {
 export default LogPage;
 
 const styles = StyleSheet.create({
-  setLogRow: {
-    marginBottom: 10,
+  container: {
+    flex: 1,
+    backgroundColor: '#0A0F1C',
+  },
+  content: {
+    padding: 20,
   },
 
-  volumeBarTrack: {
-    height: 6,
-    backgroundColor: '#1A1F2C',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  volumeBarFill: {
-    height: '100%',
-    backgroundColor: '#00ffcc',
-    shadowColor: '#00ffcc',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 6,
-  },
-  volumeBarLabel: {
-    fontFamily: 'monospace',
-    color: '#7ACFCF',
-    fontSize: 10,
-    marginTop: 2,
-    letterSpacing: 1,
-  },
-
-  carouselContainer: {
-    marginTop: 20,
-    height: 100,
-  },
-  card: {
-    backgroundColor: 'rgba(0,255,204,0.05)',
-    borderColor: '#00ffcc',
-    borderWidth: 1,
-    borderRadius: 8,
-    width: 240,
-    padding: 12,
-    marginRight: 12,
-  },
-  cardTitle: {
-    color: '#00ffcc',
-    fontFamily: 'monospace',
-    fontSize: 12,
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  cardContent: {
-    color: '#BFC7D5',
-    fontFamily: 'monospace',
-    fontSize: 12,
-    opacity: 0.9,
-  },
   sessionStatusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -274,6 +209,82 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,
   },
+
+  vhsHudTitle: {
+    fontFamily: 'monospace',
+    color: '#00ffcc',
+    fontSize: 18,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(0, 255, 204, 0.08)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#00ffcc',
+    borderRadius: 2,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    textShadowColor: '#00ffcc',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 6,
+    marginBottom: 12,
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+
+  vhsSubHeader: {
+    fontFamily: 'monospace',
+    color: '#00ffcc',
+    fontSize: 11,
+    marginBottom: 10,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    opacity: 0.6,
+  },
+
+  trainingPlanTable: {
+    borderWidth: 1,
+    borderColor: '#00ffcc',
+    borderRadius: 10,
+    backgroundColor: 'transparent',
+    height: 180,
+    overflow: 'hidden',
+  },
+  scrollArea: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+
+  trainingPlanItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: '#101622',
+  },
+  selectedExercise: {
+    borderColor: '#00ffcc',
+    borderWidth: 2,
+    backgroundColor: '#002229',
+  },
+  dimmedExercise: {
+    opacity: 0.5,
+  },
+
+  exerciseTitle: {
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#BFC7D5',
+    letterSpacing: 2,
+    marginBottom: 4,
+  },
+  exerciseMeta: {
+    fontFamily: 'monospace',
+    fontSize: 12,
+    color: '#7ACFCF',
+    opacity: 0.75,
+    marginBottom: 2,
+    letterSpacing: 1,
+  },
+
   exerciseStatsBox: {
     padding: 12,
     borderWidth: 1,
@@ -296,6 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
     letterSpacing: 1,
   },
+
   logFeed: {
     marginTop: 0,
   },
@@ -306,8 +318,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     letterSpacing: 2,
   },
-  feedEntry: {
-    marginBottom: 14,
+  setLogRow: {
+    marginBottom: 10,
   },
   dotRpeContainer: {
     flexDirection: 'row',
@@ -333,20 +345,29 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 2,
   },
-  loadBarTrack: {
+
+  volumeBarTrack: {
     height: 6,
-    backgroundColor: '#0A0F1C',
+    backgroundColor: '#1A1F2C',
     borderRadius: 3,
     overflow: 'hidden',
   },
-  loadBarFill: {
+  volumeBarFill: {
     height: '100%',
     backgroundColor: '#00ffcc',
     shadowColor: '#00ffcc',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    shadowOpacity: 0.7,
     shadowRadius: 6,
   },
+  volumeBarLabel: {
+    fontFamily: 'monospace',
+    color: '#7ACFCF',
+    fontSize: 10,
+    marginTop: 2,
+    letterSpacing: 1,
+  },
+
   tapeStatRow: {
     marginTop: 30,
     flexDirection: 'row',
@@ -358,89 +379,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 2,
   },
-  trainingPlanWrapper: {
-    marginTop: 20,
-  },
-  trainingPlanTable: {
-    borderWidth: 1,
-    borderColor: '#00ffcc',
-    borderRadius: 10,
-    opacity: 1,
-    backgroundColor: 'transparent',
-    height: 180,
-    overflow: 'hidden',
-  },
-  trainingPlanItem: {
-    paddingVertical: 4,
-    paddingHorizontal: 4,
-    borderRadius: 6,
-  },
-  selectedExercise: {
-    backgroundColor: 'rgba(0,255,204,0.08)',
-    borderColor: '#00ffcc',
-    borderWidth: 1,
-    shadowColor: '#00ffcc',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 6,
-  },
-  dimmedExercise: {
-    opacity: 0.3,
-  },
-  scrollArea: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  exerciseTitle: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-    color: '#BFC7D5',
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
-  exerciseMeta: {
-    fontFamily: 'monospace',
-    fontSize: 12,
-    color: '#7ACFCF',
-    opacity: 0.75,
-    marginBottom: 2,
-    letterSpacing: 1,
-  },
-  vhsHudTitle: {
-    fontFamily: 'monospace',
-    color: '#00ffcc',
-    fontSize: 18,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(0, 255, 204, 0.08)',
-    borderLeftWidth: 3,
-    borderLeftColor: '#00ffcc',
-    borderRadius: 2,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    textShadowColor: '#00ffcc',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
-    marginBottom: 12,
-    alignSelf: 'center',
-    overflow: 'hidden',
-  },
-  vhsSubHeader: {
-    fontFamily: 'monospace',
-    color: '#00ffcc',
-    fontSize: 11,
-    marginBottom: 10,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    opacity: 0.6,
-  },
-  container: {
-    backgroundColor: '#0A0F1C',
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-  },
+
   endButton: {
     backgroundColor: '#00ffcc',
     marginTop: 20,
