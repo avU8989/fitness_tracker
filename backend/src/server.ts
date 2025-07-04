@@ -1,22 +1,31 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import * as OpenApiValidator from "express-openapi-validator";
 import mongoose from "mongoose";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
-import dotenv from "dotenv";
 import authMiddleware from "./middleware/auth";
 import authenticationRoutes from "./routes/authenticationRoutes";
 import trainingPlanRoutes from "./routes/trainingPlanRoutes";
 import workoutRoutes from "./routes/workoutRoutes";
+import "reflect-metadata";
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-dotenv.config();
-
 // load openapi spec
-const swaggerDocument = YAML.load(process.env.OPEN_API_DESIGN || "");
+let swaggerDocument;
+
+if (process.env.OPEN_API_DESIGN) {
+  swaggerDocument = YAML.load(process.env.OPEN_API_DESIGN);
+
+  if (swaggerDocument) {
+    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  }
+}
 
 app.use(cors());
 app.use(express.json());
@@ -38,8 +47,6 @@ mongoose
   .catch((err) => {
     console.error("MongoDB connection error:", err);
   });
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 /*
 app.use(

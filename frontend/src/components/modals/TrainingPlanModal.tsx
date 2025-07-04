@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
     Modal,
     View,
@@ -10,20 +10,26 @@ import {
     KeyboardAvoidingView,
     Platform,
 } from 'react-native';
+import { sanitizeTrainingPlanData, validateTrainingPlanData } from '../../utils/formHelpers';
+import { Exercise, WorkoutDay } from '../../requests/trainingPlan';
+import { AuthContext } from '../../context/AuthContext';
+import { createTrainingPlan } from '../../services/trainingPlanService';
 
-const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 
 const units = ['kg', 'lbs'];
 
 export default function TrainingPlanModal({ visible, onClose, onSave }) {
+    const { token } = useContext(AuthContext);
     const [name, setName] = useState('');
-    const [days, setDays] = useState(
+    const [days, setDays] = useState<WorkoutDay[]>(
         daysOfWeek.map(day => ({
             dayOfWeek: day,
             splitType: '',
             exercises: [],
         }))
     );
+    const [loading, setLoading] = useState(false);
 
     // Update day splitType
     const updateDayField = (index, value) => {
@@ -46,11 +52,30 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
     };
 
     // Update exercise field
-    const updateExercise = (dayIndex, exIndex, field, value) => {
+    type ExerciseField = keyof Exercise;
+
+    const updateExercise = (
+        dayIndex: number,
+        exIndex: number,
+        field: ExerciseField,
+        value: string
+    ) => {
         const newDays = [...days];
-        newDays[dayIndex].exercises[exIndex][field] = value;
+
+        if (field === "sets" || field === "repetitions" || field === "weight") {
+            newDays[dayIndex].exercises[exIndex][field] = Number(value);
+        } else if (field === "unit") {
+            const unitValue = value.toLowerCase();
+            if (unitValue === "kg" || unitValue === "lbs") {
+                newDays[dayIndex].exercises[exIndex].unit = unitValue;
+            }
+        } else {
+            newDays[dayIndex].exercises[exIndex][field] = value;
+        }
+
         setDays(newDays);
     };
+
 
     // Remove exercise
     const removeExercise = (dayIndex, exIndex) => {
@@ -60,22 +85,46 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
     };
 
     // Validate & Save
-    const handleSave = () => {
-        if (!name.trim()) {
-            alert('Please enter a plan name.');
+    const handleSave = async () => {
+        const sanitizedDays = sanitizeTrainingPlanData(days);
+        const validation = validateTrainingPlanData(name, sanitizedDays);
+
+        if (!validation.valid) {
+            alert(validation.message);
             return;
         }
-        // Optional: add more validation here
 
-        onSave({ name: name.trim(), days });
-        // Reset form
-        setName('');
-        setDays(daysOfWeek.map(day => ({
-            dayOfWeek: day,
-            splitType: '',
-            exercises: [],
-        })));
-        onClose();
+        if (!token) {
+            alert('You must be logged in to create a plan.');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const payload = {
+                name: name.trim(),
+                days: sanitizedDays,
+            };
+
+            const response = await createTrainingPlan(token, payload);
+
+            alert('Training plan created successfully!');
+
+            onSave({ name: name.trim(), days: sanitizedDays });
+            // Reset form
+            setName('');
+            setDays(daysOfWeek.map(day => ({
+                dayOfWeek: day,
+                splitType: '',
+                exercises: [],
+            })));
+            onClose();
+        } catch (err: any) {
+            alert(err.message || 'Failed to create training plan');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleCancel = () => {

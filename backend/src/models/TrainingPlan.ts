@@ -63,8 +63,8 @@ const trainingPlanSchema = new Schema<ITrainingPlan>(
   { timestamps: true }
 );
 
-const Trainingplan: Model<ITrainingPlan> = mongoose.model<ITrainingPlan>(
-  "Trainingplan",
+const TrainingPlan: Model<ITrainingPlan> = mongoose.model<ITrainingPlan>(
+  "TrainingPlan",
   trainingPlanSchema
 );
-export default Trainingplan;
+export default TrainingPlan;

@@ -2,9 +2,10 @@ import TrainingPlan from "../models/TrainingPlan";
 import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { Error } from "mongoose";
+import { CreateTrainingPlanRequest } from "../requests/trainingplans/CreateTrainingPlanRequest";
 
 export const createTrainingPlan = async (
-  req: AuthenticatedRequest,
+  req: AuthenticatedRequest & { body: CreateTrainingPlanRequest },
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -24,6 +25,8 @@ export const createTrainingPlan = async (
     });
 
     await newPlan.save();
+
+    console.log("Successfully created training plan");
 
     res.status(201).json({
       message: "Training plan created",

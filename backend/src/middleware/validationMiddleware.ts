@@ -21,6 +21,8 @@ export function validationMiddleware<T extends object>(type: new () => T) {
         .flat();
 
       res.status(400).json({ message: "Validation failed", errors: message });
+      console.log(message);
+
       return;
     } else {
       next();

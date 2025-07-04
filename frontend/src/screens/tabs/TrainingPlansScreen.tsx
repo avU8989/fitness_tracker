@@ -5,132 +5,89 @@ import {
     StyleSheet,
     ScrollView,
     Pressable,
-    Platform,
 } from 'react-native';
 import TrainingPlanModal from '../../components/modals/TrainingPlanModal';
 import Ticker from '../../components/Ticker';
 import VHSGlowDivider from '../../components/VHSGlowDivider';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import CustomDatePickerModal from '../../components/modals/CustomDatePickerModal'; // import custom picker
+import CustomDatePickerModal from '../../components/modals/CustomDatePickerModal';
 import VHSButton from '../../components/VHSButton';
-import Ionicons from 'react-native-vector-icons/Ionicons'; // import icon library
+import Ionicons from 'react-native-vector-icons/Ionicons';
+
 const splitsInitial = [
     {
         name: 'Hypertrophy Focus',
         date: new Date('2025-04-01'),
-        split: [
-            {
-                day: 'MON',
-                type: 'PUSH',
-                status: 'Chest_A1',
-                exercises: [{ sets: 4, repetitions: 10, weight: 80 }],
-            },
-            {
-                day: 'TUE',
-                type: 'PULL',
-                status: 'Back_A1',
-                exercises: [{ sets: 3, repetitions: 8, weight: 70 }],
-            },
-            {
-                day: 'WED',
-                type: 'LEGS',
-                status: 'Legs_A1',
-                exercises: [{ sets: 4, repetitions: 12, weight: 90 }],
-            },
-            { day: 'THU', type: 'REST', status: '', exercises: [] },
-            {
-                day: 'FRI',
-                type: 'PUSH',
-                status: 'Chest_A2',
-                exercises: [{ sets: 3, repetitions: 10, weight: 85 }],
-            },
-            { day: 'SAT', type: 'REST', status: '', exercises: [] },
-            {
-                day: 'SUN',
-                type: 'PULL',
-                status: 'Back_A2',
-                exercises: [{ sets: 4, repetitions: 8, weight: 75 }],
-            },
+        days: [
+            { dayOfWeek: 'MON', splitType: 'PUSH', status: 'Chest_A1', exercises: [{ sets: 4, repetitions: 10, weight: 80 }] },
+            { dayOfWeek: 'TUE', splitType: 'PULL', status: 'Back_A1', exercises: [{ sets: 3, repetitions: 8, weight: 70 }] },
+            { dayOfWeek: 'WED', splitType: 'LEGS', status: 'Legs_A1', exercises: [{ sets: 4, repetitions: 12, weight: 90 }] },
+            { dayOfWeek: 'THU', splitType: 'REST', status: '', exercises: [] },
+            { dayOfWeek: 'FRI', splitType: 'PUSH', status: 'Chest_A2', exercises: [{ sets: 3, repetitions: 10, weight: 85 }] },
+            { dayOfWeek: 'SAT', splitType: 'REST', status: '', exercises: [] },
+            { dayOfWeek: 'SUN', splitType: 'PULL', status: 'Back_A2', exercises: [{ sets: 4, repetitions: 8, weight: 75 }] },
         ],
     },
     {
         name: 'Strength Cycle',
         date: new Date('2025-04-08'),
-        split: [
-            {
-                day: 'MON',
-                type: 'PUSH',
-                status: 'Chest_B1',
-                exercises: [{ sets: 5, repetitions: 5, weight: 100 }],
-            },
-            {
-                day: 'TUE',
-                type: 'PULL',
-                status: 'Back_B1',
-                exercises: [{ sets: 4, repetitions: 6, weight: 90 }],
-            },
-            {
-                day: 'WED',
-                type: 'LEGS',
-                status: 'Legs_B1',
-                exercises: [{ sets: 5, repetitions: 5, weight: 110 }],
-            },
-            { day: 'THU', type: 'REST', status: '', exercises: [] },
-            {
-                day: 'FRI',
-                type: 'PUSH',
-                status: 'Chest_B2',
-                exercises: [{ sets: 4, repetitions: 6, weight: 105 }],
-            },
-            { day: 'SAT', type: 'REST', status: '', exercises: [] },
-            {
-                day: 'SUN',
-                type: 'PULL',
-                status: 'Back_B2',
-                exercises: [{ sets: 5, repetitions: 5, weight: 95 }],
-            },
+        days: [
+            { dayOfWeek: 'MON', splitType: 'PUSH', status: 'Chest_B1', exercises: [{ sets: 5, repetitions: 5, weight: 100 }] },
+            { dayOfWeek: 'TUE', splitType: 'PULL', status: 'Back_B1', exercises: [{ sets: 4, repetitions: 6, weight: 90 }] },
+            { dayOfWeek: 'WED', splitType: 'LEGS', status: 'Legs_B1', exercises: [{ sets: 5, repetitions: 5, weight: 110 }] },
+            { dayOfWeek: 'THU', splitType: 'REST', status: '', exercises: [] },
+            { dayOfWeek: 'FRI', splitType: 'PUSH', status: 'Chest_B2', exercises: [{ sets: 4, repetitions: 6, weight: 105 }] },
+            { dayOfWeek: 'SAT', splitType: 'REST', status: '', exercises: [] },
+            { dayOfWeek: 'SUN', splitType: 'PULL', status: 'Back_B2', exercises: [{ sets: 5, repetitions: 5, weight: 95 }] },
         ],
     },
 ];
 
 export default function TrainingPlansScreen() {
-    const [splits, setSplits] = useState(splitsInitial);
+    const [plans, setPlans] = useState(splitsInitial);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const currentSplit = splits[currentIndex];
+    const currentPlan = plans[currentIndex];
     const [modalVisible, setModalVisible] = useState(false);
     const [completedDays, setCompletedDays] = useState([]);
-    const [plans, setPlans] = useState(splitsInitial);
     const [datePickerVisible, setDatePickerVisible] = useState(false);
-    const goPrev = () => {
-        setCurrentIndex(i => (i === 0 ? splits.length - 1 : i - 1));
-        setCompletedDays([]); // reset on switch if desired
-    };
 
-    const goNext = () => {
-        setCurrentIndex(i => (i === splits.length - 1 ? 0 : i + 1));
+    const goPrev = () => {
+        setCurrentIndex(i => (i === 0 ? plans.length - 1 : i - 1));
         setCompletedDays([]);
     };
 
-    // Toggle completion of days
+    const goNext = () => {
+        setCurrentIndex(i => (i === plans.length - 1 ? 0 : i + 1));
+        setCompletedDays([]);
+    };
+
     const toggleDayComplete = day => {
         setCompletedDays(prev =>
             prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
         );
     };
 
-    // Handle date change from modal
     const onDateChange = (newDate: Date) => {
         const updatedPlans = [...plans];
         updatedPlans[currentIndex].date = newDate;
         setPlans(updatedPlans);
     };
 
-
-    // Summary calculations
-    const totalExercises = currentSplit.split.reduce(
-        (acc, day) => acc + (day.exercises ? day.exercises.length : 0),
+    const totalExercises = currentPlan.days.reduce(
+        (acc, day) => acc + (day.exercises?.length || 0),
         0
     );
+
+    const estimatedVolume = currentPlan.days.reduce((acc, day) => {
+        if (!Array.isArray(day.exercises)) return acc;
+        return (
+            acc +
+            day.exercises.reduce(
+                (sum, ex) =>
+                    sum + (ex.sets || 0) * (ex.repetitions || 0) * (ex.weight || 0),
+                0
+            )
+        );
+    }, 0);
 
     const formatSplitDateRange = (startDate: Date) => {
         const optionsMonth = { month: 'long' } as const;
@@ -142,7 +99,6 @@ export default function TrainingPlansScreen() {
         endDate.setDate(startDate.getDate() + 6);
         const dayEnd = endDate.getDate();
         const monthEnd = endDate.toLocaleDateString('en-US', optionsMonth);
-
         const year = startDate.getFullYear();
 
         return {
@@ -151,25 +107,13 @@ export default function TrainingPlansScreen() {
         };
     };
 
-    const { rangeLine, yearLine } = formatSplitDateRange(currentSplit.date);
-
-    const estimatedVolume = currentSplit.split.reduce((acc, day) => {
-        if (!day.exercises) return acc;
-        return (
-            acc +
-            day.exercises.reduce(
-                (sum, ex) => sum + (ex.sets || 0) * (ex.repetitions || 0) * (ex.weight || 0),
-                0
-            )
-        );
-    }, 0);
-
+    const { rangeLine, yearLine } = formatSplitDateRange(currentPlan.date);
     const daysCompleted = completedDays.length;
 
     const handleSavePlan = newPlan => {
-        setSplits([...splits, newPlan]);
+        setPlans([...plans, { ...newPlan, date: new Date() }]);
         setModalVisible(false);
-        setCurrentIndex(splits.length); // show new plan
+        setCurrentIndex(plans.length);
         setCompletedDays([]);
     };
 
@@ -180,7 +124,7 @@ export default function TrainingPlansScreen() {
             </View>
 
             <View style={styles.titleContainer}>
-                <Text style={styles.splitName}>{currentSplit.name}</Text>
+                <Text style={styles.splitName}>{currentPlan.name}</Text>
 
                 <View style={styles.dateContainer}>
                     <Pressable
@@ -198,16 +142,13 @@ export default function TrainingPlansScreen() {
                         </View>
                         <Text style={styles.dateYearText}>{yearLine}</Text>
                     </Pressable>
-
                 </View>
-
             </View>
 
-            {/* Date Picker Modal */}
             <CustomDatePickerModal
                 visible={datePickerVisible}
                 onClose={() => setDatePickerVisible(false)}
-                date={currentSplit.date}
+                date={currentPlan.date}
                 onChange={onDateChange}
             />
 
@@ -217,16 +158,16 @@ export default function TrainingPlansScreen() {
                 </Pressable>
 
                 <ScrollView style={styles.tableContainer}>
-                    {currentSplit.split.map(({ day, type, status }, idx) => {
-                        const isCompleted = completedDays.includes(day);
+                    {currentPlan.days.map(({ dayOfWeek, splitType, status }, idx) => {
+                        const isCompleted = completedDays.includes(dayOfWeek);
                         return (
                             <Pressable
                                 key={idx}
-                                onPress={() => toggleDayComplete(day)}
+                                onPress={() => toggleDayComplete(dayOfWeek)}
                                 style={[styles.tableRow, isCompleted && styles.completedDayRow]}
                             >
-                                <Text style={styles.tableDay}>{day}</Text>
-                                <Text style={styles.tableType}>{type}</Text>
+                                <Text style={styles.tableDay}>{dayOfWeek}</Text>
+                                <Text style={styles.tableType}>{splitType}</Text>
                                 <Text style={styles.tableStatus}>{status || 'REST'}</Text>
                                 <Text style={[styles.completionToggle, isCompleted && styles.completedToggle]}>
                                     ▐
@@ -245,12 +186,8 @@ export default function TrainingPlansScreen() {
 
             <View style={styles.summaryContainer}>
                 <Text style={styles.summaryText}>Total Exercises Planned: {totalExercises}</Text>
-                <Text style={styles.summaryText}>
-                    Estimated Volume: {estimatedVolume.toLocaleString()} kg
-                </Text>
-                <Text style={styles.summaryText}>
-                    Days Completed: {daysCompleted} / {currentSplit.split.length}
-                </Text>
+                <Text style={styles.summaryText}>Estimated Volume: {estimatedVolume.toLocaleString()} kg</Text>
+                <Text style={styles.summaryText}>Days Completed: {daysCompleted} / {currentPlan.days.length}</Text>
             </View>
 
             <View style={styles.newPlanContainer}>
