@@ -19,6 +19,7 @@ const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 
 const units = ['kg', 'lbs'];
 
+//MODAL FOR CREATING TRAINING PLANS
 export default function TrainingPlanModal({ visible, onClose, onSave }) {
     const { token } = useContext(AuthContext);
     const [name, setName] = useState('');

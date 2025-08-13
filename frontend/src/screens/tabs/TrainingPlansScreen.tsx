@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     Pressable,
+    RefreshControl,
 } from 'react-native';
 import TrainingPlanModal from '../../components/modals/TrainingPlanModal';
 import Ticker from '../../components/Ticker';
@@ -12,43 +13,54 @@ import VHSGlowDivider from '../../components/VHSGlowDivider';
 import CustomDatePickerModal from '../../components/modals/CustomDatePickerModal';
 import VHSButton from '../../components/VHSButton';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
-const splitsInitial = [
-    {
-        name: 'Hypertrophy Focus',
-        date: new Date('2025-04-01'),
-        days: [
-            { dayOfWeek: 'MON', splitType: 'PUSH', status: 'Chest_A1', exercises: [{ sets: 4, repetitions: 10, weight: 80 }] },
-            { dayOfWeek: 'TUE', splitType: 'PULL', status: 'Back_A1', exercises: [{ sets: 3, repetitions: 8, weight: 70 }] },
-            { dayOfWeek: 'WED', splitType: 'LEGS', status: 'Legs_A1', exercises: [{ sets: 4, repetitions: 12, weight: 90 }] },
-            { dayOfWeek: 'THU', splitType: 'REST', status: '', exercises: [] },
-            { dayOfWeek: 'FRI', splitType: 'PUSH', status: 'Chest_A2', exercises: [{ sets: 3, repetitions: 10, weight: 85 }] },
-            { dayOfWeek: 'SAT', splitType: 'REST', status: '', exercises: [] },
-            { dayOfWeek: 'SUN', splitType: 'PULL', status: 'Back_A2', exercises: [{ sets: 4, repetitions: 8, weight: 75 }] },
-        ],
-    },
-    {
-        name: 'Strength Cycle',
-        date: new Date('2025-04-08'),
-        days: [
-            { dayOfWeek: 'MON', splitType: 'PUSH', status: 'Chest_B1', exercises: [{ sets: 5, repetitions: 5, weight: 100 }] },
-            { dayOfWeek: 'TUE', splitType: 'PULL', status: 'Back_B1', exercises: [{ sets: 4, repetitions: 6, weight: 90 }] },
-            { dayOfWeek: 'WED', splitType: 'LEGS', status: 'Legs_B1', exercises: [{ sets: 5, repetitions: 5, weight: 110 }] },
-            { dayOfWeek: 'THU', splitType: 'REST', status: '', exercises: [] },
-            { dayOfWeek: 'FRI', splitType: 'PUSH', status: 'Chest_B2', exercises: [{ sets: 4, repetitions: 6, weight: 105 }] },
-            { dayOfWeek: 'SAT', splitType: 'REST', status: '', exercises: [] },
-            { dayOfWeek: 'SUN', splitType: 'PULL', status: 'Back_B2', exercises: [{ sets: 5, repetitions: 5, weight: 95 }] },
-        ],
-    },
-];
+import { AuthContext } from '../../context/AuthContext';
+import { getTrainingPlans } from '../../services/trainingPlanService';
+import { DayOfWeek, toUIPlan, TrainingPlanUI, WorkoutDay } from '../../requests/trainingPlan';
 
 export default function TrainingPlansScreen() {
-    const [plans, setPlans] = useState(splitsInitial);
+    const { token } = useContext(AuthContext)
+    const [plans, setPlans] = useState<TrainingPlanUI[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const currentPlan = plans[currentIndex];
     const [modalVisible, setModalVisible] = useState(false);
-    const [completedDays, setCompletedDays] = useState([]);
+    const [completedDays, setCompletedDays] = useState<DayOfWeek[]>([]);
     const [datePickerVisible, setDatePickerVisible] = useState(false);
+
+
+    const loadPlans = async () => {
+        if (!token) {
+            setError('Missing auth token');
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+            const api = await getTrainingPlans(token);
+            const ui = api.map(toUIPlan);
+
+
+            setPlans(ui);
+            setCurrentIndex(0);
+            setCompletedDays([]);
+
+        } catch (err: any) {
+            setError(e.message ?? 'Failed to fetch training plans');
+        } finally {
+            setLoading(false);
+        }
+
+    }
+
+    useEffect(() => {
+        loadPlans();
+    }, [token]);
+
+
+    const currentPlan = plans[currentIndex];
+
 
     const goPrev = () => {
         setCurrentIndex(i => (i === 0 ? plans.length - 1 : i - 1));
@@ -68,26 +80,27 @@ export default function TrainingPlansScreen() {
 
     const onDateChange = (newDate: Date) => {
         const updatedPlans = [...plans];
-        updatedPlans[currentIndex].date = newDate;
+        updatedPlans[currentIndex].updatedAt = newDate;
         setPlans(updatedPlans);
     };
 
-    const totalExercises = currentPlan.days.reduce(
-        (acc, day) => acc + (day.exercises?.length || 0),
-        0
-    );
+    const totalExercises = useMemo(() => {
+        if (!currentPlan) return 0;
 
-    const estimatedVolume = currentPlan.days.reduce((acc, day) => {
-        if (!Array.isArray(day.exercises)) return acc;
-        return (
-            acc +
-            day.exercises.reduce(
-                (sum, ex) =>
-                    sum + (ex.sets || 0) * (ex.repetitions || 0) * (ex.weight || 0),
-                0
-            )
-        );
-    }, 0);
+        let sum = 0;
+        for (const day of currentPlan.days) {
+            const count = day.exercises ? day.exercises.length : 0;
+            sum += count;
+        }
+        return sum;
+    }, [currentPlan]);
+
+    const estimatedVolume = useMemo(() =>
+        currentPlan ? currentPlan.days.reduce((a, d) =>
+            a + (d.exercises ?? []).reduce((s, ex) =>
+                s + (ex.sets ?? 0) * (ex.repetitions ?? 0) * (ex.weight ?? 0), 0
+            ), 0) : 0,
+        [currentPlan]);
 
     const formatSplitDateRange = (startDate: Date) => {
         const optionsMonth = { month: 'long' } as const;
@@ -107,7 +120,8 @@ export default function TrainingPlansScreen() {
         };
     };
 
-    const { rangeLine, yearLine } = formatSplitDateRange(currentPlan.date);
+    const startDate = currentPlan?.updatedAt ?? new Date();
+    const { rangeLine, yearLine } = formatSplitDateRange(startDate);
     const daysCompleted = completedDays.length;
 
     const handleSavePlan = newPlan => {
@@ -124,7 +138,7 @@ export default function TrainingPlansScreen() {
             </View>
 
             <View style={styles.titleContainer}>
-                <Text style={styles.splitName}>{currentPlan.name}</Text>
+                <Text style={styles.splitName}>{currentPlan?.name}</Text>
 
                 <View style={styles.dateContainer}>
                     <Pressable
@@ -148,7 +162,7 @@ export default function TrainingPlansScreen() {
             <CustomDatePickerModal
                 visible={datePickerVisible}
                 onClose={() => setDatePickerVisible(false)}
-                date={currentPlan.date}
+                date={currentPlan?.updatedAt}
                 onChange={onDateChange}
             />
 
@@ -157,8 +171,9 @@ export default function TrainingPlansScreen() {
                     <Text style={styles.arrowText}>‹</Text>
                 </Pressable>
 
-                <ScrollView style={styles.tableContainer}>
-                    {currentPlan.days.map(({ dayOfWeek, splitType, status }, idx) => {
+                <ScrollView style={styles.tableContainer}
+                    refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlans} />}>
+                    {currentPlan?.days.map(({ dayOfWeek, splitType, exercises }, idx) => {
                         const isCompleted = completedDays.includes(dayOfWeek);
                         return (
                             <Pressable
@@ -168,7 +183,6 @@ export default function TrainingPlansScreen() {
                             >
                                 <Text style={styles.tableDay}>{dayOfWeek}</Text>
                                 <Text style={styles.tableType}>{splitType}</Text>
-                                <Text style={styles.tableStatus}>{status || 'REST'}</Text>
                                 <Text style={[styles.completionToggle, isCompleted && styles.completedToggle]}>
                                     ▐
                                 </Text>
@@ -187,7 +201,7 @@ export default function TrainingPlansScreen() {
             <View style={styles.summaryContainer}>
                 <Text style={styles.summaryText}>Total Exercises Planned: {totalExercises}</Text>
                 <Text style={styles.summaryText}>Estimated Volume: {estimatedVolume.toLocaleString()} kg</Text>
-                <Text style={styles.summaryText}>Days Completed: {daysCompleted} / {currentPlan.days.length}</Text>
+                <Text style={styles.summaryText}>Days Completed: {daysCompleted} / {currentPlan?.days.length}</Text>
             </View>
 
             <View style={styles.newPlanContainer}>

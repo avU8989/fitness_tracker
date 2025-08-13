@@ -26,3 +26,20 @@ export async function createTrainingPlan(
 
   return response.json();
 }
+
+export async function getTrainingPlans(token: string) {
+  const response = await fetch(`${URL}/`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    }
+  });
+
+  console.log('status', response.status, 'body', await response.clone().text);
+  if(!response.ok){
+    throw new Error("Failed to fetch training plan");
+  }
+
+  return response.json();
+}
