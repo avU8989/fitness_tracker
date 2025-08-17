@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { Vibration } from 'react-native';
 import {
     View,
     Text,
@@ -6,6 +7,7 @@ import {
     ScrollView,
     Pressable,
     RefreshControl,
+    Modal,
 } from 'react-native';
 import TrainingPlanModal from '../../components/modals/TrainingPlanModal';
 import Ticker from '../../components/Ticker';
@@ -16,12 +18,16 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../../context/AuthContext';
 import { getTrainingPlans } from '../../services/trainingPlanService';
 import { DayOfWeek, toUIPlan, TrainingPlanUI, WorkoutDay } from '../../requests/trainingPlan';
+import * as Haptics from 'expo-haptics';
 
 export default function TrainingPlansScreen() {
+    const [pressedIdx, setPressedIdx] = useState<number | null>(null);
     const { token } = useContext(AuthContext)
     const [plans, setPlans] = useState<TrainingPlanUI[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
+
     const [currentIndex, setCurrentIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [completedDays, setCompletedDays] = useState<DayOfWeek[]>([]);
@@ -35,6 +41,8 @@ export default function TrainingPlansScreen() {
             return;
         }
 
+        console.log(token);
+
         try {
             setLoading(true);
             setError(null);
@@ -46,6 +54,8 @@ export default function TrainingPlansScreen() {
             setCurrentIndex(0);
             setCompletedDays([]);
 
+            console.log(JSON.stringify(ui, null, 2));
+
         } catch (err: any) {
             setError(e.message ?? 'Failed to fetch training plans');
         } finally {
@@ -53,6 +63,12 @@ export default function TrainingPlansScreen() {
         }
 
     }
+
+    const [selectedDay, setSelectedDay] = useState<typeof currentPlan.days[0] | null>(null);
+    const [trainingPlanModalVisible, setTrainingPlanModalVisible] = useState(false);
+
+
+
 
     useEffect(() => {
         loadPlans();
@@ -79,10 +95,16 @@ export default function TrainingPlansScreen() {
     };
 
     const onDateChange = (newDate: Date) => {
-        const updatedPlans = [...plans];
-        updatedPlans[currentIndex].updatedAt = newDate;
-        setPlans(updatedPlans);
+        setPlans(prev => {
+            const updated = [...prev];
+            updated[currentIndex] = {
+                ...updated[currentIndex],
+                updatedAt: newDate,
+            };
+            return updated;
+        });
     };
+
 
     const totalExercises = useMemo(() => {
         if (!currentPlan) return 0;
@@ -162,7 +184,7 @@ export default function TrainingPlansScreen() {
             <CustomDatePickerModal
                 visible={datePickerVisible}
                 onClose={() => setDatePickerVisible(false)}
-                date={currentPlan?.updatedAt}
+                date={currentPlan?.updatedAt ?? new Date()}
                 onChange={onDateChange}
             />
 
@@ -173,23 +195,80 @@ export default function TrainingPlansScreen() {
 
                 <ScrollView style={styles.tableContainer}
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlans} />}>
-                    {currentPlan?.days.map(({ dayOfWeek, splitType, exercises }, idx) => {
+                    {currentPlan?.days.map(({ dayOfWeek, splitType }, idx) => {
+                        if (!dayOfWeek) return null;
+
                         const isCompleted = completedDays.includes(dayOfWeek);
                         return (
                             <Pressable
                                 key={idx}
-                                onPress={() => toggleDayComplete(dayOfWeek)}
-                                style={[styles.tableRow, isCompleted && styles.completedDayRow]}
+                                onLongPress={() => {
+                                    setHighlightedIndex(idx); // turn on highlight
+                                    setSelectedDay(currentPlan.days[idx]);
+                                    setTrainingPlanModalVisible(true);
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                }}
+                                style={[styles.tableRow, isCompleted && styles.completedDayRow, highlightedIndex === idx && styles.longPressHighlight]}
                             >
                                 <Text style={styles.tableDay}>{dayOfWeek}</Text>
                                 <Text style={styles.tableType}>{splitType}</Text>
+
                                 <Text style={[styles.completionToggle, isCompleted && styles.completedToggle]}>
-                                    ▐
+                                    █
                                 </Text>
+
+
                             </Pressable>
                         );
                     })}
                 </ScrollView>
+
+                <Modal
+                    visible={trainingPlanModalVisible}
+                    transparent
+                    animationType="fade"
+                    onRequestClose={() => {
+                        setTrainingPlanModalVisible(false)
+                        setHighlightedIndex(null);
+                    }}
+                >
+                    <View style={styles.modalBackdrop}>
+                        <Pressable
+                            onPress={() => {
+                                setTrainingPlanModalVisible(false);
+                                setHighlightedIndex(null);
+                            }}
+                            style={styles.modalCloseButton}
+                        >
+                            <Text style={styles.modalCloseText}>✕</Text>
+                        </Pressable>
+
+                        <View style={styles.modalHeaderText}>
+                            <Text style={styles.modalTitle}>{selectedDay?.dayOfWeek} - {selectedDay?.splitType}</Text>
+
+                            <ScrollView style={styles.modalScroll}>
+                                {selectedDay?.exercises.length ? (
+                                    selectedDay?.exercises.map((exercise, index) => (
+                                        <View key={index} style={styles.exerciseRow}>
+                                            <Text style={styles.exerciseText}>
+                                                ░ {exercise.name?.toUpperCase()} ░
+                                            </Text>
+                                            <Text style={styles.exerciseDetail}>
+                                                {exercise.sets} SETS × {exercise.repetitions} REPS >> {exercise.weight} {exercise.unit?.toUpperCase()}
+                                            </Text>
+                                            <View style={styles.scanline} />
+                                        </View>
+                                    ))
+                                ) : (
+                                    <Text style={styles.exerciseText}>No exercises available</Text>
+                                )
+                                }
+                            </ScrollView>
+
+                        </View>
+                    </View>
+
+                </Modal>
 
                 <Pressable onPress={goNext} style={styles.arrowButton}>
                     <Text style={styles.arrowText}>›</Text>
@@ -222,6 +301,127 @@ export default function TrainingPlansScreen() {
 }
 
 const styles = StyleSheet.create({
+
+    modalCloseButton: {
+        position: 'absolute',
+        top: -20,
+        right: -20,
+        width: 48,
+        height: 48,
+        borderRadius: 999,
+        backgroundColor: '#00ffcc',
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#00ffcc',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 12,
+        elevation: 10,
+    },
+
+    modalCloseText: {
+        color: '#0A0F1C',
+        fontSize: 24,
+        fontWeight: 'bold',
+        textShadowColor: '#00ffcc',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 6,
+    },
+
+
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: '#111622', // dark semi-transparent
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+    },
+    modalHeaderText: {
+        backgroundColor: '#111622',
+        padding: 20,
+        borderRadius: 10,
+        width: '88%',           // <-- wider modal (you can try '95%' or '100%' too)
+        maxHeight: '85%',       // <-- taller modal
+        shadowColor: '#00ffcc', // optional glow effect
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+        elevation: 8,           // for Android shadow
+    },
+    modalTitle: {
+        fontFamily: 'monospace',
+        fontSize: 18,
+        color: '#00ffcc',
+        marginBottom: 12,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        textAlign: 'center',
+        textShadowColor: '#00ffcc',
+        textShadowRadius: 6,
+    },
+    modalScroll: {
+        maxHeight: '75%',
+    },
+    exerciseRow: {
+        marginBottom: 12,
+    },
+    exerciseText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#00ffcc',
+        fontFamily: 'monospace',
+    },
+    exerciseDetail: {
+        fontSize: 14,
+        color: '#BFC7D5',
+        fontFamily: 'monospace',
+        marginBottom: 6,
+    },
+    scanline: {
+        height: 1,
+        backgroundColor: '#00ffcc33',
+        marginVertical: 4,
+    },
+    longPressHighlight: {
+        backgroundColor: 'rgba(0, 255, 204, 0.1)',
+        borderWidth: 1,
+        borderColor: '#00ffcc',
+        shadowColor: '#00ffcc',
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 8,
+        shadowOpacity: 0.6,
+    },
+
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        width: '100%',
+        maxHeight: '70%',
+    },
+    modalText: {
+        fontSize: 16,
+        marginVertical: 2,
+    },
+    modalCloseButton: {
+        marginTop: 20,
+        alignSelf: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 20,
+        backgroundColor: '#ccc',
+        borderRadius: 8,
+    },
+    modalCloseText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+
     dateContainer: {
         alignItems: 'center',
         marginBottom: 10,
@@ -357,6 +557,16 @@ const styles = StyleSheet.create({
     scrollArea: {
         backgroundColor: 'transparent',
     },
+    longPressHighlight: {
+        backgroundColor: 'rgba(0, 255, 204, 0.2)',
+        borderColor: '#00ffcc',
+        borderWidth: 1,
+        shadowColor: '#00ffcc',
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 10,
+        shadowOpacity: 0.8,
+    },
+
     tableRow: {
         flexDirection: 'row',
         paddingVertical: 12,
@@ -364,9 +574,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    completedDayRow: {
-        backgroundColor: 'rgba(0, 255, 204, 0.1)',
-    },
+
     tableDay: {
         flex: 1,
         color: '#BFC7D5',
@@ -395,16 +603,30 @@ const styles = StyleSheet.create({
         textAlign: 'right',
         letterSpacing: 2,
     },
+    completedDayRow: {
+        backgroundColor: 'rgba(0, 255, 204, 0.1)',
+    },
+
     completionToggle: {
-        color: '#555',
-        fontSize: 20,
+        fontFamily: 'monospace',
+        fontSize: 22,
         marginLeft: 10,
+        color: '#333',
+        textShadowColor: '#00ffcc',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 4,
         opacity: 0.4,
     },
+
     completedToggle: {
         color: '#00ffcc',
+        textShadowColor: '#00ffcc',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 12,
         opacity: 1,
+        transform: [{ scale: 1.05 }],
     },
+
     summaryContainer: {
         padding: 12,
         marginHorizontal: 30,
