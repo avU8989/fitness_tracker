@@ -16,11 +16,11 @@ import { AuthContext } from '../../context/AuthContext';
 import { createTrainingPlan } from '../../services/trainingPlanService';
 
 const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
-
-const units = ['kg', 'lbs'];
+const planTypes = ['Bodybuilding', 'Powerlifting', 'Crossfit'];
 
 //MODAL FOR CREATING TRAINING PLANS
 export default function TrainingPlanModal({ visible, onClose, onSave }) {
+    const [planType, setPlanType] = useState('');
     const { token } = useContext(AuthContext);
     const [name, setName] = useState('');
     const [days, setDays] = useState<WorkoutDay[]>(
@@ -105,6 +105,7 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
         try {
             const payload = {
                 name: name.trim(),
+                type: planType,
                 days: sanitizedDays,
             };
 
@@ -154,6 +155,31 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
                         value={name}
                         onChangeText={setName}
                     />
+
+                    <View style={styles.planTypeContainer}>
+                        {planTypes.map((type) => (
+                            <Pressable
+                                key={type}
+                                onPress={() => setPlanType(type)}
+                                style={[
+                                    styles.planTypeOption,
+                                    planType === type && styles.planTypeOptionActive
+                                ]}
+                            >
+                                <Text
+                                    style={[
+                                        styles.planTypeText,
+                                        planType === type && styles.planTypeTextActive
+                                    ]}
+                                >
+                                    {type.toUpperCase()}
+                                </Text>
+                            </Pressable>
+                        ))}
+                    </View>
+
+
+
 
                     <ScrollView style={styles.daysContainer} nestedScrollEnabled>
                         {days.map((day, dayIndex) => (
@@ -252,6 +278,43 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
 }
 
 const styles = StyleSheet.create({
+    planTypeContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginVertical: 10,
+        backgroundColor: '#1A1F2C',
+        padding: 8,
+        borderRadius: 6,
+    },
+
+    planTypeOption: {
+        flex: 1,
+        marginHorizontal: 4,
+        backgroundColor: '#111622',
+        paddingVertical: 10,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#444',
+        alignItems: 'center',
+    },
+
+    planTypeOptionActive: {
+        backgroundColor: '#00ffcc22',
+        borderColor: '#00ffcc',
+        elevation: 4,
+    },
+
+    planTypeText: {
+        color: '#BFC7D5',
+        fontFamily: 'monospace',
+        fontSize: 12,
+    },
+
+    planTypeTextActive: {
+        color: '#00ffcc',
+        fontWeight: 'bold',
+    },
+
     modalContainer: {
         flex: 1,
         backgroundColor: '#0A0F1CCC',

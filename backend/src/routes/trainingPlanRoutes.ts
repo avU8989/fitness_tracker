@@ -4,14 +4,14 @@ import { updateExercise } from "../controllers/trainingPlanController";
 import { getTrainingPlans } from "../controllers/trainingPlanController";
 import authMiddleware from "../middleware/auth";
 import { validationMiddleware } from "../middleware/validationMiddleware";
-import { CreateTrainingPlanRequest } from "../requests/trainingplans/CreateTrainingPlanRequest";
+import { validateCreateTrainingPlan } from "../middleware/validatePlan";
 
 const trainingPlanRouter = Router();
 
 //define routers and assign controller function
 trainingPlanRouter.post(
   "/",
-  validationMiddleware(CreateTrainingPlanRequest),
+  validateCreateTrainingPlan,
   createTrainingPlan
 );
 trainingPlanRouter.patch("/:planId/exercises/:exerciseId", updateExercise);

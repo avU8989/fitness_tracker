@@ -2,28 +2,67 @@ import TrainingPlan from "../models/TrainingPlan";
 import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { Error } from "mongoose";
-import { CreateTrainingPlanRequest } from "../requests/trainingplans/CreateTrainingPlanRequest";
+import { CreateBaseTrainingPlanRequest, CreatePowerliftingPlanRequest } from "../requests/trainingplans/CreateTrainingPlanRequest";
+import PowerLiftingPlan from "../models/PowerliftingPlan";
+import CrossfitPlan from "../models/CrossfitPlan";
+import BodybuildingPlan from "../models/BodybuildingPlan";
+import { findWorkoutDay, loadUserPlan } from "./trainingPlan-helpers";
 
 export const createTrainingPlan = async (
-  req: AuthenticatedRequest & { body: CreateTrainingPlanRequest },
+  req: AuthenticatedRequest & { body: CreateBaseTrainingPlanRequest | CreatePowerliftingPlanRequest },
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { name, days } = req.body;
+    const { name, days, type } = req.body;
 
     if (!req.user || !req.user.id) {
       res.status(401).json({ message: "Unauthorized: User ID missing" });
       return;
     }
 
-    //logic to create a training plan
-    const newPlan = new TrainingPlan({
+    const baseFields = {
       name,
-      days,
+      type,
       user: req.user.id,
-    });
+    }
 
+    let newPlan;
+    const normalizedType = type?.toLowerCase();
+    console.log("THIW IS THE");
+
+    console.log(normalizedType);
+
+    if (!normalizedType) {
+      newPlan = new TrainingPlan(baseFields); // fallback
+    } else {
+      switch (normalizedType) {
+        case "powerlifting":
+          console.log("Creating Powerlifting Plan");
+          newPlan = new PowerLiftingPlan({
+            ...baseFields,
+            ...req.body, //includes blockPeriodization weeks, etc
+          })
+          break;
+        case "crossfit":
+          console.log("Creating Crossfit Plan");
+          newPlan = new CrossfitPlan({
+            ...baseFields,
+            days,
+          })
+          break;
+        case "bodybuilding":
+          console.log("Creating Bodybuilding Plan");
+          newPlan = new BodybuildingPlan({
+            ...baseFields,
+            days,
+          })
+          break;
+        default:
+          res.status(400).json({ message: "Invalid training plan type" });
+          return;
+      }
+    }
     await newPlan.save();
 
     console.log("Successfully created training plan");
@@ -67,18 +106,16 @@ export const updateExercise = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const { sets, repetitions, weight, unit } = req.body;
+  const { sets, repetitions, weight, unit, name } = req.body;
   const { planId, dayId, exerciseId } = req.params;
+  const { weekId, weekNumber } = req.query as { weekId?: string; weekNumber?: number };
 
   try {
     if (!req.user?.id) {
       res.status(401).json({ message: "Unauthorized: User ID missing" });
       return;
     }
-    const trainingPlan = await TrainingPlan.findOne({
-      _id: planId,
-      user: req.user.id,
-    });
+    const trainingPlan = await loadUserPlan(req.user.id, planId);
 
     if (!trainingPlan) {
       res.status(404).json({
@@ -87,15 +124,20 @@ export const updateExercise = async (
       return;
     }
 
-    const trainingDay = trainingPlan.days.id(dayId);
-    if (!trainingDay) {
+    const { day } = findWorkoutDay(trainingPlan, {
+      dayId,
+      weekId,
+      weekNumber: weekNumber ? Number(weekNumber) : undefined
+    })
+
+    if (!day) {
       res.status(404).json({
-        message: "Workout day not found",
+        message: "Workout day not found"
       });
       return;
     }
 
-    const exercise = trainingDay.exercises.id(exerciseId);
+    const exercise = day.exercises.id(exerciseId);
     if (!exercise) {
       res.status(404).json({
         message: "Exercise not found",
@@ -103,9 +145,11 @@ export const updateExercise = async (
       return;
     }
 
+    if (name !== undefined) exercise.name = name;
     if (sets !== undefined) exercise.sets = sets;
     if (repetitions !== undefined) exercise.repetitions = repetitions;
     if (weight !== undefined) exercise.weight = weight;
+    if (unit !== undefined) exercise.unit = unit;
 
     await trainingPlan.save();
 
@@ -128,6 +172,7 @@ export const updateWorkoutDay = async (
 ): Promise<void> => {
   const { dayId, planId } = req.params;
   const { dayOfWeek, splitType, exercises } = req.body;
+  const { weekId, weekNumber } = req.query as { weekId?: string, weekNumber?: number };
 
   try {
     if (!req.user?.id) {
@@ -135,10 +180,7 @@ export const updateWorkoutDay = async (
       return;
     }
 
-    const trainingPlan = await TrainingPlan.findOne({
-      _id: planId,
-      user: req.user.id,
-    });
+    const trainingPlan = await loadUserPlan(req.user.id, planId);
 
     if (!trainingPlan) {
       res.status(404).json({
@@ -147,23 +189,29 @@ export const updateWorkoutDay = async (
       return;
     }
 
-    const trainingDay = trainingPlan.days.id(dayId);
-    if (!trainingDay) {
+    const { day } = findWorkoutDay(trainingPlan,
+      {
+        dayId,
+        weekId,
+        weekNumber: weekNumber ? Number(weekNumber) : undefined
+      })
+
+    if (!day) {
       res.status(404).json({
         message: "Workout day not found",
       });
       return;
     }
 
-    if (dayOfWeek) trainingDay.dayOfWeek = dayOfWeek;
-    if (splitType) trainingDay.splitType = splitType;
-    if (exercises) trainingDay.exercises = exercises;
+    if (dayOfWeek) day.dayOfWeek = dayOfWeek;
+    if (splitType) day.splitType = splitType;
+    if (exercises) day.exercises = exercises;
 
     await trainingPlan.save();
 
     res.status(200).json({
       message: "Workout Day updated successfully",
-      trainingDay,
+      day,
     });
   } catch (err: any) {
     res.status(500).json({
@@ -206,3 +254,26 @@ export const deleteTrainingPlan = async (
       .json({ message: "Internal server error", error: err.message });
   }
 };
+
+export const getTodaysWorkout = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ message: "Unauthorized: User id missing" });
+      return;
+    }
+    const userId = req.user.id;
+
+    const today = new Date().toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+    const plan = await TrainingPlan.findOne({ user: userId });
+  } catch (err: any) {
+    res.status(500)
+      .json({ message: "Internal server error", error: err.message });
+  }
+
+
+}

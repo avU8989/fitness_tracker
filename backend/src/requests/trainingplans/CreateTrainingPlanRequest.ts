@@ -2,6 +2,9 @@ import {
   IsArray,
   IsEnum,
   IsNotEmpty,
+  IsBoolean,
+  IsOptional,
+  IsIn,
   IsString,
   ValidateNested,
   IsNumber,
@@ -26,7 +29,7 @@ class ExerciseDTO {
 
   @IsNumber()
   @IsNotEmpty()
-  repetitions!: number; // fixed plural here
+  repetitions!: number;
 
   @IsNumber()
   @IsNotEmpty()
@@ -51,13 +54,54 @@ export class WorkoutDayDTO {
   exercises!: ExerciseDTO[];
 }
 
-export class CreateTrainingPlanRequest {
+export class CreateBaseTrainingPlanRequest {
   @IsString()
   @IsNotEmpty()
   name!: string;
+
+  @IsOptional()
+  @IsIn(["Bodybuilding", "Crossfit"])
+  type?: "Bodybuilding" | "Crossfit";
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WorkoutDayDTO)
   days!: WorkoutDayDTO[];
+}
+
+//-----------------POWERLIFTING TRAININGPLAN REQUEST-------------------
+class PowerWeekDTO {
+  @IsNumber()
+  @IsNotEmpty()
+  weekNumber!: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WorkoutDayDTO)
+  days!: WorkoutDayDTO[];
+}
+
+export class CreatePowerliftingPlanRequest {
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsIn(['Powerlifting'])
+  type!: "Powerlifting";
+
+  @IsBoolean()
+  blockPeriodization?: boolean;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PowerWeekDTO)
+  weeks!: PowerWeekDTO[];
+
+  @IsOptional() @IsArray() weeklyFocusNotes?: string[];
+  @IsOptional() @IsArray() accessoryFocus?: string[];
+  @IsOptional() @IsBoolean() competitionPrep?: boolean;
+
+  @IsIn(["Volume", "Intensity", "Peaking"])
+  intensityPhase!: "Volume" | "Intensity" | "Peaking";
+
 }

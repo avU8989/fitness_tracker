@@ -33,7 +33,7 @@ export interface IWorkoutDay extends Document {
   updatedAt?: Date;
 }
 
-const workoutDaySchema = new Schema<IWorkoutDay>(
+export const workoutDaySchema = new Schema<IWorkoutDay>(
   {
     dayOfWeek: {
       type: String,
@@ -46,25 +46,35 @@ const workoutDaySchema = new Schema<IWorkoutDay>(
   { timestamps: true }
 );
 
+type TrainingPlanType = "Crossfit" | "Bodybuilding" | "Powerlifting"
+
 export interface ITrainingPlan extends Document {
   name: string;
-  days: Types.DocumentArray<IWorkoutDay>;
+  type: TrainingPlanType;
   user: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-const trainingPlanSchema = new Schema<ITrainingPlan>(
+//base Trainingplan using Discriminator to distinguish between different training plans
+const trainingPlanBase = new Schema<ITrainingPlan>(
   {
     name: { type: String, required: true },
-    days: [workoutDaySchema],
+    type: {
+      type: String,
+      required: true,
+      enum: ["Crossfit", "Bodybuilding", "Powerlifting"],
+    },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    discriminatorKey: "type", //required for discriminator support in order to create Crossfit Trainingplan, Bodybuidling Trainingplan, etc
+  }
 );
 
 const TrainingPlan: Model<ITrainingPlan> = mongoose.model<ITrainingPlan>(
   "TrainingPlan",
-  trainingPlanSchema
+  trainingPlanBase
 );
 export default TrainingPlan;

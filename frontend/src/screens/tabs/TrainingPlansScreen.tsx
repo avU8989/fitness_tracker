@@ -21,7 +21,6 @@ import { DayOfWeek, toUIPlan, TrainingPlanUI, WorkoutDay } from '../../requests/
 import * as Haptics from 'expo-haptics';
 
 export default function TrainingPlansScreen() {
-    const [pressedIdx, setPressedIdx] = useState<number | null>(null);
     const { token } = useContext(AuthContext)
     const [plans, setPlans] = useState<TrainingPlanUI[]>([]);
     const [loading, setLoading] = useState(true);
@@ -58,6 +57,7 @@ export default function TrainingPlansScreen() {
 
         } catch (err: any) {
             setError(e.message ?? 'Failed to fetch training plans');
+            console.log(error);
         } finally {
             setLoading(false);
         }
@@ -66,9 +66,6 @@ export default function TrainingPlansScreen() {
 
     const [selectedDay, setSelectedDay] = useState<typeof currentPlan.days[0] | null>(null);
     const [trainingPlanModalVisible, setTrainingPlanModalVisible] = useState(false);
-
-
-
 
     useEffect(() => {
         loadPlans();
@@ -86,12 +83,6 @@ export default function TrainingPlansScreen() {
     const goNext = () => {
         setCurrentIndex(i => (i === plans.length - 1 ? 0 : i + 1));
         setCompletedDays([]);
-    };
-
-    const toggleDayComplete = day => {
-        setCompletedDays(prev =>
-            prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-        );
     };
 
     const onDateChange = (newDate: Date) => {

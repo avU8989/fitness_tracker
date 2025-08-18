@@ -62,6 +62,7 @@ const LogPage = () => {
     return Math.min((load / maxLoad) * 100, 100);
   };
 
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Session Status */}

@@ -34,6 +34,8 @@ app.use("/training-plans", authMiddleware, trainingPlanRoutes);
 app.use("/auth", authenticationRoutes);
 app.use("/workouts", authMiddleware, workoutRoutes);
 
+console.log("AYEE WE STARTING");
+
 // connect to mongodb
 mongoose
   .connect(process.env.MONGODB_URI || "", {})

@@ -17,7 +17,7 @@ export interface WorkoutDay {
   updatedAt?: Date;
 }
 
-export interface TrainingPlanDTO{
+export interface TrainingPlanDTO {
   _id: string;
   name: string;
   createdAt?: string;
@@ -25,14 +25,7 @@ export interface TrainingPlanDTO{
     _id: string;
     dayOfWeek: DayOfWeek;
     splitType: string;
-    exercises: Array<{
-      id: string;
-      name: string;
-      sets: number;
-      repetitions: number;
-      weight: number;
-      unit: 'kg'|'lbs';
-    }>
+    exercises: Exercise[];
   }>;
   updatedAt?: string;
 }
@@ -44,14 +37,15 @@ export interface TrainingPlanUI {
   days: TrainingPlanDTO['days']; // same shape in UI for now
 }
 
-export const toUIPlan = (p : TrainingPlanDTO) : TrainingPlanUI =>({
+export const toUIPlan = (p: TrainingPlanDTO): TrainingPlanUI => ({
   _id: p._id,
   name: p.name,
-  updatedAt: p.updatedAt? new Date(p.updatedAt) : new Date(),
+  updatedAt: p.updatedAt ? new Date(p.updatedAt) : new Date(),
   days: p.days,
 })
 
 export interface CreateTrainingPlanRequest {
   name: string;
   days: WorkoutDay[];
+  type?: 'Bodybuilding' | 'Powerlifting' | 'Crossfit';
 }
