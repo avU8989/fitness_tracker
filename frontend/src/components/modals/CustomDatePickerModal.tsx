@@ -11,9 +11,10 @@ import {
 
 const { width } = Dimensions.get('window');
 const CELL_SIZE = width / 9; // to fit 7 days + padding nicely
+//which week range the user picked
+const [viewRange, setViewRange] = useState<{ start: Date; end: Date } | null>(null);
 
 const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
 function getDaysInMonth(year: number, month: number) {
     return new Date(year, month + 1, 0).getDate();
 }

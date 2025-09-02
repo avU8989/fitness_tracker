@@ -21,7 +21,7 @@ import { DayOfWeek, toUIPlan, TrainingPlanUI, WorkoutDay } from '../../requests/
 import * as Haptics from 'expo-haptics';
 
 export default function TrainingPlansScreen() {
-    const { token } = useContext(AuthContext)
+    const { token } = useContext(AuthContext);
     const [plans, setPlans] = useState<TrainingPlanUI[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -101,19 +101,25 @@ export default function TrainingPlansScreen() {
         if (!currentPlan) return 0;
 
         let sum = 0;
-        for (const day of currentPlan.days) {
-            const count = day.exercises ? day.exercises.length : 0;
-            sum += count;
+        if (currentPlan.days != null) {
+            for (const day of currentPlan.days) {
+                const count = day.exercises ? day.exercises.length : 0;
+                sum += count;
+            }
         }
+
         return sum;
     }, [currentPlan]);
 
-    const estimatedVolume = useMemo(() =>
-        currentPlan ? currentPlan.days.reduce((a, d) =>
-            a + (d.exercises ?? []).reduce((s, ex) =>
-                s + (ex.sets ?? 0) * (ex.repetitions ?? 0) * (ex.weight ?? 0), 0
-            ), 0) : 0,
-        [currentPlan]);
+
+    const estimatedVolume = useMemo(() => {
+        return currentPlan?.days?.reduce((acc, d) => {
+            const list = d?.exercises ?? [];
+            return acc + list.reduce((s, ex) =>
+                s + ((ex?.sets as number) ?? 0) * ((ex?.repetitions as number) ?? 0) * ((ex?.weight as number) ?? 0)
+                , 0);
+        }, 0) ?? 0;
+    }, [currentPlan]);
 
     const formatSplitDateRange = (startDate: Date) => {
         const optionsMonth = { month: 'long' } as const;
@@ -186,7 +192,7 @@ export default function TrainingPlansScreen() {
 
                 <ScrollView style={styles.tableContainer}
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlans} />}>
-                    {currentPlan?.days.map(({ dayOfWeek, splitType }, idx) => {
+                    {currentPlan?.days?.map(({ dayOfWeek, splitType }, idx) => {
                         if (!dayOfWeek) return null;
 
                         const isCompleted = completedDays.includes(dayOfWeek);
@@ -271,7 +277,7 @@ export default function TrainingPlansScreen() {
             <View style={styles.summaryContainer}>
                 <Text style={styles.summaryText}>Total Exercises Planned: {totalExercises}</Text>
                 <Text style={styles.summaryText}>Estimated Volume: {estimatedVolume.toLocaleString()} kg</Text>
-                <Text style={styles.summaryText}>Days Completed: {daysCompleted} / {currentPlan?.days.length}</Text>
+                <Text style={styles.summaryText}>Days Completed: {daysCompleted} / {currentPlan?.days?.length}</Text>
             </View>
 
             <View style={styles.newPlanContainer}>
