@@ -10,8 +10,11 @@ import {
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { login } from '../../services/authService';
+import { RootStackParameterList } from '../../navigation/types';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+type Props = NativeStackScreenProps<RootStackParameterList, 'Login'>;
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen({ navigation }: Props) {
     const { login: contextLogin } = useContext(AuthContext);
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState('');

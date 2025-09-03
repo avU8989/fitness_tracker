@@ -1,6 +1,3 @@
-import React, { useEffect, useState } from 'react';
-import * as SplashScreen from 'expo-splash-screen';
-import * as Font from 'expo-font';
 import AppTabs from './AppTabs';
 import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -10,8 +7,9 @@ import LoginScreen from './screens/auth/LoginScreen';
 import { useContext } from 'react';
 import SignUpCredentialsScreen from './screens/auth/SignUpCredentialsScreen';
 import SignUpProfileScreen from './screens/auth/SignUpProfileScreen';
+import { RootStackParameterList } from './navigation/types';
 
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParameterList>();
 
 function RootNavigator() {
   const { isLoggedIn } = useContext(AuthContext);

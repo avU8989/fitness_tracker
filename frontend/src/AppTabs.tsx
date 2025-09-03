@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { StyleSheet, Text } from 'react-native';
 
-import StatsScreen from './screens/StatsScreen';
 import LogScreen from './screens/tabs/LogScreen';
 import GainScreen from './screens/tabs/GainScreen';
 import HomeScreen from './screens/tabs/HomeScreen';

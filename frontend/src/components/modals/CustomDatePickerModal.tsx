@@ -12,7 +12,6 @@ import {
 const { width } = Dimensions.get('window');
 const CELL_SIZE = width / 9; // to fit 7 days + padding nicely
 //which week range the user picked
-const [viewRange, setViewRange] = useState<{ start: Date; end: Date } | null>(null);
 
 const daysOfWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 function getDaysInMonth(year: number, month: number) {
@@ -54,6 +53,7 @@ export default function CustomDatePickerModal({
     date,
     onChange,
 }: CustomDatePickerModalProps) {
+    const [viewRange, setViewRange] = useState<{ start: Date; end: Date } | null>(null);
     const [selectedYear, setSelectedYear] = useState(date.getFullYear());
     const [selectedMonth, setSelectedMonth] = useState(date.getMonth());
     const [selectedStartDate, setSelectedStartDate] = useState(date);

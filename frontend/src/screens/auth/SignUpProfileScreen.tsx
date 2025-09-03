@@ -6,14 +6,9 @@ import { Animated } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { register } from '../../services/authService';
 import { RegistrationRequest } from '../../requests/auth';
+import type { RootStackParameterList } from '../../navigation/types';
 
-
-type RootStackParamList = {
-    SignUpCredentials: undefined;
-    SignUpProfile: { email: string; password: string, username: string };
-};
-
-type Props = NativeStackScreenProps<RootStackParamList, 'SignUpProfile'>;
+type Props = NativeStackScreenProps<RootStackParameterList, 'SignUpProfile'>;
 
 
 const trainingStyles = ['Powerlifting', 'Bodybuilding', 'General Fitness'];

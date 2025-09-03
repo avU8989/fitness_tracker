@@ -9,11 +9,7 @@ import { validateCreateTrainingPlan } from "../middleware/validatePlan";
 const trainingPlanRouter = Router();
 
 //define routers and assign controller function
-trainingPlanRouter.post(
-  "/",
-  validateCreateTrainingPlan,
-  createTrainingPlan
-);
+trainingPlanRouter.post("/", validateCreateTrainingPlan, createTrainingPlan);
 trainingPlanRouter.patch("/:planId/exercises/:exerciseId", updateExercise);
 trainingPlanRouter.get("/", authMiddleware, getTrainingPlans);
 

@@ -2,15 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CustomAlert from '../../components/CustomAlert';
+import { RootStackParameterList } from '../../navigation/types';
 
-type RootStackParamList = {
-    SignUpCredentials: undefined;
-    SignUpProfile: { email: string; password: string; username: string };
-};
+type Props = NativeStackScreenProps<RootStackParameterList, 'SignUpCredentials'>;
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SignUpCredentials'>;
-
-export default function SignUpCredentialsScreen({ navigation }: Props) {
+export default function SignUpCredentialsScreen({ navigation, route }: Props) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');

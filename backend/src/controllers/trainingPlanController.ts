@@ -2,14 +2,19 @@ import TrainingPlan from "../models/TrainingPlan";
 import { Request, Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
 import { Error } from "mongoose";
-import { CreateBaseTrainingPlanRequest, CreatePowerliftingPlanRequest } from "../requests/trainingplans/CreateTrainingPlanRequest";
+import {
+  CreateBaseTrainingPlanRequest,
+  CreatePowerliftingPlanRequest,
+} from "../requests/trainingplans/CreateTrainingPlanRequest";
 import PowerLiftingPlan from "../models/PowerliftingPlan";
 import CrossfitPlan from "../models/CrossfitPlan";
 import BodybuildingPlan from "../models/BodybuildingPlan";
 import { findWorkoutDay, loadUserPlan } from "./trainingPlan-helpers";
 
 export const createTrainingPlan = async (
-  req: AuthenticatedRequest & { body: CreateBaseTrainingPlanRequest | CreatePowerliftingPlanRequest },
+  req: AuthenticatedRequest & {
+    body: CreateBaseTrainingPlanRequest | CreatePowerliftingPlanRequest;
+  },
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -25,7 +30,7 @@ export const createTrainingPlan = async (
       name,
       type,
       user: req.user.id,
-    }
+    };
 
     let newPlan;
     const normalizedType = type?.toLowerCase();
@@ -42,21 +47,21 @@ export const createTrainingPlan = async (
           newPlan = new PowerLiftingPlan({
             ...baseFields,
             ...req.body, //includes blockPeriodization weeks, etc
-          })
+          });
           break;
         case "crossfit":
           console.log("Creating Crossfit Plan");
           newPlan = new CrossfitPlan({
             ...baseFields,
             days,
-          })
+          });
           break;
         case "bodybuilding":
           console.log("Creating Bodybuilding Plan");
           newPlan = new BodybuildingPlan({
             ...baseFields,
             days,
-          })
+          });
           break;
         default:
           res.status(400).json({ message: "Invalid training plan type" });
@@ -108,7 +113,10 @@ export const updateExercise = async (
 ): Promise<void> => {
   const { sets, repetitions, weight, unit, name } = req.body;
   const { planId, dayId, exerciseId } = req.params;
-  const { weekId, weekNumber } = req.query as { weekId?: string; weekNumber?: number };
+  const { weekId, weekNumber } = req.query as {
+    weekId?: string;
+    weekNumber?: number;
+  };
 
   try {
     if (!req.user?.id) {
@@ -127,12 +135,12 @@ export const updateExercise = async (
     const { day } = findWorkoutDay(trainingPlan, {
       dayId,
       weekId,
-      weekNumber: weekNumber ? Number(weekNumber) : undefined
-    })
+      weekNumber: weekNumber ? Number(weekNumber) : undefined,
+    });
 
     if (!day) {
       res.status(404).json({
-        message: "Workout day not found"
+        message: "Workout day not found",
       });
       return;
     }
@@ -172,7 +180,10 @@ export const updateWorkoutDay = async (
 ): Promise<void> => {
   const { dayId, planId } = req.params;
   const { dayOfWeek, splitType, exercises } = req.body;
-  const { weekId, weekNumber } = req.query as { weekId?: string, weekNumber?: number };
+  const { weekId, weekNumber } = req.query as {
+    weekId?: string;
+    weekNumber?: number;
+  };
 
   try {
     if (!req.user?.id) {
@@ -189,12 +200,11 @@ export const updateWorkoutDay = async (
       return;
     }
 
-    const { day } = findWorkoutDay(trainingPlan,
-      {
-        dayId,
-        weekId,
-        weekNumber: weekNumber ? Number(weekNumber) : undefined
-      })
+    const { day } = findWorkoutDay(trainingPlan, {
+      dayId,
+      weekId,
+      weekNumber: weekNumber ? Number(weekNumber) : undefined,
+    });
 
     if (!day) {
       res.status(404).json({
@@ -260,7 +270,6 @@ export const getTodaysWorkout = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-
   try {
     if (!req.user?.id) {
       res.status(401).json({ message: "Unauthorized: User id missing" });
@@ -268,12 +277,13 @@ export const getTodaysWorkout = async (
     }
     const userId = req.user.id;
 
-    const today = new Date().toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+    const today = new Date()
+      .toLocaleDateString("en-US", { weekday: "short" })
+      .toUpperCase();
     const plan = await TrainingPlan.findOne({ user: userId });
   } catch (err: any) {
-    res.status(500)
+    res
+      .status(500)
       .json({ message: "Internal server error", error: err.message });
   }
-
-
-}
+};

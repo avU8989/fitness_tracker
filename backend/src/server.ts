@@ -12,7 +12,7 @@ import authenticationRoutes from "./routes/authenticationRoutes";
 import trainingPlanRoutes from "./routes/trainingPlanRoutes";
 import workoutRoutes from "./routes/workoutRoutes";
 import "reflect-metadata";
-
+import trainingAssignmentRoutes from "./routes/trainingAssignmentRoutes";
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -33,7 +33,7 @@ app.use(express.json());
 app.use("/training-plans", authMiddleware, trainingPlanRoutes);
 app.use("/auth", authenticationRoutes);
 app.use("/workouts", authMiddleware, workoutRoutes);
-
+app.use("/trainingplan-assignments", authMiddleware, trainingAssignmentRoutes);
 console.log("AYEE WE STARTING");
 
 // connect to mongodb
