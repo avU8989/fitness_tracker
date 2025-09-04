@@ -62,6 +62,7 @@ export const createTrainingPlanAssignment = async (
 
     if (overlap) {
       res.status(409).json({ message: "Overlapping assignments exists" });
+      return;
     }
 
     const assignedPlan = await TrainingPlanAssignment.create({
@@ -87,7 +88,17 @@ export const getActivePlan = async (
   next: NextFunction
 ): Promise<void> => {
   const userId = req.user?.id;
-  const date = req.query.date ? new Date(String(req.query.date)) : new Date();
+  const rawDate = String(req.query.date);
+  const date = rawDate
+    ? new Date(rawDate + "T00:00:00.000Z") // always UTC midnight
+    : new Date();
+
+  console.log("Querying active plan with:", {
+    userId,
+    rawDate: req.query.date,
+    parsedDate: date.toISOString(),
+  });
+
   try {
     if (!userId) {
       res.status(401).json({ message: "Unauthorized: User Id missing" });
@@ -97,7 +108,11 @@ export const getActivePlan = async (
     const assignment = await TrainingPlanAssignment.findOne({
       user: userId,
       startDate: { $lte: date },
-      $or: [{ endDate: { $exists: false } }, { endDate: { $gte: date } }],
+      $or: [
+        { endDate: null },
+        { endDate: { $exists: false } },
+        { endDate: { $gte: date } },
+      ],
     }).populate("trainingPlan");
 
     if (!assignment) {

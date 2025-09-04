@@ -27,7 +27,6 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [token, setToken] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         //as I'm relatively new to TypeScript --> was my question: "Why do we define a function inside a useEffect and not outside"

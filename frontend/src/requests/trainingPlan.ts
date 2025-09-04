@@ -54,6 +54,16 @@ export interface PowerliftingPlanDTO {
 //Union of server responses
 export type TrainingPlanDTO = BasePlanDTO | PowerliftingPlanDTO;
 
+export interface TrainingPlanAssignment {
+  _id: string;
+  user: string;
+  startDate: string;
+  endDate: string;
+  trainingPlan: TrainingPlanDTO;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface TrainingPlanUI {
   _id: string;
   name: string;
@@ -118,4 +128,10 @@ export interface CreateTrainingPlanRequest {
   name: string;
   days: WorkoutDay[];
   type?: "Bodybuilding" | "Powerlifting" | "Crossfit";
+}
+
+export interface CreateTrainingAssignmentRequest {
+  trainingPlanId: string;
+  startDate: string;
+  endDate?: string | null;
 }

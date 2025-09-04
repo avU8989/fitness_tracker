@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { act, useContext, useEffect, useMemo, useState } from 'react';
 import { Vibration } from 'react-native';
 import {
     View,
@@ -17,8 +17,9 @@ import VHSButton from '../../components/VHSButton';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../../context/AuthContext';
 import { getTrainingPlans } from '../../services/trainingPlanService';
-import { DayOfWeek, toUIPlan, TrainingPlanUI, WorkoutDay } from '../../requests/trainingPlan';
+import { DayOfWeek, toUIPlan, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../requests/trainingPlan';
 import * as Haptics from 'expo-haptics';
+import { getActivePlan } from '../../services/planAssignmentsService';
 
 export default function TrainingPlansScreen() {
     const { token } = useContext(AuthContext);
@@ -26,7 +27,7 @@ export default function TrainingPlansScreen() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
-
+    const [activePlan, setActivePlan] = useState<TrainingPlanAssignment | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [completedDays, setCompletedDays] = useState<DayOfWeek[]>([]);
@@ -56,7 +57,7 @@ export default function TrainingPlansScreen() {
             console.log(JSON.stringify(ui, null, 2));
 
         } catch (err: any) {
-            setError(e.message ?? 'Failed to fetch training plans');
+            setError(err.message ?? 'Failed to fetch training plans');
             console.log(error);
         } finally {
             setLoading(false);
@@ -122,20 +123,21 @@ export default function TrainingPlansScreen() {
     }, [currentPlan]);
 
     const formatSplitDateRange = (startDate: Date) => {
-        const optionsMonth = { month: 'long' } as const;
+        const pad = (n: number) => n.toString().padStart(2, "0");
 
-        const dayStart = startDate.getDate();
-        const monthStart = startDate.toLocaleDateString('en-US', optionsMonth);
+        const dayStart = pad(startDate.getDate());
+        const monthStart = pad(startDate.getMonth() + 1);
+        const yearStart = startDate.getFullYear();
 
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
-        const dayEnd = endDate.getDate();
-        const monthEnd = endDate.toLocaleDateString('en-US', optionsMonth);
-        const year = startDate.getFullYear();
+        const dayEnd = pad(endDate.getDate());
+        const monthEnd = pad(endDate.getMonth() + 1);
+        const yearEnd = endDate.getFullYear();
 
         return {
-            rangeLine: `${dayStart.toString().padStart(2, '0')}-${monthStart} — ${dayEnd.toString().padStart(2, '0')}-${monthEnd}`,
-            yearLine: year.toString(),
+            rangeLine: `${dayStart}.${monthStart} — ${dayEnd}.${monthEnd}`,
+            yearLine: yearStart === yearEnd ? yearStart.toString() : `${yearStart}/${yearEnd}`,
         };
     };
 
@@ -150,6 +152,25 @@ export default function TrainingPlansScreen() {
         setCompletedDays([]);
     };
 
+    const handleWeekChange = async (start: Date, end: Date) => {
+        console.log(start);
+
+        try {
+            if (!token) {
+                console.log('No token provided cannot fetch active training plan');
+                return 0;
+            }
+            const queryDate = start.toLocaleDateString("en-CA");
+
+            const fetchedActivePlan = await getActivePlan(token, queryDate);
+
+            setActivePlan(fetchedActivePlan);
+        } catch (err: any) {
+            console.error("Failed to fetch active plan:", err);
+            setActivePlan(null);
+        }
+    }
+
     return (
         <View style={styles.root}>
             <View style={styles.headerContainer}>
@@ -157,7 +178,7 @@ export default function TrainingPlansScreen() {
             </View>
 
             <View style={styles.titleContainer}>
-                <Text style={styles.splitName}>{currentPlan?.name}</Text>
+                <Text style={styles.splitName}>{activePlan ? toUIPlan(activePlan.trainingPlan).name : currentPlan?.name ?? "No plan"}</Text>
 
                 <View style={styles.dateContainer}>
                     <Pressable
@@ -170,7 +191,15 @@ export default function TrainingPlansScreen() {
                         android_ripple={{ color: 'rgba(0,255,204,0.2)', borderless: false }}
                     >
                         <View style={styles.dateRow}>
-                            <Text style={styles.dateRangeText}>{rangeLine}</Text>
+                            <Text style={styles.dateRangeText}>
+                                {activePlan
+                                    ? `${new Date(activePlan.startDate).toLocaleDateString("en-GB")} — ${activePlan.endDate
+                                        ? new Date(activePlan.endDate).toLocaleDateString("en-GB")
+                                        : "ongoing"
+                                    }`
+                                    : rangeLine}
+                            </Text>
+
                             <Ionicons name="calendar-outline" size={24} color="#00ffcc" style={styles.calendarIcon} />
                         </View>
                         <Text style={styles.dateYearText}>{yearLine}</Text>
@@ -181,8 +210,8 @@ export default function TrainingPlansScreen() {
             <CustomDatePickerModal
                 visible={datePickerVisible}
                 onClose={() => setDatePickerVisible(false)}
-                date={currentPlan?.updatedAt ?? new Date()}
-                onChange={onDateChange}
+                date={new Date()}
+                onChange={handleWeekChange}
             />
 
             <View style={styles.carouselContainer}>
@@ -192,32 +221,38 @@ export default function TrainingPlansScreen() {
 
                 <ScrollView style={styles.tableContainer}
                     refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlans} />}>
-                    {currentPlan?.days?.map(({ dayOfWeek, splitType }, idx) => {
-                        if (!dayOfWeek) return null;
 
-                        const isCompleted = completedDays.includes(dayOfWeek);
-                        return (
-                            <Pressable
-                                key={idx}
-                                onLongPress={() => {
-                                    setHighlightedIndex(idx); // turn on highlight
-                                    setSelectedDay(currentPlan.days[idx]);
+                    {(activePlan ? toUIPlan(activePlan.trainingPlan) : currentPlan)?.days.map(
+                        (day, idx) => {
+                            if (!day.dayOfWeek) {
+                                return null;
+                            }
+
+                            const isCompleted = completedDays.includes(day.dayOfWeek);
+
+                            return (
+                                <Pressable key={idx} onLongPress={() => {
+                                    setHighlightedIndex(idx);
+                                    setSelectedDay((activePlan ? toUIPlan(activePlan.trainingPlan).days : currentPlan?.days)[idx]);
                                     setTrainingPlanModalVisible(true);
                                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 }}
-                                style={[styles.tableRow, isCompleted && styles.completedDayRow, highlightedIndex === idx && styles.longPressHighlight]}
-                            >
-                                <Text style={styles.tableDay}>{dayOfWeek}</Text>
-                                <Text style={styles.tableType}>{splitType}</Text>
+                                    style={[styles.tableRow, isCompleted && styles.completedDayRow, highlightedIndex === idx && styles.longPressHighlight]}>
+                                    <Text style={styles.tableDay}>{day.dayOfWeek}</Text>
+                                    <Text style={styles.tableType}>{day.splitType}</Text>
 
-                                <Text style={[styles.completionToggle, isCompleted && styles.completedToggle]}>
-                                    █
-                                </Text>
-
-
-                            </Pressable>
-                        );
-                    })}
+                                    <Text
+                                        style={[
+                                            styles.completionToggle
+                                            && styles.completedToggle,
+                                        ]}
+                                    >
+                                        █
+                                    </Text>
+                                </Pressable>
+                            );
+                        }
+                    )}
                 </ScrollView>
 
                 <Modal
@@ -293,7 +328,7 @@ export default function TrainingPlansScreen() {
             </View>
 
             <Ticker />
-        </View>
+        </View >
     );
 }
 

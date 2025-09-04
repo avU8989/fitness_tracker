@@ -9,12 +9,14 @@ import {
     StyleSheet,
     KeyboardAvoidingView,
     Platform,
+    Switch,
 } from 'react-native';
 import { sanitizeTrainingPlanData, validateTrainingPlanData } from '../../utils/formHelpers';
-import { Exercise, WorkoutDay } from '../../requests/trainingPlan';
+import { CreateTrainingAssignmentRequest, Exercise, WorkoutDay } from '../../requests/trainingPlan';
 import { AuthContext } from '../../context/AuthContext';
 import { createTrainingPlan } from '../../services/trainingPlanService';
-
+import CustomDatePickerModal from './CustomDatePickerModal';
+import { createTrainingPlanAssignment } from '../../services/planAssignmentsService';
 const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 const planTypes = ['Bodybuilding', 'Powerlifting', 'Crossfit'];
 
@@ -30,7 +32,14 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
             exercises: [],
         }))
     );
+
+    //new state for activation
+    const [activateNow, setActivateNow] = useState(false);
+    const [startDate, setStartDate] = useState<Date | null>(null);
+    const [endDate, setEndDate] = useState<Date | null>(null);
+    const [datePickerVisible, setDatePickerVisible] = useState(false);
     const [loading, setLoading] = useState(false);
+
 
     // Update day splitType
     const updateDayField = (index, value) => {
@@ -103,24 +112,31 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
         setLoading(true);
 
         try {
-            const payload = {
+            const createTrainingPlanPayload = {
                 name: name.trim(),
                 type: planType,
                 days: sanitizedDays,
             };
 
-            const response = await createTrainingPlan(token, payload);
+            const createPlanResponse = await createTrainingPlan(token, createTrainingPlanPayload);
+            console.log(createPlanResponse);
+
+            if (activateNow && startDate) {
+                const assignTrainingPlanPayload: CreateTrainingAssignmentRequest = {
+                    trainingPlanId: createPlanResponse.plan._id,
+                    startDate: startDate.toISOString(),
+                    endDate: endDate ? endDate.toISOString() : null,
+                };
+
+                const assignTrainingResponse = await createTrainingPlanAssignment(token, assignTrainingPlanPayload);
+
+                console.log("Assignment created", assignTrainingResponse);
+            }
 
             alert('Training plan created successfully!');
 
             onSave({ name: name.trim(), days: sanitizedDays });
-            // Reset form
-            setName('');
-            setDays(daysOfWeek.map(day => ({
-                dayOfWeek: day,
-                splitType: '',
-                exercises: [],
-            })));
+            resetForm();
             onClose();
         } catch (err: any) {
             alert(err.message || 'Failed to create training plan');
@@ -137,6 +153,19 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
             exercises: [],
         })));
         onClose();
+    };
+
+    const resetForm = () => {
+        setName('');
+        setPlanType('');
+        setDays(daysOfWeek.map(day => ({
+            dayOfWeek: day,
+            splitType: '',
+            exercises: [],
+        })));
+        setActivateNow(false);
+        setStartDate(null);
+        setEndDate(null);
     };
 
     return (
@@ -178,6 +207,40 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
                         ))}
                     </View>
 
+                    {/* Activate Now Toggle */}
+                    <View style={styles.activateRow}>
+                        <Text style={styles.activateLabel}>Start this Trainingplan</Text>
+                        <Switch
+                            value={activateNow}
+                            onValueChange={setActivateNow}
+                            thumbColor={activateNow ? '#00ffcc' : '#ccc'}
+                        />
+                    </View>
+
+                    {activateNow && (
+                        <View style={styles.dateRangeContainer}>
+                            <Pressable
+                                onPress={() => setDatePickerVisible(true)}
+                                style={styles.dateRangeBtn}
+                            >
+                                <Text style={styles.dateRangeText}>
+                                    {startDate
+                                        ? `${startDate.toLocaleDateString()} — ${endDate ? endDate.toLocaleDateString() : 'Ongoing'}`
+                                        : 'Select Start & End Date'}
+                                </Text>
+                            </Pressable>
+
+                            <CustomDatePickerModal
+                                visible={datePickerVisible}
+                                onClose={() => setDatePickerVisible(false)}
+                                date={new Date()}
+                                onChange={(start, end) => {
+                                    setStartDate(start);
+                                    setEndDate(end);
+                                }}
+                            />
+                        </View>
+                    )}
 
 
 
@@ -278,6 +341,17 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
 }
 
 const styles = StyleSheet.create({
+    activateRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginVertical: 12,
+    },
+    activateLabel: {
+        color: '#BFC7D5',
+        fontFamily: 'monospace',
+        fontSize: 14,
+    },
     planTypeContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -285,6 +359,20 @@ const styles = StyleSheet.create({
         backgroundColor: '#1A1F2C',
         padding: 8,
         borderRadius: 6,
+    },
+    dateRangeContainer: {
+        marginBottom: 16,
+    },
+    dateRangeBtn: {
+        padding: 10,
+        borderRadius: 6,
+        backgroundColor: '#1A1F2C',
+    },
+    dateRangeText: {
+        color: '#00ffcc',
+        fontFamily: 'monospace',
+        fontSize: 13,
+        textAlign: 'center',
     },
 
     planTypeOption: {
