@@ -27,7 +27,12 @@ if (process.env.OPEN_API_DESIGN) {
   }
 }
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "*", //allow everything
+    credentials: true, //for cookies/sessions
+  })
+);
 app.use(express.json());
 // route protection with middleware
 app.use("/training-plans", authMiddleware, trainingPlanRoutes);

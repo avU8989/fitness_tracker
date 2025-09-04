@@ -23,8 +23,6 @@ const userSchema = new Schema<IUser>(
   { timestamps: true }
 );
 
-userSchema.index({ email: 1 });
-
 //need to hash password before saving
 userSchema.pre("save", async function (this: IUser) {
   if (!this.isModified("password")) return;
