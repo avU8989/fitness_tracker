@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-
+import path from "path";
 import cors from "cors";
 import express, { NextFunction, Request, Response } from "express";
 import * as OpenApiValidator from "express-openapi-validator";
@@ -20,7 +20,7 @@ const port = process.env.PORT || 5000;
 let swaggerDocument;
 
 if (process.env.OPEN_API_DESIGN) {
-  swaggerDocument = YAML.load(process.env.OPEN_API_DESIGN);
+  swaggerDocument = YAML.load(path.resolve((process.env.OPEN_API_DESIGN)));
 
   if (swaggerDocument) {
     app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));

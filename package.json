@@ -1,5 +1,8 @@
 {
   "dependencies": {
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "react-native-ble-plx": "^3.5.0",
+    "react-native-permission": "^0.0.1",
+    "react-native-permissions": "^5.4.2"
   }
 }
