@@ -8,6 +8,7 @@ import { useContext } from 'react';
 import SignUpCredentialsScreen from './screens/auth/SignUpCredentialsScreen';
 import SignUpProfileScreen from './screens/auth/SignUpProfileScreen';
 import { RootStackParameterList } from './navigation/types';
+import { BleProvider } from './context/BleContext';
 
 const Stack = createNativeStackNavigator<RootStackParameterList>();
 
@@ -35,11 +36,13 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <View style={styles.appWrapper}>
-          <RootNavigator />
-        </View>
-      </NavigationContainer>
+      <BleProvider>
+        <NavigationContainer>
+          <View style={styles.appWrapper}>
+            <RootNavigator />
+          </View>
+        </NavigationContainer>
+      </BleProvider>
     </AuthProvider>
   );
 

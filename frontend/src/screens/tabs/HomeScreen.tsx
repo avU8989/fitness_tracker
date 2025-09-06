@@ -12,8 +12,11 @@ import { useState, useEffect } from 'react';
 import WeeklySplitLog from '../../components/WeeklySplitLog';
 import Icon from 'react-native-vector-icons/Ionicons'; // at top
 import VHSGlowDivider from '../../components/VHSGlowDivider';
+import { useHeartRateMonitor } from '../../hooks/useHeartRateMonitor';
 
 export default function HardloggerUI() {
+    const bpm = useHeartRateMonitor();
+    console.log(bpm);
     const stats = {
         lastWorkoutDays: '01/04/1996',
         exercisesLogged: 6,
@@ -102,7 +105,7 @@ export default function HardloggerUI() {
                     <View style={{ paddingVertical: 10 }}>
                         <PulseBarGraph />
                         <View style={{ marginTop: 10 }}>
-                            <Text style={styles.vhsHudLine}>▌HEART RATE // 132 BPM</Text>
+                            <Text style={styles.vhsHudLine}>▌HEART RATE //  {bpm ?? "--"}</Text>
                             <Text style={styles.vhsHudLine}>▌INTENSITY LEVEL // 74%</Text>
                         </View>
                     </View>
