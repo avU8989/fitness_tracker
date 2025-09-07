@@ -13,10 +13,11 @@ import WeeklySplitLog from '../../components/WeeklySplitLog';
 import Icon from 'react-native-vector-icons/Ionicons'; // at top
 import VHSGlowDivider from '../../components/VHSGlowDivider';
 import { useHeartRateMonitor } from '../../hooks/useHeartRateMonitor';
+import { usePulseOximeterMonitor } from '../../hooks/usePulseOximeterMonitor';
 
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
-    console.log(bpm);
+    const { spo2, pulseRate } = usePulseOximeterMonitor();
     const stats = {
         lastWorkoutDays: '01/04/1996',
         exercisesLogged: 6,
@@ -60,21 +61,40 @@ export default function HardloggerUI() {
         return tapeAnim;
     };
 
-    const PulseBarGraph = () => (
-        <View style={{ flexDirection: 'row', marginTop: 10 }}>
-            {[...Array(20)].map((_, i) => (
-                <View
-                    key={i}
-                    style={{
-                        width: 4,
-                        height: Math.random() * 30 + 10,
-                        backgroundColor: '#00ffcc',
-                        marginHorizontal: 1,
-                    }}
-                />
-            ))}
-        </View>
-    );
+    const PulseBarGraph = ({ bpm }: { bpm: number | null }) => {
+        // set a baseline height from bpm
+        const baseHeight = bpm ? Math.min(bpm / 2, 100) : 20;
+        // bpm/2 means: 120 bpm ≈ 60px tall bars (cap at 100px)
+
+        return (
+            <View
+                style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-end',
+                    height: 100, // max graph height
+                    marginTop: 10,
+                }}
+            >
+                {[...Array(20)].map((_, i) => {
+                    // add random variation around base height
+                    const height = baseHeight + Math.random() * 20 - 10;
+                    return (
+                        <View
+                            key={i}
+                            style={{
+                                width: 4,
+                                height: Math.max(5, height), // min 5px
+                                backgroundColor: '#00ffcc',
+                                marginHorizontal: 1,
+                            }}
+                        />
+                    );
+                })}
+            </View>
+        );
+    };
+
+
     const recoveryCards = [
         {
             title: 'MOTIVATION MODULE',
@@ -103,11 +123,11 @@ export default function HardloggerUI() {
             render: () => (
                 <View>
                     <View style={{ paddingVertical: 10 }}>
-                        <PulseBarGraph />
                         <View style={{ marginTop: 10 }}>
                             <Text style={styles.vhsHudLine}>▌HEART RATE //  {bpm ?? "--"}</Text>
-                            <Text style={styles.vhsHudLine}>▌INTENSITY LEVEL // 74%</Text>
+                            <Text style={styles.vhsHudLine}>PULSE RATE // {spo2 ?? "--"}</Text>
                         </View>
+                        <PulseBarGraph bpm={bpm} />
                     </View>
                 </View>
             ),

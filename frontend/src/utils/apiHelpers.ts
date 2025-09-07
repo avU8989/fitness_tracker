@@ -20,3 +20,7 @@ export async function handleResponse(
 
   return response.json();
 }
+
+export function delay(ms: number) {
+  return new Promise((res) => setTimeout(res, ms));
+}

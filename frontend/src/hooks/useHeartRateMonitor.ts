@@ -40,7 +40,7 @@ function parseHeartRateMeasurement(base64Value: string): number | null {
 export function useHeartRateMonitor() {
   const { device } = useBleDevice();
   const [bpm, setBpm] = useState<number | null>(null);
-
+  let lastUpdate = 0;
   useEffect(() => {
     const sub = device?.monitorCharacteristicForService(
       HEARTRATE_SERVICE,
@@ -50,14 +50,17 @@ export function useHeartRateMonitor() {
           console.log("Could not monitor heartrate: ", err);
         }
 
+        const now = Date.now();
+        if (now - lastUpdate < 1000) return;
+        lastUpdate = now;
+
         if (characteristic?.value) {
           const heartMeasurement = parseHeartRateMeasurement(
             characteristic.value
           );
 
-          if (heartMeasurement !== null) {
+          if (heartMeasurement != null) {
             setBpm(heartMeasurement);
-            console.log("Updated heart measurement: ", heartMeasurement);
           }
         }
       }
