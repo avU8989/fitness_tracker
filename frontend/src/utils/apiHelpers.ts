@@ -1,3 +1,5 @@
+import { DayOfWeek } from "../requests/trainingPlan";
+
 export async function handleResponse(
   response: Response,
   defaultMessage: string
@@ -23,4 +25,14 @@ export async function handleResponse(
 
 export function delay(ms: number) {
   return new Promise((res) => setTimeout(res, ms));
+}
+
+export function toDateFormatFetchActiveTrainingPlans(date: Date): string {
+  return date.toLocaleDateString("en-CA");
+}
+
+export function getTodayName(): DayOfWeek {
+  const map: DayOfWeek[] = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+  const todayIndex = new Date().getDay(); // 0 = Sunday, 6 = Saturday
+  return map[todayIndex];
 }

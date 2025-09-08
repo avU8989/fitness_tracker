@@ -6,10 +6,11 @@ export function sanitizeTrainingPlanData(days: WorkoutDay[]) {
     splitType: day.splitType.trim(),
     exercises: day.exercises.map((ex) => ({
       name: ex.name.trim(),
-      sets: Number(ex.sets) || 0,
-      repetitions: Number(ex.repetitions) || 0,
-      weight: Number(ex.weight) || 0,
-      unit: ex.unit || "kg",
+      sets: ex.sets.map((s) => ({
+        reps: Number(s.reps) || 0,
+        weight: Number(s.weight) || 0,
+        unit: s.unit || "kg",
+      })),
     })),
   }));
 }
@@ -34,25 +35,40 @@ export function validateTrainingPlanData(
           valid: false,
           message: `Exercise name is required on ${day.dayOfWeek}`,
         };
-      if (!ex.sets || isNaN(ex.sets) || Number(ex.sets) <= 0)
+
+      if (!ex.sets || !Array.isArray(ex.sets) || ex.sets.length === 0)
         return {
           valid: false,
-          message: `Sets must be positive on ${day.dayOfWeek} for ${ex.name}`,
+          message: `At least one set is required on ${day.dayOfWeek} for ${ex.name}`,
         };
-      if (
-        !ex.repetitions ||
-        isNaN(ex.repetitions) ||
-        Number(ex.repetitions) <= 0
-      )
-        return {
-          valid: false,
-          message: `Repetitions must be positive on ${day.dayOfWeek} for ${ex.name}`,
-        }; // singular key
-      if (!ex.weight || isNaN(ex.weight) || Number(ex.weight) < 0)
-        return {
-          valid: false,
-          message: `Weight must be zero or positive on ${day.dayOfWeek} for ${ex.name}`,
-        };
+
+      for (let i = 0; i < ex.sets.length; i++) {
+        const set = ex.sets[i];
+
+        if (!set.reps || isNaN(set.reps) || set.reps <= 0)
+          return {
+            valid: false,
+            message: `Reps must be a positive number (Set ${i + 1}) on ${
+              day.dayOfWeek
+            } for ${ex.name}`,
+          };
+
+        if (set.weight === undefined || isNaN(set.weight) || set.weight < 0)
+          return {
+            valid: false,
+            message: `Weight must be zero or positive (Set ${i + 1}) on ${
+              day.dayOfWeek
+            } for ${ex.name}`,
+          };
+
+        if (!set.unit || !["kg", "lbs"].includes(set.unit))
+          return {
+            valid: false,
+            message: `Unit must be "kg" or "lbs" (Set ${i + 1}) on ${
+              day.dayOfWeek
+            } for ${ex.name}`,
+          };
+      }
     }
   }
 

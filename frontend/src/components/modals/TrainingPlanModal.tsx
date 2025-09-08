@@ -17,6 +17,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { createTrainingPlan } from '../../services/trainingPlanService';
 import CustomDatePickerModal from './CustomDatePickerModal';
 import { createTrainingPlanAssignment } from '../../services/planAssignmentsService';
+
 const daysOfWeek = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
 const planTypes = ['Bodybuilding', 'Powerlifting', 'Crossfit'];
 
@@ -53,36 +54,35 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
         const newDays = [...days];
         newDays[dayIndex].exercises.push({
             name: '',
-            sets: '',
-            repetitions: '',
-            weight: '',
-            unit: 'kg',
+            sets: [
+                { reps: 0, weight: 0, unit: 'kg' }
+            ],
         });
         setDays(newDays);
     };
 
+    const updateExercise = (dayIndex: number, exIndex: number, field: ExerciseField, value: string) => {
+        const newDays = [...days]; if (field === "sets" || field === "repetitions" || field === "weight") {
+            newDays[dayIndex].exercises[exIndex][field] = Number(value);
+        } else if (field === "unit") {
+            const unitValue = value.toLowerCase(); if (unitValue === "kg" || unitValue === "lbs") { newDays[dayIndex].exercises[exIndex].unit = unitValue; }
+        }
+        else { newDays[dayIndex].exercises[exIndex][field] = value; } setDays(newDays);
+    };
+
+
     // Update exercise field
     type ExerciseField = keyof Exercise;
 
-    const updateExercise = (
-        dayIndex: number,
-        exIndex: number,
-        field: ExerciseField,
-        value: string
-    ) => {
+    const updateSetField = (dayIndex: number, exIndex: number, setIndex: number, field: "reps" | "weight" | "unit", value: string | number) => {
         const newDays = [...days];
-
-        if (field === "sets" || field === "repetitions" || field === "weight") {
-            newDays[dayIndex].exercises[exIndex][field] = Number(value);
+        if (field === "reps" || field === "weight") {
+            newDays[dayIndex].exercises[exIndex].sets[setIndex][field] = Number(value);
         } else if (field === "unit") {
-            const unitValue = value.toLowerCase();
-            if (unitValue === "kg" || unitValue === "lbs") {
-                newDays[dayIndex].exercises[exIndex].unit = unitValue;
+            if (value === "kg" || value === "lbs") {
+                newDays[dayIndex].exercises[exIndex].sets[setIndex].unit = value;
             }
-        } else {
-            newDays[dayIndex].exercises[exIndex][field] = value;
         }
-
         setDays(newDays);
     };
 
@@ -177,74 +177,73 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
                 <View style={styles.modalContent}>
                     <Text style={styles.modalTitle}>▓ CREATE NEW TRAINING PLAN ▓</Text>
 
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Plan Name"
-                        placeholderTextColor="#555"
-                        value={name}
-                        onChangeText={setName}
-                    />
+                    <ScrollView style={styles.daysContainer} nestedScrollEnabled>
 
-                    <View style={styles.planTypeContainer}>
-                        {planTypes.map((type) => (
-                            <Pressable
-                                key={type}
-                                onPress={() => setPlanType(type)}
-                                style={[
-                                    styles.planTypeOption,
-                                    planType === type && styles.planTypeOptionActive
-                                ]}
-                            >
-                                <Text
+
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Plan Name"
+                            placeholderTextColor="#555"
+                            value={name}
+                            onChangeText={setName}
+                        />
+                        <View style={styles.planTypeContainer}>
+                            {planTypes.map((type) => (
+                                <Pressable
+                                    key={type}
+                                    onPress={() => setPlanType(type)}
                                     style={[
-                                        styles.planTypeText,
-                                        planType === type && styles.planTypeTextActive
+                                        styles.planTypeOption,
+                                        planType === type && styles.planTypeOptionActive
                                     ]}
                                 >
-                                    {type.toUpperCase()}
-                                </Text>
-                            </Pressable>
-                        ))}
-                    </View>
+                                    <Text
+                                        style={[
+                                            styles.planTypeText,
+                                            planType === type && styles.planTypeTextActive
+                                        ]}
+                                    >
+                                        {type.toUpperCase()}
+                                    </Text>
+                                </Pressable>
+                            ))}
+                        </View>
 
-                    {/* Activate Now Toggle */}
-                    <View style={styles.activateRow}>
-                        <Text style={styles.activateLabel}>Start this Trainingplan</Text>
-                        <Switch
-                            value={activateNow}
-                            onValueChange={setActivateNow}
-                            thumbColor={activateNow ? '#00ffcc' : '#ccc'}
-                        />
-                    </View>
-
-                    {activateNow && (
-                        <View style={styles.dateRangeContainer}>
-                            <Pressable
-                                onPress={() => setDatePickerVisible(true)}
-                                style={styles.dateRangeBtn}
-                            >
-                                <Text style={styles.dateRangeText}>
-                                    {startDate
-                                        ? `${startDate.toLocaleDateString()} — ${endDate ? endDate.toLocaleDateString() : 'Ongoing'}`
-                                        : 'Select Start & End Date'}
-                                </Text>
-                            </Pressable>
-
-                            <CustomDatePickerModal
-                                visible={datePickerVisible}
-                                onClose={() => setDatePickerVisible(false)}
-                                date={new Date()}
-                                onChange={(start, end) => {
-                                    setStartDate(start);
-                                    setEndDate(end);
-                                }}
+                        {/* Activate Now Toggle */}
+                        <View style={styles.activateRow}>
+                            <Text style={styles.activateLabel}>Start this Trainingplan</Text>
+                            <Switch
+                                value={activateNow}
+                                onValueChange={setActivateNow}
+                                thumbColor={activateNow ? '#00ffcc' : '#ccc'}
                             />
                         </View>
-                    )}
 
+                        {activateNow && (
+                            <View style={styles.dateRangeContainer}>
+                                <Pressable
+                                    onPress={() => setDatePickerVisible(true)}
+                                    style={styles.dateRangeBtn}
+                                >
+                                    <Text style={styles.dateRangeText}>
+                                        {startDate
+                                            ? `${startDate.toLocaleDateString()} — ${endDate ? endDate.toLocaleDateString() : 'Ongoing'}`
+                                            : 'Select Start & End Date'}
+                                    </Text>
+                                </Pressable>
 
+                                <CustomDatePickerModal
+                                    visible={datePickerVisible}
+                                    onClose={() => setDatePickerVisible(false)}
+                                    date={new Date()}
+                                    onChange={(start, end) => {
+                                        setStartDate(start);
+                                        setEndDate(end);
+                                    }}
+                                />
+                            </View>
+                        )}
 
-                    <ScrollView style={styles.daysContainer} nestedScrollEnabled>
                         {days.map((day, dayIndex) => (
                             <View key={day.dayOfWeek} style={styles.dayBlock}>
                                 <Text style={styles.dayLabel}>{day.dayOfWeek}</Text>
@@ -260,7 +259,9 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
 
                                 {/* Exercises List */}
                                 {day.exercises.map((ex, exIndex) => (
-                                    <View key={exIndex} style={styles.exerciseRow}>
+                                    <View key={exIndex} style={{ marginBottom: 12 }}>
+                                        {/* Exercise name input */}
+
                                         <TextInput
                                             style={[styles.exerciseInput, { flex: 3 }]}
                                             placeholder="EXERCISE"
@@ -268,58 +269,88 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
                                             value={ex.name}
                                             onChangeText={(text) => updateExercise(dayIndex, exIndex, 'name', text)}
                                         />
-                                        <TextInput
-                                            style={[styles.exerciseInput, { flex: 1 }]}
-                                            placeholder="SETS"
-                                            placeholderTextColor="#555"
-                                            keyboardType="numeric"
-                                            value={ex.sets.toString()}
-                                            onChangeText={(text) => updateExercise(dayIndex, exIndex, 'sets', text)}
-                                        />
-                                        <TextInput
-                                            style={[styles.exerciseInput, { flex: 1 }]}
-                                            placeholder="REPS"
-                                            placeholderTextColor="#555"
-                                            keyboardType="numeric"
-                                            value={ex.repetitions.toString()}
-                                            onChangeText={(text) => updateExercise(dayIndex, exIndex, 'repetitions', text)}
-                                        />
-                                        <TextInput
-                                            style={[styles.exerciseInput, { flex: 1 }]}
-                                            placeholder="LOAD"
-                                            placeholderTextColor="#555"
-                                            keyboardType="numeric"
-                                            value={ex.weight.toString()}
-                                            onChangeText={(text) => updateExercise(dayIndex, exIndex, 'weight', text)}
-                                        />
-                                        <TextInput
-                                            style={[styles.exerciseInput, { flex: 1 }]}
-                                            placeholder="Unit (kg/lbs)"
-                                            placeholderTextColor="#555"
-                                            maxLength={3}
-                                            autoCapitalize="none"
-                                            value={ex.unit}
-                                            onChangeText={(text) => {
-                                                const unit = text.toLowerCase();
-                                                if (unit === 'kg' || unit === 'lbs' || unit === '') {
-                                                    updateExercise(dayIndex, exIndex, 'unit', unit);
-                                                }
-                                            }}
-                                        />
+
+                                        {/* Render sets vertically */}
+                                        <View style={{ marginTop: 6 }}>
+                                            {ex.sets.map((set, setIndex) => (
+                                                <View
+                                                    key={setIndex}
+                                                    style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}
+                                                >
+                                                    {/* Set number */}
+                                                    <Text
+                                                        style={{
+                                                            color: '#00ffcc',
+                                                            fontFamily: 'monospace',
+                                                            marginRight: 8,
+                                                            width: 20,
+                                                            textAlign: 'center',
+                                                        }}
+                                                    >
+                                                        {setIndex + 1}
+                                                    </Text>
+                                                    <TextInput
+                                                        style={[styles.exerciseInput, { flex: 1 }]}
+                                                        placeholder="Reps"
+                                                        placeholderTextColor="#555"
+                                                        keyboardType="numeric"
+                                                        value={set.reps === 0 ? "" : set.reps.toString()}
+                                                        onChangeText={(text) => updateSetField(dayIndex, exIndex, setIndex, 'reps', text)}
+                                                    />
+                                                    <TextInput
+                                                        style={[styles.exerciseInput, { flex: 1 }]}
+                                                        placeholder="Load"
+                                                        placeholderTextColor="#555"
+                                                        keyboardType="numeric"
+                                                        value={set.weight === 0 ? "" : set.weight.toString()}
+                                                        onChangeText={(text) => updateSetField(dayIndex, exIndex, setIndex, 'weight', text)}
+                                                    />
+                                                    <TextInput
+                                                        style={[styles.exerciseInput, { flex: 1 }]}
+                                                        placeholder="Unit"
+                                                        placeholderTextColor="#555"
+                                                        value={set.unit}
+                                                        onChangeText={(text) => updateSetField(dayIndex, exIndex, setIndex, 'unit', text)}
+                                                    />
+
+                                                    {/* Delete Set Button */}
+                                                    <Pressable
+                                                        onPress={() => {
+                                                            const newDays = [...days];
+                                                            newDays[dayIndex].exercises[exIndex].sets.splice(setIndex, 1);
+                                                            setDays(newDays);
+                                                        }}
+                                                        style={styles.deleteSetBtn}
+                                                    >
+                                                        <Text style={styles.deleteSetText}>✕</Text>
+                                                    </Pressable>
+                                                </View>
+                                            ))}
+                                        </View>
+
                                         <Pressable
-                                            onPress={() => removeExercise(dayIndex, exIndex)}
-                                            style={styles.removeBtn}
+                                            onPress={() => {
+                                                const newDays = [...days];
+                                                newDays[dayIndex].exercises[exIndex].sets.push({
+                                                    reps: 0,
+                                                    weight: 0,
+                                                    unit: 'kg',
+                                                });
+                                                setDays(newDays);
+                                            }}
+                                            style={styles.addSetBtn}
                                         >
-                                            <Text style={{ color: '#ff0055', fontWeight: 'bold' }}>×</Text>
+                                            <Text style={styles.addSetText}>+ Add Set</Text>
                                         </Pressable>
                                     </View>
                                 ))}
+
 
                                 <Pressable
                                     style={styles.addExerciseBtn}
                                     onPress={() => addExercise(dayIndex)}
                                 >
-                                    <Text style={{ color: '#00ffcc', fontFamily: 'monospace' }}>+ Add Exercise</Text>
+                                    <Text style={styles.addExerciseText}>+ Add Exercise</Text>
                                 </Pressable>
                             </View>
                         ))}
@@ -341,6 +372,54 @@ export default function TrainingPlanModal({ visible, onClose, onSave }) {
 }
 
 const styles = StyleSheet.create({
+    deleteSetBtn: {
+        marginLeft: 6,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        backgroundColor: 'rgba(255, 0, 85, 0.1)',
+        borderRadius: 4,
+    },
+
+    deleteSetText: {
+        color: '#ff0055',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+
+    addSetBtn: {
+        alignSelf: 'flex-start',
+        marginTop: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+    },
+
+    addSetText: {
+        color: '#7ACFCF', // softer cyan
+        fontFamily: 'monospace',
+        fontSize: 12,
+        opacity: 0.8,
+    },
+
+    addExerciseBtn: {
+        marginTop: 10,
+        alignSelf: 'center',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#00ffcc',
+        backgroundColor: 'rgba(0, 255, 204, 0.05)',
+    },
+
+    addExerciseText: {
+        color: '#00ffcc',
+        fontFamily: 'monospace',
+        fontSize: 14,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+
     activateRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',

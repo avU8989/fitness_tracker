@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -13,7 +13,7 @@ interface ExerciseLogModalProps {
     visible: boolean;
     onClose: () => void;
     exerciseName: string;
-    plannedSets: { reps: number; weight: number }[];
+    plannedSets: { reps: number; weight: number; unit: string }[];
     onSave: (exerciseName: string, logs: LoggedSet[]) => void;
 }
 
@@ -23,25 +23,23 @@ type LoggedSet = {
     rpe: string;
 };
 
+const ExerciseLogModal = ({
+    visible,
+    onClose,
+    exerciseName,
+    plannedSets,
+    onSave,
+}: ExerciseLogModalProps) => {
+    const [loggedSets, setLoggedSets] = useState<LoggedSet[]>([]);
 
-const ExerciseLogModal = ({ visible, onClose, exerciseName, plannedSets, onSave }: ExerciseLogModalProps) => {
-    const [sets, setSets] = useState([]);
-    const [weight, setWeight] = useState('');
-    const [reps, setReps] = useState('');
+    // Reset logged sets when modal opens or plannedSets change
+    useEffect(() => {
+        setLoggedSets(
+            plannedSets.map(() => ({ actualReps: '', actualWeight: '', rpe: '' }))
+        );
+    }, [plannedSets, visible]);
 
-    const logSet = () => {
-        if (weight && reps) {
-            setSets([...sets, { weight, reps }]);
-            setWeight('');
-            setReps('');
-        }
-    };
-
-    const [loggedSets, setLoggedSets] = useState(
-        plannedSets.map(() => ({ actualReps: '', actualWeight: '', rpe: '' }))
-    );
-
-    const handleChange = (index, field, value) => {
+    const handleChange = (index: number, field: keyof LoggedSet, value: string) => {
         const updated = [...loggedSets];
         updated[index][field] = value;
         setLoggedSets(updated);
@@ -56,36 +54,44 @@ const ExerciseLogModal = ({ visible, onClose, exerciseName, plannedSets, onSave 
         <Modal visible={visible} animationType="slide" transparent>
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>LOG: {exerciseName}</Text>
+                    <Text style={styles.modalTitle}>LOG: {exerciseName.toUpperCase()}</Text>
                     <ScrollView>
                         {plannedSets.map((set, i) => (
                             <View key={i} style={styles.setRow}>
-                                <Text style={styles.setLabel}>SET {i + 1}: {set.reps}x{set.weight}kg</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Reps"
-                                    keyboardType="numeric"
-                                    value={loggedSets[i].actualReps}
-                                    onChangeText={(v) => handleChange(i, 'actualReps', v)}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Weight"
-                                    keyboardType="numeric"
-                                    value={loggedSets[i].actualWeight}
-                                    onChangeText={(v) => handleChange(i, 'actualWeight', v)}
-                                />
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="RPE"
-                                    keyboardType="numeric"
-                                    value={loggedSets[i].rpe}
-                                    onChangeText={(v) => handleChange(i, 'rpe', v)}
-                                />
+                                {/* Planned set info */}
+                                <Text style={styles.setLabel}>
+                                    Set {i + 1}: {set.reps} reps @ {set.weight} {set.unit}
+                                </Text>
+
+                                {/* Actual logging */}
+                                <View style={styles.inputsRow}>
+                                    <TextInput
+                                        style={[styles.input, { flex: 1 }]}
+                                        placeholder="Reps"
+                                        keyboardType="numeric"
+                                        value={loggedSets[i]?.actualReps}
+                                        onChangeText={(v) => handleChange(i, 'actualReps', v)}
+                                    />
+                                    <TextInput
+                                        style={[styles.input, { flex: 1, marginLeft: 6 }]}
+                                        placeholder="Weight"
+                                        keyboardType="numeric"
+                                        value={loggedSets[i]?.actualWeight}
+                                        onChangeText={(v) => handleChange(i, 'actualWeight', v)}
+                                    />
+                                    <TextInput
+                                        style={[styles.input, { flex: 1, marginLeft: 6 }]}
+                                        placeholder="RPE"
+                                        keyboardType="numeric"
+                                        value={loggedSets[i]?.rpe}
+                                        onChangeText={(v) => handleChange(i, 'rpe', v)}
+                                    />
+                                </View>
                             </View>
                         ))}
                     </ScrollView>
 
+                    {/* Actions */}
                     <View style={styles.actions}>
                         <Pressable onPress={handleSave} style={styles.saveBtn}>
                             <Text style={styles.saveText}>SAVE SETS</Text>
@@ -98,7 +104,6 @@ const ExerciseLogModal = ({ visible, onClose, exerciseName, plannedSets, onSave 
             </View>
         </Modal>
     );
-
 };
 
 const styles = StyleSheet.create({
@@ -125,21 +130,23 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         letterSpacing: 2,
     },
-    setRow: { marginBottom: 10 },
-    setLabel: { color: '#BFC7D5', fontSize: 12, marginBottom: 4 },
+    setRow: { marginBottom: 14 },
+    setLabel: { color: '#BFC7D5', fontSize: 13, marginBottom: 6 },
+    inputsRow: { flexDirection: 'row' },
     input: {
         borderWidth: 1,
         borderColor: '#2A2F3C',
         borderRadius: 4,
         padding: 8,
         color: '#fff',
-        marginBottom: 6,
         backgroundColor: '#1A1F2C',
         fontFamily: 'monospace',
+        textAlign: 'center',
     },
     actions: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        marginTop: 14,
     },
     saveBtn: {
         backgroundColor: '#00ffcc',

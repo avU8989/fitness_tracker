@@ -1,11 +1,27 @@
 import mongoose, { Document, Model, Types, Schema } from "mongoose";
 
-export interface IExercise extends Document {
-  name: string;
-  sets: number;
-  repetitions: number;
+export interface ISet extends Document {
+  reps: number;
   weight: number;
   unit: "kg" | "lbs";
+}
+
+const setSchema = new Schema<ISet>(
+  {
+    reps: { type: Number, required: true },
+    weight: { type: Number, required: true },
+    unit: {
+      type: String,
+      enum: ["kg", "lbs"],
+      default: "kg",
+    },
+  },
+  { _id: false }
+);
+
+export interface IExercise extends Document {
+  name: string;
+  sets: Types.DocumentArray<ISet>;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -13,14 +29,7 @@ export interface IExercise extends Document {
 const exerciseSchema = new Schema<IExercise>(
   {
     name: { type: String, required: true },
-    sets: { type: Number, required: true },
-    repetitions: { type: Number, required: true },
-    weight: { type: Number, required: true },
-    unit: {
-      type: String,
-      enum: ["kg", "lbs"],
-      required: true,
-    },
+    sets: [setSchema],
   },
   { timestamps: true }
 );
@@ -46,7 +55,7 @@ export const workoutDaySchema = new Schema<IWorkoutDay>(
   { timestamps: true }
 );
 
-type TrainingPlanType = "Crossfit" | "Bodybuilding" | "Powerlifting"
+type TrainingPlanType = "Crossfit" | "Bodybuilding" | "Powerlifting";
 
 export interface ITrainingPlan extends Document {
   name: string;

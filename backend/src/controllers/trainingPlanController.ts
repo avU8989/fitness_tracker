@@ -89,6 +89,10 @@ export const getTrainingPlans = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
+  res.setHeader("Cache-Control", "no-store");
+  res.removeHeader("ETag");
+  res.removeHeader("Last-Modified");
+
   try {
     if (!req.user?.id) {
       res.status(401).json({ message: "Unauthorized: User ID missing" });

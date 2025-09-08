@@ -71,7 +71,7 @@ export default function HardloggerUI() {
                 style={{
                     flexDirection: 'row',
                     alignItems: 'flex-end',
-                    height: 100, // max graph height
+                    height: 60, // max graph height
                     marginTop: 10,
                 }}
             >
@@ -629,43 +629,6 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
         opacity: 0.3,
     },
-    powerBarContainer: {
-        marginVertical: 6,
-        paddingVertical: 10,
-        paddingHorizontal: 10,
-        backgroundColor: '#0A0F1C',
-        borderColor: '#00ffcc',
-        borderWidth: 1.2,
-        borderRadius: 6,
-        shadowColor: '#00ffcc',
-        shadowOpacity: 0.4,
-        shadowRadius: 6,
-    },
-
-    powerBarLabel: {
-        fontFamily: 'monospace',
-        fontSize: 13,
-        color: '#00ffcc',
-        marginBottom: 6,
-        letterSpacing: 2,
-    },
-
-    powerBarTrack: {
-        height: 10,
-        backgroundColor: '#1A1F2C',
-        borderRadius: 4,
-        overflow: 'hidden',
-    },
-
-    powerBarFill: {
-        height: '100%',
-        backgroundColor: '#00ffcc',
-        shadowColor: '#00ffcc',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.8,
-        shadowRadius: 10,
-    },
-
 
     table: {
         borderWidth: 1,
@@ -739,6 +702,7 @@ const styles = StyleSheet.create({
         padding: 16,
         marginRight: 16,
         width: 260,
+        height: 220,
         shadowColor: '#00ffcc',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.35,

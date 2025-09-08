@@ -18,18 +18,10 @@ type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
 const Units = ["kg", "lbs"] as const;
 type Unit = (typeof Units)[number];
 
-class ExerciseDTO {
-  @IsString()
-  @IsNotEmpty()
-  name!: string;
-
+class SetDTO {
   @IsNumber()
   @IsNotEmpty()
-  sets!: number;
-
-  @IsNumber()
-  @IsNotEmpty()
-  repetitions!: number;
+  reps!: number;
 
   @IsNumber()
   @IsNotEmpty()
@@ -38,6 +30,17 @@ class ExerciseDTO {
   @IsEnum(Units)
   @IsNotEmpty()
   unit!: Unit;
+}
+
+class ExerciseDTO {
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SetDTO)
+  sets!: SetDTO[];
 }
 
 export class WorkoutDayDTO {
@@ -69,7 +72,6 @@ export class CreateBaseTrainingPlanRequest {
   days!: WorkoutDayDTO[];
 }
 
-//-----------------POWERLIFTING TRAININGPLAN REQUEST-------------------
 class PowerWeekDTO {
   @IsNumber()
   @IsNotEmpty()
@@ -86,7 +88,7 @@ export class CreatePowerliftingPlanRequest {
   @IsNotEmpty()
   name!: string;
 
-  @IsIn(['Powerlifting'])
+  @IsIn(["Powerlifting"])
   type!: "Powerlifting";
 
   @IsBoolean()
@@ -97,11 +99,18 @@ export class CreatePowerliftingPlanRequest {
   @Type(() => PowerWeekDTO)
   weeks!: PowerWeekDTO[];
 
-  @IsOptional() @IsArray() weeklyFocusNotes?: string[];
-  @IsOptional() @IsArray() accessoryFocus?: string[];
-  @IsOptional() @IsBoolean() competitionPrep?: boolean;
+  @IsOptional()
+  @IsArray()
+  weeklyFocusNotes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  accessoryFocus?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  competitionPrep?: boolean;
 
   @IsIn(["Volume", "Intensity", "Peaking"])
   intensityPhase!: "Volume" | "Intensity" | "Peaking";
-
 }

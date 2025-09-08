@@ -9,6 +9,7 @@ export async function getActivePlan(token: string, date: string) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        cache: "no-store",
         Authorization: `Bearer ${token}`,
       },
     });

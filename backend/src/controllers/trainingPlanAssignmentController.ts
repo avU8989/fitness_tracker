@@ -89,15 +89,18 @@ export const getActivePlan = async (
 ): Promise<void> => {
   const userId = req.user?.id;
   const rawDate = String(req.query.date);
-  const date = rawDate
-    ? new Date(rawDate + "T00:00:00.000Z") // always UTC midnight
-    : new Date();
+  const queryDate = rawDate ? new Date(rawDate) : new Date();
 
-  console.log("Querying active plan with:", {
-    userId,
-    rawDate: req.query.date,
-    parsedDate: date.toISOString(),
-  });
+  // normalize to start and end of day (UTC)
+  const startOfDay = new Date(queryDate);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(queryDate);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+
+  res.setHeader("Cache-Control", "no-store");
+  res.removeHeader("ETag");
+  res.removeHeader("Last-Modified");
 
   try {
     if (!userId) {
@@ -107,11 +110,11 @@ export const getActivePlan = async (
 
     const assignment = await TrainingPlanAssignment.findOne({
       user: userId,
-      startDate: { $lte: date },
+      startDate: { $lte: endOfDay },
       $or: [
         { endDate: null },
         { endDate: { $exists: false } },
-        { endDate: { $gte: date } },
+        { endDate: { $gte: startOfDay } },
       ],
     }).populate("trainingPlan");
 

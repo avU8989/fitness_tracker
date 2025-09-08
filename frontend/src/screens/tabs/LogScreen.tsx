@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,10 @@ import {
 } from 'react-native';
 import ExerciseLogModal from '../../components/modals/ExerciseLogModal';
 import VHSGlowDivider from '../../components/VHSGlowDivider';
+import { AuthContext } from '../../context/AuthContext';
+import { getActivePlan } from '../../services/planAssignmentsService';
+import { getTodayName, toDateFormatFetchActiveTrainingPlans } from '../../utils/apiHelpers';
+import { Exercise, toUIPlan } from '../../requests/trainingPlan';
 
 const initialSets = [
   { exercise: 'BENCH PRESS', reps: '8', weight: '100', rpe: '7' },
@@ -34,9 +38,11 @@ const trainingPlan = [
 ];
 
 const LogPage = () => {
+  const { token } = useContext(AuthContext);
   const [sets, setSets] = useState(initialSets);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [blinkVisible, setBlinkVisible] = useState(true);
+  const [currentExercises, setCurrentExercises] = useState<Exercise[]>([]);
 
   // Blink animation for session status
   useEffect(() => {
@@ -62,6 +68,52 @@ const LogPage = () => {
     return Math.min((load / maxLoad) * 100, 100);
   };
 
+  const loadExercises = async () => {
+    if (!token) {
+      alert('You must be logged in to log your workout');
+      return;
+    }
+
+    //fetch active trainingplan
+    try {
+      const today = toDateFormatFetchActiveTrainingPlans(new Date());
+      const assignment = await getActivePlan(token, today);
+      const trainingPlan = assignment.trainingPlan;
+      console.log(JSON.stringify(assignment, null, 2));
+
+      if (!trainingPlan) {
+        console.log("Could not find active trainingplan");
+        return;
+      }
+
+      for (let i = 0; i < trainingPlan.days.length; ++i) {
+        if (trainingPlan.days[i].dayOfWeek === "MON") {
+          console.log(trainingPlan.days[i].exercises.length);
+
+          if (trainingPlan.days[i].exercises.length > 0) {
+            setCurrentExercises(trainingPlan.days[i].exercises);
+          }
+        }
+      };
+
+
+    } catch (err: any) {
+      console.error("Could not load Exercises for today: ", err);
+    }
+  }
+
+  const logWorkout = async () => {
+
+    //display active trainingplan on exercise log modal 
+
+    //create workout log on user, save on database
+
+  }
+
+  useEffect(() => {
+    loadExercises();
+  }, [token]);
+
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -77,10 +129,10 @@ const LogPage = () => {
 
       <VHSGlowDivider />
 
-      {/* Training Plan List */}
+      {/* Training Plan List - Supposed Sets, Reps and Load to perform*/}
       <View style={styles.trainingPlanTable}>
         <ScrollView style={styles.scrollArea} nestedScrollEnabled>
-          {trainingPlan.map((exercise, i) => {
+          {currentExercises.map((exercise, i) => {
             const isSelected = selectedExercise === exercise.name;
             return (
               <Pressable
@@ -92,9 +144,10 @@ const LogPage = () => {
                 ]}
               >
                 <Text style={styles.exerciseTitle}>▌ {exercise.name}</Text>
+
                 {exercise.sets.map((set, idx) => (
                   <Text key={idx} style={styles.exerciseMeta}>
-                    ▍Set {idx + 1}: {set.reps} reps @ {set.weight}kg
+                    ▍Set {idx + 1}: {set.reps} reps @ {set.weight} {set.unit}
                   </Text>
                 ))}
               </Pressable>
@@ -111,7 +164,7 @@ const LogPage = () => {
           visible={!!selectedExercise}
           onClose={() => setSelectedExercise(null)}
           exerciseName={selectedExercise}
-          plannedSets={trainingPlan.find(e => e.name === selectedExercise)?.sets}
+          plannedSets={currentExercises.find(e => e.name === selectedExercise)?.sets}
           onSave={(exerciseName, logs) => {
             console.log('Saved logs for', exerciseName, logs);
           }}
@@ -164,7 +217,7 @@ const LogPage = () => {
       </View>
 
       {/* Finalize Button */}
-      <Pressable style={styles.endButton}>
+      <Pressable style={styles.endButton} onPress={logWorkout}>
         <Text style={styles.endButtonText}>■ FINALIZE & ENCODE SESSION</Text>
       </Pressable>
     </ScrollView>

@@ -54,8 +54,6 @@ export default function TrainingPlansScreen() {
             setCurrentIndex(0);
             setCompletedDays([]);
 
-            console.log(JSON.stringify(ui, null, 2));
-
         } catch (err: any) {
             setError(err.message ?? 'Failed to fetch training plans');
             console.log(error);
@@ -117,10 +115,12 @@ export default function TrainingPlansScreen() {
         return currentPlan?.days?.reduce((acc, d) => {
             const list = d?.exercises ?? [];
             return acc + list.reduce((s, ex) =>
-                s + ((ex?.sets as number) ?? 0) * ((ex?.repetitions as number) ?? 0) * ((ex?.weight as number) ?? 0)
+                s + ex.sets.reduce((setAcc, set) => setAcc + set.reps * set.weight, 0)
                 , 0);
         }, 0) ?? 0;
     }, [currentPlan]);
+
+
 
     const formatSplitDateRange = (startDate: Date) => {
         const pad = (n: number) => n.toString().padStart(2, "0");
@@ -280,23 +280,25 @@ export default function TrainingPlansScreen() {
 
                             <ScrollView style={styles.modalScroll}>
                                 {selectedDay?.exercises.length ? (
-                                    selectedDay?.exercises.map((exercise, index) => (
+                                    selectedDay.exercises.map((exercise, index) => (
                                         <View key={index} style={styles.exerciseRow}>
                                             <Text style={styles.exerciseText}>
                                                 ░ {exercise.name?.toUpperCase()} ░
                                             </Text>
-                                            <Text style={styles.exerciseDetail}>
-                                                {exercise.sets} SETS × {exercise.repetitions} REPS >> {exercise.weight} {exercise.unit?.toUpperCase()}
-                                            </Text>
+
+                                            {exercise.sets.map((set, sIdx) => (
+                                                <Text key={sIdx} style={styles.exerciseDetail}>
+                                                    Set {sIdx + 1}: {set.reps} reps @ {set.weight} {set.unit.toUpperCase()}
+                                                </Text>
+                                            ))}
+
                                             <View style={styles.scanline} />
                                         </View>
                                     ))
                                 ) : (
                                     <Text style={styles.exerciseText}>No exercises available</Text>
-                                )
-                                }
+                                )}
                             </ScrollView>
-
                         </View>
                     </View>
 

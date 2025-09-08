@@ -20,7 +20,7 @@ const port = process.env.PORT || 5000;
 let swaggerDocument;
 
 if (process.env.OPEN_API_DESIGN) {
-  swaggerDocument = YAML.load(path.resolve((process.env.OPEN_API_DESIGN)));
+  swaggerDocument = YAML.load(path.resolve(process.env.OPEN_API_DESIGN));
 
   if (swaggerDocument) {
     app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -55,6 +55,7 @@ mongoose
     console.error("MongoDB connection error:", err);
   });
 
+console.log(process.env.MONGODB_URI);
 /*
 app.use(
   OpenApiValidator.middleware({
