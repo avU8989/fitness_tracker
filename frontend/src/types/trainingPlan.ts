@@ -1,15 +1,16 @@
 export type DayOfWeek = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
 
 export interface ExerciseSet {
+  _id?: string;
   reps: number;
   weight: number;
   unit: "kg" | "lbs";
 }
 
 export interface Exercise {
-  _id: string;
+  _id?: string;
   name: string;
-  sets: ExerciseSet[]; // ⬅️ Now an array of sets
+  sets: ExerciseSet[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -82,55 +83,4 @@ export interface TrainingPlanUI {
       notes?: string[];
     };
   };
-}
-
-// Type narrowing
-function isPowerlifting(plan: TrainingPlanDTO): plan is PowerliftingPlanDTO {
-  return plan.type === "Powerlifting";
-}
-
-export function toUIPlan(
-  plan: TrainingPlanDTO,
-  opts?: { activeWeekNumber?: number }
-): TrainingPlanUI {
-  if (isPowerlifting(plan)) {
-    const weeks = plan.weeks ?? [];
-    const weeksCount = weeks.length;
-    const targetWeek =
-      weeks.find((w) => w.weekNumber === opts?.activeWeekNumber) ?? weeks[0];
-
-    return {
-      _id: plan._id,
-      name: plan.name,
-      type: plan.type,
-      days: targetWeek?.days ?? [],
-      meta: {
-        powerlifting: {
-          weeksCount,
-          activeWeekNumber: targetWeek?.weekNumber ?? 1,
-          phase: plan.intensityPhase,
-          notes: plan.weeklyFocusNotes,
-        },
-      },
-    };
-  }
-
-  return {
-    _id: plan._id,
-    name: plan.name,
-    type: plan.type,
-    days: plan.days,
-  };
-}
-
-export interface CreateTrainingPlanRequest {
-  name: string;
-  days: WorkoutDay[];
-  type?: "Bodybuilding" | "Powerlifting" | "Crossfit";
-}
-
-export interface CreateTrainingAssignmentRequest {
-  trainingPlanId: string;
-  startDate: string;
-  endDate?: string | null;
 }

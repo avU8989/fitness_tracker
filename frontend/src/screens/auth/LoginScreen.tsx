@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { login } from '../../services/authService';
-import { RootStackParameterList } from '../../navigation/types';
+import { RootStackParameterList } from '../../navigation/navtypes';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 type Props = NativeStackScreenProps<RootStackParameterList, 'Login'>;
 

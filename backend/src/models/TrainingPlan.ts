@@ -6,7 +6,7 @@ export interface ISet extends Document {
   unit: "kg" | "lbs";
 }
 
-const setSchema = new Schema<ISet>(
+export const setSchema = new Schema<ISet>(
   {
     reps: { type: Number, required: true },
     weight: { type: Number, required: true },
@@ -26,7 +26,7 @@ export interface IExercise extends Document {
   updatedAt?: Date;
 }
 
-const exerciseSchema = new Schema<IExercise>(
+export const exerciseSchema = new Schema<IExercise>(
   {
     name: { type: String, required: true },
     sets: [setSchema],

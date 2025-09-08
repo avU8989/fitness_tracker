@@ -12,7 +12,7 @@ import {
     Switch,
 } from 'react-native';
 import { sanitizeTrainingPlanData, validateTrainingPlanData } from '../../utils/formHelpers';
-import { CreateTrainingAssignmentRequest, Exercise, WorkoutDay } from '../../requests/trainingPlan';
+import { CreateTrainingAssignmentRequest, Exercise, PlanType, WorkoutDay } from '../../types/trainingPlan';
 import { AuthContext } from '../../context/AuthContext';
 import { createTrainingPlan } from '../../services/trainingPlanService';
 import CustomDatePickerModal from './CustomDatePickerModal';
@@ -23,7 +23,7 @@ const planTypes = ['Bodybuilding', 'Powerlifting', 'Crossfit'];
 
 //MODAL FOR CREATING TRAINING PLANS
 export default function TrainingPlanModal({ visible, onClose, onSave }) {
-    const [planType, setPlanType] = useState('');
+    const [planType, setPlanType] = useState<PlanType>("");
     const { token } = useContext(AuthContext);
     const [name, setName] = useState('');
     const [days, setDays] = useState<WorkoutDay[]>(

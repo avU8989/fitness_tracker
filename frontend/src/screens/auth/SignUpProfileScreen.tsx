@@ -5,8 +5,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Animated } from 'react-native';
 import { AuthContext } from '../../context/AuthContext';
 import { register } from '../../services/authService';
-import { RegistrationRequest } from '../../requests/auth';
-import type { RootStackParameterList } from '../../navigation/types';
+import { RegistrationRequest } from '../../types/auth';
+import type { RootStackParameterList } from '../../navigation/navtypes';
 
 type Props = NativeStackScreenProps<RootStackParameterList, 'SignUpProfile'>;
 

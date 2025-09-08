@@ -11,7 +11,10 @@ import VHSGlowDivider from '../../components/VHSGlowDivider';
 import { AuthContext } from '../../context/AuthContext';
 import { getActivePlan } from '../../services/planAssignmentsService';
 import { getTodayName, toDateFormatFetchActiveTrainingPlans } from '../../utils/apiHelpers';
-import { Exercise, toUIPlan } from '../../requests/trainingPlan';
+import { Exercise } from '../../types/trainingPlan';
+import { CreateWorkoutLogRequest } from '../../requests/CreateWorkoutLogRequest';
+import { createWorkoutLog } from '../../services/workoutLogService';
+import { LoggedExercise, LoggedSet } from '../../types/workoutLog';
 
 const initialSets = [
   { exercise: 'BENCH PRESS', reps: '8', weight: '100', rpe: '7' },
@@ -43,6 +46,11 @@ const LogPage = () => {
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [blinkVisible, setBlinkVisible] = useState(true);
   const [currentExercises, setCurrentExercises] = useState<Exercise[]>([]);
+  const [currentPlanId, setCurrentPlanId] = useState(null);
+  const [currentWorkoutDayId, setCurrentWorkoutDayId] = useState(null);
+  const [loggedExercises, setLoggedExercises] = useState<LoggedExercise[]>([]);
+  const [completedExercises, setCompletedExercises] = useState<String[]>([]);
+  const [workoutLogged, setWorkoutLogged] = useState(false);
 
   // Blink animation for session status
   useEffect(() => {
@@ -79,15 +87,20 @@ const LogPage = () => {
       const today = toDateFormatFetchActiveTrainingPlans(new Date());
       const assignment = await getActivePlan(token, today);
       const trainingPlan = assignment.trainingPlan;
-      console.log(JSON.stringify(assignment, null, 2));
 
       if (!trainingPlan) {
         console.log("Could not find active trainingplan");
         return;
       }
 
+      //set the trainingplanid to create workout logs for later
+      setCurrentPlanId(trainingPlan._id);
+      console.log("This is the current training plan id: ", trainingPlan._id);
+
       for (let i = 0; i < trainingPlan.days.length; ++i) {
-        if (trainingPlan.days[i].dayOfWeek === "MON") {
+        if (trainingPlan.days[i].dayOfWeek === getTodayName()) {
+          //set the current Workout Day id to create workout logs for later
+          setCurrentWorkoutDayId(trainingPlan.days[i]._id);
           console.log(trainingPlan.days[i].exercises.length);
 
           if (trainingPlan.days[i].exercises.length > 0) {
@@ -103,15 +116,49 @@ const LogPage = () => {
   }
 
   const logWorkout = async () => {
+    if (!token) {
+      alert('You must be logged in to log a workout');
+      return;
+    }
 
-    //display active trainingplan on exercise log modal 
+    if (!currentPlanId) {
+      console.error("Current training plan id is undefined");
+      return;
+    }
+
+    if (!currentWorkoutDayId) {
+      console.error("Current workout day id is undefined");
+      return;
+    }
+
+    if (loggedExercises?.length === 0 || loggedExercises === null) {
+      console.error("Logged exercises cannot be null");
+      return;
+    }
 
     //create workout log on user, save on database
+    try {
+      const payload: CreateWorkoutLogRequest = {
+        trainingPlanId: currentPlanId,
+        workoutDayId: currentWorkoutDayId,
+        performed: new Date(),
+        exercises: loggedExercises,
+      };
 
+      const createdWorkoutLog = await createWorkoutLog(token, payload);
+      console.log(createdWorkoutLog);
+
+      //indication that the workout is logged
+      alert("Workout successfully logged!");
+      setWorkoutLogged(true);
+    } catch (err: any) {
+      alert(err.message || 'Failed to log workout');
+    }
   }
 
   useEffect(() => {
     loadExercises();
+    console.log("Updated loggedExercises", loggedExercises);
   }, [token]);
 
 
@@ -127,6 +174,13 @@ const LogPage = () => {
       <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — SESSION LOG▓</Text>
       <Text style={styles.vhsSubHeader}>▐▐ SPLIT: PUSH_A1 ▐▐</Text>
 
+      {workoutLogged && (
+        <View style={styles.loggedIndicator}>
+          <Text style={styles.loggedText}>■ Workout Logged Successfully</Text>
+        </View>
+      )}
+
+
       <VHSGlowDivider />
 
       {/* Training Plan List - Supposed Sets, Reps and Load to perform*/}
@@ -140,17 +194,27 @@ const LogPage = () => {
                 onPress={() => setSelectedExercise(exercise.name)}
                 style={[
                   styles.trainingPlanItem,
-                  isSelected ? styles.selectedExercise : styles.dimmedExercise,
+                  selectedExercise === exercise.name
+                    ? styles.selectedExercise
+                    : styles.dimmedExercise,
                 ]}
               >
                 <Text style={styles.exerciseTitle}>▌ {exercise.name}</Text>
 
-                {exercise.sets.map((set, idx) => (
-                  <Text key={idx} style={styles.exerciseMeta}>
-                    ▍Set {idx + 1}: {set.reps} reps @ {set.weight} {set.unit}
-                  </Text>
-                ))}
+                {exercise.sets.map((set, idx) => {
+                  // Check if this exercise is in loggedExercises and if that set has a logged rep/weight
+                  const logged = loggedExercises.find(le => le.name === exercise.name);
+                  const thisSetLogged = logged?.sets?.[idx] && logged.sets[idx].reps > 0;
+
+                  return (
+                    <Text key={idx} style={styles.exerciseMeta}>
+                      ▍Set {idx + 1}: {set.reps} reps @ {set.weight} {set.unit}
+                      {thisSetLogged && <Text style={styles.doneMarker}> ✓</Text>}
+                    </Text>
+                  );
+                })}
               </Pressable>
+
             );
           })}
         </ScrollView>
@@ -164,9 +228,48 @@ const LogPage = () => {
           visible={!!selectedExercise}
           onClose={() => setSelectedExercise(null)}
           exerciseName={selectedExercise}
-          plannedSets={currentExercises.find(e => e.name === selectedExercise)?.sets}
+          plannedSets={currentExercises.find(e => e.name === selectedExercise)?.sets ?? []}
           onSave={(exerciseName, logs) => {
-            console.log('Saved logs for', exerciseName, logs);
+            const performedSets: LoggedSet[] = logs.map(l => ({
+              reps: parseInt(l.actualReps, 10) || 0,
+              weight: parseFloat(l.actualWeight) || 0,
+              unit: "kg",
+              rpe: l.rpe ? parseFloat(l.rpe) : undefined,
+            }));
+
+            setLoggedExercises(prev => {
+              const withoutThisExercise = prev.filter(ex => ex.name !== exerciseName);
+              return [
+                ...withoutThisExercise,
+                { name: exerciseName, sets: performedSets }
+              ];
+            });
+
+            // mark exercise as completed
+            setCompletedExercises(prev => [...new Set([...prev, exerciseName])]);
+
+            setCurrentExercises(prev =>
+              prev.map(ex => {
+                if (ex.name !== exerciseName) return ex;
+
+                const mergedSets = ex.sets.map((plannedSet, idx) => {
+                  const loggedSet = performedSets[idx];
+
+                  // if user filled this set (any meaningful value)
+                  if (
+                    loggedSet &&
+                    (loggedSet.reps > 0 || loggedSet.weight > 0 || loggedSet.rpe !== undefined)
+                  ) {
+                    return loggedSet; // use logged version
+                  }
+
+                  // otherwise, keep the planned version
+                  return plannedSet;
+                });
+
+                return { ...ex, sets: mergedSets };
+              })
+            );
           }}
         />
       )}
@@ -224,9 +327,38 @@ const LogPage = () => {
   );
 };
 
+
 export default LogPage;
 
 const styles = StyleSheet.create({
+  loggedIndicator: {
+    marginTop: 15,
+    padding: 10,
+    borderRadius: 6,
+    backgroundColor: '#00ffcc22',
+    borderWidth: 1,
+    borderColor: '#00ffcc',
+    alignItems: 'center',
+  },
+  loggedText: {
+    color: '#00ffcc',
+    fontFamily: 'monospace',
+    fontSize: 13,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
+
+  completedExercise: {
+    borderColor: '#00ffcc', // green border when done
+    borderWidth: 2,
+    backgroundColor: '#00ffcc24',
+  },
+  doneMarker: {
+    color: '#ff0055',
+    marginLeft: 6,
+    fontWeight: 'bold',
+  },
+
   container: {
     flex: 1,
     backgroundColor: '#0A0F1C',

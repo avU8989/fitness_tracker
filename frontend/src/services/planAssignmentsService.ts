@@ -1,6 +1,6 @@
+import { CreateTrainingAssignmentRequest } from "../requests/CreateTrainingAssignmentRequest";
 import { handleResponse } from "../utils/apiHelpers";
 import { API_URL } from "@env";
-import { CreateTrainingAssignmentRequest } from "../requests/trainingPlan";
 
 const URL = `${API_URL}/trainingplan-assignments`;
 export async function getActivePlan(token: string, date: string) {

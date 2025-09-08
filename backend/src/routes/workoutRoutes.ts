@@ -8,7 +8,7 @@ import {
 
 const workoutRouter = Router();
 
-workoutRouter.post("/workouts", authMiddleware, createWorkoutLog);
-workoutRouter.get("/workouts", authMiddleware, getWorkoutLogs);
+workoutRouter.post("/", authMiddleware, createWorkoutLog);
+workoutRouter.get("/", authMiddleware, getWorkoutLogs);
 
 export default workoutRouter;

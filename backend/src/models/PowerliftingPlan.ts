@@ -1,4 +1,4 @@
-import { Schema } from "mongoose";
+import { Schema, Types } from "mongoose";
 import TrainingPlan, {
   ITrainingPlan,
   IWorkoutDay,
@@ -11,7 +11,7 @@ export interface IPowerliftingPlan extends ITrainingPlan {
   weeks: [
     {
       weekNumber: Number;
-      days: IWorkoutDay[];
+      days: Types.DocumentArray<IWorkoutDay>;
     },
   ];
   weeklyFocusNotes?: string[];

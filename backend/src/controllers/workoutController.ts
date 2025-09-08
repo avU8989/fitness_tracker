@@ -1,6 +1,10 @@
 import WorkoutLog from "../models/Workout";
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
+import TrainingPlan from "../models/TrainingPlan";
+import { IBodybuildingPlan } from "../models/BodybuildingPlan";
+import { ICrossfitPlan } from "../models/CrossfitPlan";
+import { IPowerliftingPlan } from "../models/PowerliftingPlan";
 
 // POST /workouts - Log a new workout
 export const createWorkoutLog = async (
@@ -9,28 +13,83 @@ export const createWorkoutLog = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { date, exercises, duration, caloriesBurned, notes } = req.body;
+    const {
+      trainingPlanId,
+      workoutDayId,
+      performed,
+      exercises,
+      duration,
+      caloriesBurned,
+      notes,
+    } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
       res.status(401).json({ message: "Unauthorized: User ID missing" });
       return;
     }
+    let workoutDay;
+    //fetch trainingplan
+    const trainingPlan = await TrainingPlan.findById(trainingPlanId);
+    if (!trainingPlan) {
+      res.status(404).json({ message: "Trainingplan not found" });
+      return;
+    }
 
-    const createdWorkout = new WorkoutLog({
+    if (
+      trainingPlan.type === "Bodybuilding" ||
+      trainingPlan.type === "Crossfit"
+    ) {
+      //cast to unknown because of not exisitng days in ITrainingPlan
+      const plan = trainingPlan as unknown as IBodybuildingPlan | ICrossfitPlan;
+      //IBodyBuildingPlan and ICrossfitPlan has days
+      //need to have days as DocumentArray to fetch the id, so TS knows id exists from mongo
+      workoutDay = plan.days.id(workoutDayId);
+    } else if (trainingPlan.type === "Powerlifting") {
+      const powerliftingPlan = trainingPlan as unknown as IPowerliftingPlan;
+      for (const week of powerliftingPlan.weeks) {
+        const found = week.days.id(workoutDayId);
+
+        if (found) {
+          workoutDay = found;
+          break;
+        }
+      }
+    }
+
+    if (!workoutDay) {
+      res.status(404).json({ message: "Workout Day not found" });
+      return;
+    }
+
+    const loggedWorkout = new WorkoutLog({
       userId,
-      date,
-      exercises, // array of { exerciseId?, name, sets, reps, weight, unit, rpe? }
+      trainingPlanId,
+      workoutDayId,
+
+      //snapshot
+      dayOfWeek: workoutDay.dayOfWeek,
+      plannedExercises: workoutDay.exercises,
+
+      //actual log of workout
+      performed,
+      exercises,
       duration,
       caloriesBurned,
       notes,
     });
 
-    const savedWorkout = await createdWorkout.save();
+    const savedWorkout = await loggedWorkout.save();
 
-    res
-      .status(201)
-      .json({ message: "Workout logged successfully", workout: savedWorkout });
+    res.status(201).json({
+      message: "Workout logged successfully",
+      workout: {
+        id: savedWorkout.id,
+        dayOfWeek: savedWorkout.dayOfWeek,
+        planned: { exercises: savedWorkout.plannedExercises },
+        actual: { exercises: savedWorkout.exercises },
+      },
+    });
   } catch (error: any) {
     res
       .status(500)

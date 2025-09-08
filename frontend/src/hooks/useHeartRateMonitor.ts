@@ -1,6 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import { Platform, PermissionsAndroid } from "react-native";
-import { BleManager, Characteristic, Device } from "react-native-ble-plx";
+import { useEffect, useState } from "react";
+import { Characteristic } from "react-native-ble-plx";
 import { Buffer } from "buffer";
 import { useBleDevice } from "../context/BleContext";
 

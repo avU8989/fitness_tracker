@@ -1,4 +1,4 @@
-import { RegistrationRequest, LoginRequest } from "../requests/auth";
+import { RegistrationRequest, LoginRequest } from "../types/auth";
 import { handleResponse } from "../utils/apiHelpers";
 import { API_URL } from "@env";
 

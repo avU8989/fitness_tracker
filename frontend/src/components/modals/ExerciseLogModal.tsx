@@ -32,12 +32,16 @@ const ExerciseLogModal = ({
 }: ExerciseLogModalProps) => {
     const [loggedSets, setLoggedSets] = useState<LoggedSet[]>([]);
 
-    // Reset logged sets when modal opens or plannedSets change
     useEffect(() => {
-        setLoggedSets(
-            plannedSets.map(() => ({ actualReps: '', actualWeight: '', rpe: '' }))
-        );
+        if (visible) {
+            setLoggedSets(prev =>
+                prev.length > 0
+                    ? prev // keep what user already entered
+                    : plannedSets.map(() => ({ actualReps: '', actualWeight: '', rpe: '' }))
+            );
+        }
     }, [plannedSets, visible]);
+
 
     const handleChange = (index: number, field: keyof LoggedSet, value: string) => {
         const updated = [...loggedSets];

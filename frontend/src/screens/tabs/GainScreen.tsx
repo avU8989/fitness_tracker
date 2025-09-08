@@ -7,10 +7,8 @@ import {
     FlatList,
     Pressable,
     Animated,
-    Easing,
     Alert,
     Switch,
-    Platform,
     TouchableOpacity,
 } from 'react-native';
 import StatsCarousel from '../../components/StatsCarousel';

@@ -1,4 +1,4 @@
-import { WorkoutDay } from "../requests/trainingPlan";
+import { WorkoutDay } from "../types/trainingPlan";
 
 export function sanitizeTrainingPlanData(days: WorkoutDay[]) {
   return days.map((day) => ({

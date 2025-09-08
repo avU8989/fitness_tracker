@@ -7,9 +7,8 @@ import LoginScreen from './screens/auth/LoginScreen';
 import { useContext } from 'react';
 import SignUpCredentialsScreen from './screens/auth/SignUpCredentialsScreen';
 import SignUpProfileScreen from './screens/auth/SignUpProfileScreen';
-import { RootStackParameterList } from './navigation/types';
+import { RootStackParameterList } from './navigation/navtypes';
 import { BleProvider } from './context/BleContext';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
 const Stack = createNativeStackNavigator<RootStackParameterList>();
 
 function RootNavigator() {
@@ -38,9 +37,9 @@ export default function App() {
     <AuthProvider>
       <BleProvider>
         <NavigationContainer>
-          <GestureHandlerRootView style={styles.appWrapper}>
+          <View style={styles.appWrapper}>
             <RootNavigator />
-          </GestureHandlerRootView >
+          </View >
         </NavigationContainer>
       </BleProvider>
     </AuthProvider>

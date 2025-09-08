@@ -1,17 +1,21 @@
-import { Schema } from "mongoose";
-import TrainingPlan, { ITrainingPlan, IWorkoutDay, workoutDaySchema } from "./TrainingPlan";
+import { Schema, Types } from "mongoose";
+import TrainingPlan, {
+  ITrainingPlan,
+  IWorkoutDay,
+  workoutDaySchema,
+} from "./TrainingPlan";
 
 export interface IBodybuildingPlan extends ITrainingPlan {
-    days: IWorkoutDay[];
-};
+  days: Types.DocumentArray<IWorkoutDay>;
+}
 
 const bodybuildingSchema = new Schema<IBodybuildingPlan>({
-    days: { type: [workoutDaySchema], required: true }
+  days: { type: [workoutDaySchema], required: true },
 });
 
 const BodybuildingPlan = TrainingPlan.discriminator<IBodybuildingPlan>(
-    "Bodybuilding",
-    bodybuildingSchema
+  "Bodybuilding",
+  bodybuildingSchema
 );
 
 export default BodybuildingPlan;

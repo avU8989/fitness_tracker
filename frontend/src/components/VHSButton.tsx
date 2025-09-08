@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { Pressable, StyleSheet, Animated, Easing } from 'react-native';
 
 export default function VHSButton({ onPress, title }) {
     const [pressed, setPressed] = useState(false);

@@ -1,4 +1,4 @@
-import { CreateTrainingPlanRequest } from "../requests/trainingPlan";
+import { CreateTrainingPlanRequest } from "../requests/CreateTrainingPlanRequest";
 import { handleResponse } from "../utils/apiHelpers";
 import { API_URL } from "@env";
 
@@ -33,11 +33,11 @@ export async function getTrainingPlans(token: string) {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
-    }
+    },
   });
 
-  console.log('status', response.status, 'body', await response.clone().text);
-  if(!response.ok){
+  console.log("status", response.status, "body", await response.clone().text);
+  if (!response.ok) {
     throw new Error("Failed to fetch training plan");
   }
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CustomAlert from '../../components/CustomAlert';
-import { RootStackParameterList } from '../../navigation/types';
+import { RootStackParameterList } from '../../navigation/navtypes';
 
 type Props = NativeStackScreenProps<RootStackParameterList, 'SignUpCredentials'>;
 

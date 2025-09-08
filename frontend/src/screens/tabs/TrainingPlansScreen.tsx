@@ -1,5 +1,4 @@
-import React, { act, useContext, useEffect, useMemo, useState } from 'react';
-import { Vibration } from 'react-native';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
     View,
     Text,
@@ -17,9 +16,10 @@ import VHSButton from '../../components/VHSButton';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../../context/AuthContext';
 import { getTrainingPlans } from '../../services/trainingPlanService';
-import { DayOfWeek, toUIPlan, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../requests/trainingPlan';
+import { DayOfWeek, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../types/trainingPlan';
 import * as Haptics from 'expo-haptics';
 import { getActivePlan } from '../../services/planAssignmentsService';
+import { toUIPlan } from '../../utils/apiHelpers';
 
 export default function TrainingPlansScreen() {
     const { token } = useContext(AuthContext);
@@ -84,18 +84,6 @@ export default function TrainingPlansScreen() {
         setCompletedDays([]);
     };
 
-    const onDateChange = (newDate: Date) => {
-        setPlans(prev => {
-            const updated = [...prev];
-            updated[currentIndex] = {
-                ...updated[currentIndex],
-                updatedAt: newDate,
-            };
-            return updated;
-        });
-    };
-
-
     const totalExercises = useMemo(() => {
         if (!currentPlan) return 0;
 
@@ -141,8 +129,7 @@ export default function TrainingPlansScreen() {
         };
     };
 
-    const startDate = currentPlan?.updatedAt ?? new Date();
-    const { rangeLine, yearLine } = formatSplitDateRange(startDate);
+    const { rangeLine, yearLine } = formatSplitDateRange(new Date());
     const daysCompleted = completedDays.length;
 
     const handleSavePlan = newPlan => {

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { BleManager, Characteristic, Device } from "react-native-ble-plx";
 import { Buffer } from "buffer";
 import { useBleDevice } from "../context/BleContext";
-import { delay } from "../utils/apiHelpers";
 
 const PLX_SERVICE = "00001822-0000-1000-8000-00805f9b34fb";
 const PLX_CONT_MEAS = "00002a5f-0000-1000-8000-00805f9b34fb"; // Continuous
@@ -28,12 +27,9 @@ function sfloat16(lo: number, hi: number): number | null {
 function parsePlx(
   base64: string
 ): { spo2: number | null; pulseRate: number | null } | null {
-  console.log("HAAAAAAAAAAAAAAAAAAAAAA");
-  console.log(base64);
   const d = b64ToBytes(base64);
   if (d.length < 5) return null;
   let i = 0;
-  const flags = d[i++]; // not used here, but you can gate optional fields by bits
 
   const spo2 = sfloat16(d[i++], d[i++]); // % saturation
   const pulseRate = sfloat16(d[i++], d[i++]); // bpm
