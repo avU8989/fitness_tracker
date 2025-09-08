@@ -51,6 +51,7 @@ export function toUIPlan(
   plan: TrainingPlanDTO,
   opts?: { activeWeekNumber?: number }
 ): TrainingPlanUI {
+  const updatedAt = plan.updatedAt ? new Date(plan.updatedAt) : new Date();
   if (isPowerlifting(plan)) {
     const weeks = plan.weeks ?? [];
     const weeksCount = weeks.length;
@@ -60,6 +61,7 @@ export function toUIPlan(
     return {
       _id: plan._id,
       name: plan.name,
+      updatedAt,
       type: plan.type,
       days: targetWeek?.days ?? [],
       meta: {
@@ -76,6 +78,7 @@ export function toUIPlan(
   return {
     _id: plan._id,
     name: plan.name,
+    updatedAt,
     type: plan.type,
     days: plan.days,
   };

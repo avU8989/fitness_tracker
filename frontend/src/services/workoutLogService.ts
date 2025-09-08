@@ -16,10 +16,12 @@ export async function createWorkoutLog(
     body: JSON.stringify(data),
   });
 
+  const result = await response.json();
+
   if (!response.ok) {
-    throw new Error("Failed to log Workout");
+    console.log(response);
+    throw new Error(result.error || "Failed to log workout");
   }
 
-  console.log(response);
-  return response.json();
+  return result;
 }

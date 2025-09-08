@@ -24,7 +24,7 @@ export interface IWorkoutLog extends Document {
   // Snapshots (at time of logging)
   dayOfWeek?: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
   plannedExercises?: IExercise[]; // snapshot of planned exercises
-  performed: Date;
+  performed: string;
   exercises: IExerciseLog[];
   duration?: number;
   caloriesBurned?: number;
@@ -33,14 +33,14 @@ export interface IWorkoutLog extends Document {
   updatedAt?: Date;
 }
 
-const ExerciseLogSchema = new Schema<IExerciseLog>({
+const exerciseLogSchema = new Schema<IExerciseLog>({
   exerciseId: { type: Schema.Types.ObjectId, ref: "Exercise" },
   name: { type: String, required: true },
   sets: { type: [setSchema], required: true },
   rpe: { type: Number },
 });
 
-const WorkoutLogSchema = new Schema<IWorkoutLog>(
+const workoutLogSchema = new Schema<IWorkoutLog>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     trainingPlanId: {
@@ -56,8 +56,8 @@ const WorkoutLogSchema = new Schema<IWorkoutLog>(
       enum: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
     },
     plannedExercises: [exerciseSchema],
-    performed: { type: Date, default: Date.now },
-    exercises: [ExerciseLogSchema],
+    performed: { type: String, required: true },
+    exercises: [exerciseLogSchema],
     duration: Number,
     caloriesBurned: Number,
     notes: String,
@@ -65,9 +65,12 @@ const WorkoutLogSchema = new Schema<IWorkoutLog>(
   { timestamps: true }
 );
 
+//ensure uniqueness
+workoutLogSchema.index({ userId: 1, performed: 1 }, { unique: true });
+
 const WorkoutLog: Model<IWorkoutLog> = mongoose.model<IWorkoutLog>(
   "Workout",
-  WorkoutLogSchema
+  workoutLogSchema
 );
 
 export default WorkoutLog;

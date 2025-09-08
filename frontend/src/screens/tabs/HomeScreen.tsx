@@ -294,25 +294,6 @@ export default function HardloggerUI() {
                                 &gt;&gt;STRENGTH SIGNAL LOCKED — HOLD THE LINE&lt;&lt;
                             </Text>
                         </View>
-
-                        <WeeklySplitLog></WeeklySplitLog>
-
-
-                        <View style={styles.row}>
-                            <Pressable style={styles.iconButton}>
-                                <Icon name="flash-outline" size={20} color="#00ffcc" style={styles.icon} />
-                                <Text style={[styles.buttonText, styles.glow]}>START</Text>
-                            </Pressable>
-                            <Pressable style={styles.iconButton}>
-                                <Icon name="add-circle-outline" size={20} color="#00ffcc" style={styles.icon} />
-                                <Text style={[styles.buttonText, styles.glow]}>ADD SET</Text>
-                            </Pressable>
-                            <Pressable style={styles.iconButton}>
-                                <Icon name="barbell-outline" size={20} color="#00ffcc" style={styles.icon} />
-                                <Text style={[styles.buttonText, styles.glow]}>VIEW GAINS</Text>
-                            </Pressable>
-                        </View>
-
                     </ScrollView>
                 </ImageBackground>
             </ImageBackground>

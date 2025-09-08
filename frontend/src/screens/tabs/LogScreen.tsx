@@ -40,6 +40,11 @@ const trainingPlan = [
   // Add more exercises as needed
 ];
 
+type PlannedExercise = {
+  name: string;
+  sets: { reps: number; weight: number; unit: string }[];
+};
+
 const LogPage = () => {
   const { token } = useContext(AuthContext);
   const [sets, setSets] = useState(initialSets);
@@ -51,6 +56,8 @@ const LogPage = () => {
   const [loggedExercises, setLoggedExercises] = useState<LoggedExercise[]>([]);
   const [completedExercises, setCompletedExercises] = useState<String[]>([]);
   const [workoutLogged, setWorkoutLogged] = useState(false);
+  const [splitName, setSplitName] = useState("");
+  const [plannedExercises, setPlannedExercises] = useState<PlannedExercise[]>([]);
 
   // Blink animation for session status
   useEffect(() => {
@@ -92,7 +99,6 @@ const LogPage = () => {
         console.log("Could not find active trainingplan");
         return;
       }
-
       //set the trainingplanid to create workout logs for later
       setCurrentPlanId(trainingPlan._id);
       console.log("This is the current training plan id: ", trainingPlan._id);
@@ -101,15 +107,15 @@ const LogPage = () => {
         if (trainingPlan.days[i].dayOfWeek === getTodayName()) {
           //set the current Workout Day id to create workout logs for later
           setCurrentWorkoutDayId(trainingPlan.days[i]._id);
-          console.log(trainingPlan.days[i].exercises.length);
+          setSplitName(trainingPlan.days[i].splitType);
 
           if (trainingPlan.days[i].exercises.length > 0) {
-            setCurrentExercises(trainingPlan.days[i].exercises);
+            const todaysExercises = trainingPlan.days[i].exercises;
+            setPlannedExercises(JSON.parse(JSON.stringify(todaysExercises)));
+            setCurrentExercises(todaysExercises);
           }
         }
       };
-
-
     } catch (err: any) {
       console.error("Could not load Exercises for today: ", err);
     }
@@ -152,13 +158,15 @@ const LogPage = () => {
       alert("Workout successfully logged!");
       setWorkoutLogged(true);
     } catch (err: any) {
-      alert(err.message || 'Failed to log workout');
+      console.log("This is the message: ", err.message);
+      alert(err.message || 'Log workout already exists');
     }
   }
 
   useEffect(() => {
     loadExercises();
     console.log("Updated loggedExercises", loggedExercises);
+
   }, [token]);
 
 
@@ -167,18 +175,19 @@ const LogPage = () => {
       {/* Session Status */}
       <View style={styles.sessionStatusContainer}>
         <View style={[styles.recIndicator, { opacity: blinkVisible ? 1 : 0.3 }]} />
-        <Text style={styles.sessionStatusText}>SESSION STATUS: ACTIVE</Text>
+        <Text style={[
+          styles.sessionStatusText,
+          workoutLogged && { color: '#00ffcc' }
+        ]}>
+          {workoutLogged ? "SESSION STATUS: LOGGED" : "SESSION STATUS: ACTIVE"}
+        </Text>
+
       </View>
 
       {/* Header */}
       <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — SESSION LOG▓</Text>
-      <Text style={styles.vhsSubHeader}>▐▐ SPLIT: PUSH_A1 ▐▐</Text>
+      <Text style={styles.vhsSubHeader}>▐ TODAY'S SPLIT: {splitName} ▐</Text>
 
-      {workoutLogged && (
-        <View style={styles.loggedIndicator}>
-          <Text style={styles.loggedText}>■ Workout Logged Successfully</Text>
-        </View>
-      )}
 
 
       <VHSGlowDivider />
@@ -192,28 +201,29 @@ const LogPage = () => {
               <Pressable
                 key={i}
                 onPress={() => setSelectedExercise(exercise.name)}
-                style={[
-                  styles.trainingPlanItem,
-                  selectedExercise === exercise.name
-                    ? styles.selectedExercise
-                    : styles.dimmedExercise,
-                ]}
+                style={[styles.trainingPlanItem, isSelected && styles.pressedHighlight]}
               >
                 <Text style={styles.exerciseTitle}>▌ {exercise.name}</Text>
 
                 {exercise.sets.map((set, idx) => {
-                  // Check if this exercise is in loggedExercises and if that set has a logged rep/weight
                   const logged = loggedExercises.find(le => le.name === exercise.name);
                   const thisSetLogged = logged?.sets?.[idx] && logged.sets[idx].reps > 0;
 
                   return (
-                    <Text key={idx} style={styles.exerciseMeta}>
+                    <Text
+                      key={idx}
+                      style={[
+                        styles.exerciseMeta,
+                        thisSetLogged ? styles.savedSetHighlight : styles.unsavedSetDimmed,
+                      ]}
+                    >
                       ▍Set {idx + 1}: {set.reps} reps @ {set.weight} {set.unit}
                       {thisSetLogged && <Text style={styles.doneMarker}> ✓</Text>}
                     </Text>
                   );
                 })}
               </Pressable>
+
 
             );
           })}
@@ -230,47 +240,39 @@ const LogPage = () => {
           exerciseName={selectedExercise}
           plannedSets={currentExercises.find(e => e.name === selectedExercise)?.sets ?? []}
           onSave={(exerciseName, logs) => {
-            const performedSets: LoggedSet[] = logs.map(l => ({
-              reps: parseInt(l.actualReps, 10) || 0,
-              weight: parseFloat(l.actualWeight) || 0,
-              unit: "kg",
-              rpe: l.rpe ? parseFloat(l.rpe) : undefined,
-            }));
-
             setLoggedExercises(prev => {
               const withoutThisExercise = prev.filter(ex => ex.name !== exerciseName);
+              const existing = prev.find(ex => ex.name === exerciseName);
+
+              const mergedSets = logs.map((l, idx) => {
+                const newSet = {
+                  reps: parseInt(l.actualReps, 10) || 0,
+                  weight: parseFloat(l.actualWeight) || 0,
+                  unit: "kg",
+                  rpe: l.rpe ? parseFloat(l.rpe) : undefined,
+                };
+
+                // If user didn’t enter anything → keep old logged set (if it exists)
+                const isEmpty =
+                  !l.actualReps && !l.actualWeight && (!l.rpe || l.rpe === "");
+
+                if (isEmpty && existing?.sets[idx]) {
+                  return existing.sets[idx];
+                }
+
+                return newSet;
+              });
+
               return [
                 ...withoutThisExercise,
-                { name: exerciseName, sets: performedSets }
+                { name: exerciseName, sets: mergedSets }
               ];
             });
 
-            // mark exercise as completed
+            // Mark exercise as completed if at least one set has been logged
             setCompletedExercises(prev => [...new Set([...prev, exerciseName])]);
-
-            setCurrentExercises(prev =>
-              prev.map(ex => {
-                if (ex.name !== exerciseName) return ex;
-
-                const mergedSets = ex.sets.map((plannedSet, idx) => {
-                  const loggedSet = performedSets[idx];
-
-                  // if user filled this set (any meaningful value)
-                  if (
-                    loggedSet &&
-                    (loggedSet.reps > 0 || loggedSet.weight > 0 || loggedSet.rpe !== undefined)
-                  ) {
-                    return loggedSet; // use logged version
-                  }
-
-                  // otherwise, keep the planned version
-                  return plannedSet;
-                });
-
-                return { ...ex, sets: mergedSets };
-              })
-            );
           }}
+
         />
       )}
 
@@ -286,43 +288,111 @@ const LogPage = () => {
       {/* Log Feed */}
       <View style={styles.logFeed}>
         <Text style={styles.feedHeader}>▓ LOG FEED ▓</Text>
-        {sets.slice(-3).reverse().map((set, i) => {
-          const exercisePlan = trainingPlan.find(e => e.name === set.exercise);
-          const plannedVolume = exercisePlan
-            ? exercisePlan.sets.reduce((acc, s) => acc + s.weight * s.reps, 0)
+
+        {plannedExercises.map((planned, i) => {
+          const logged = loggedExercises.find(le => le.name === planned.name);
+
+          // planned volume
+          const plannedVolume = planned.sets.reduce(
+            (acc, s) => acc + (s.weight || 0) * (s.reps || 0),
+            0
+          );
+
+          // logged volume
+          const actualVolume = logged
+            ? logged.sets.reduce(
+              (acc, s) => acc + (s.weight || 0) * (s.reps || 0),
+              0
+            )
             : 0;
-          const actualVolume = (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0);
-          const percent = plannedVolume ? Math.min((actualVolume / plannedVolume) * 100, 100) : 0;
+
+          const percent = plannedVolume
+            ? Math.min((actualVolume / plannedVolume) * 100, 100)
+            : 0;
 
           return (
             <View key={i} style={styles.setLogRow}>
-              <View style={styles.dotRpeContainer}>
-                <View style={[styles.rpeDot, rpeColor(set.rpe)]} />
-                <Text style={styles.feedText}>
-                  {set.exercise} — {set.reps} reps @ {set.weight}kg
-                </Text>
-              </View>
+              <Text style={styles.feedText}>{planned.name}</Text>
+
+              {/* Progress bar */}
               <View style={styles.volumeBarTrack}>
-                <View style={[styles.volumeBarFill, { width: `${percent}%` }]} />
+                <View
+                  style={[
+                    styles.volumeBarFill,
+                    { width: `${percent}%` },
+                  ]}
+                />
               </View>
+
               <Text style={styles.volumeBarLabel}>
                 {actualVolume} kg lifted / {plannedVolume} planned
               </Text>
+
+              {/* Show logged sets with RPE */}
+
+              {logged && logged.sets.map((set, idx) => {
+                // calculate average RPE for context
+                const rpeValues = logged.sets
+                  .map(s => s.rpe)
+                  .filter(r => r !== undefined) as number[];
+
+                const avgRPE =
+                  rpeValues.length > 0
+                    ? rpeValues.reduce((a, b) => a + b, 0) / rpeValues.length
+                    : null;
+
+                return (
+                  <View key={idx} style={styles.dotRpeContainer}>
+                    {/* Set info */}
+                    <Text style={styles.exerciseMeta}>
+                      ▍Set {idx + 1}: {set.reps} reps @ {set.weight}kg
+                      {set.rpe !== undefined && ` | RPE ${set.rpe}`}
+                    </Text>
+                    {/* RPE dot */}
+                    {set.rpe !== undefined && (
+                      <View style={[styles.rpeDot, rpeColor(String(set.rpe))]} />
+                    )}
+                  </View>
+                );
+              })}
+
             </View>
           );
         })}
       </View>
 
+
+
       {/* Tape Stats */}
       <View style={styles.tapeStatRow}>
-        <Text style={styles.tapeStat}>▌SETS LOGGED: {sets.length}</Text>
-        <Text style={styles.tapeStat}>▌TOTAL LOAD: {sets.reduce((acc, s) => acc + parseFloat(s.weight || '0'), 0)} kg</Text>
+        <Text style={styles.tapeStat}>
+          SETS LOGGED: {
+            loggedExercises.reduce(
+              (sum, e) =>
+                sum + e.sets.filter(s => (s.reps ?? 0) > 0 || (s.weight ?? 0) > 0 || s.rpe !== undefined).length,
+              0
+            )
+          }
+        </Text>
+
+        <Text style={styles.tapeStat}>▌TOTAL LOAD:
+          {loggedExercises.reduce((acc, ex) => {
+            return acc + ex.sets.reduce((sum, s) =>
+              sum + s.reps * s.weight, 0);
+          }, 0)} kg</Text>
       </View>
 
       {/* Finalize Button */}
-      <Pressable style={styles.endButton} onPress={logWorkout}>
-        <Text style={styles.endButtonText}>■ FINALIZE & ENCODE SESSION</Text>
+      <Pressable
+        style={[styles.endButton, workoutLogged && { backgroundColor: '#33FF66' }]}
+        disabled={workoutLogged}
+        onPress={logWorkout}
+      >
+        <Text style={styles.endButtonText}>
+          {workoutLogged ? "■ SESSION LOGGED" : "■ FINALIZE & ENCODE SESSION"}
+        </Text>
       </Pressable>
+
     </ScrollView>
   );
 };
@@ -331,6 +401,23 @@ const LogPage = () => {
 export default LogPage;
 
 const styles = StyleSheet.create({
+  pressedHighlight: {
+    borderColor: '#00ffcc',
+    borderWidth: 2,
+    backgroundColor: '#002229',
+  },
+  unsavedSetDimmed: {
+    opacity: 0.5,  // dim only unsaved sets
+  },
+
+  savedSetHighlight: {
+    color: '#00ffcc',          // neon green text
+    fontWeight: 'bold',
+    textShadowColor: '#00ffcc',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+  },
+
   loggedIndicator: {
     marginTop: 15,
     padding: 10,
@@ -419,8 +506,8 @@ const styles = StyleSheet.create({
   vhsSubHeader: {
     fontFamily: 'monospace',
     color: '#00ffcc',
-    fontSize: 11,
-    marginBottom: 10,
+    fontSize: 20,
+    marginTop: 10,
     letterSpacing: 2,
     textTransform: 'uppercase',
     opacity: 0.6,
@@ -431,7 +518,7 @@ const styles = StyleSheet.create({
     borderColor: '#00ffcc',
     borderRadius: 10,
     backgroundColor: 'transparent',
-    height: 180,
+    height: 260,
     overflow: 'hidden',
   },
   scrollArea: {
@@ -517,6 +604,7 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     marginRight: 10,
+    marginLeft: 10,
     shadowColor: '#00ffcc',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,

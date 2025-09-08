@@ -30,18 +30,9 @@ const ExerciseLogModal = ({
     plannedSets,
     onSave,
 }: ExerciseLogModalProps) => {
-    const [loggedSets, setLoggedSets] = useState<LoggedSet[]>([]);
-
-    useEffect(() => {
-        if (visible) {
-            setLoggedSets(prev =>
-                prev.length > 0
-                    ? prev // keep what user already entered
-                    : plannedSets.map(() => ({ actualReps: '', actualWeight: '', rpe: '' }))
-            );
-        }
-    }, [plannedSets, visible]);
-
+    const [loggedSets, setLoggedSets] = useState<LoggedSet[]>(
+        plannedSets.map(() => ({ actualReps: '', actualWeight: '', rpe: '' }))
+    );
 
     const handleChange = (index: number, field: keyof LoggedSet, value: string) => {
         const updated = [...loggedSets];

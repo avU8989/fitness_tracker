@@ -5,7 +5,7 @@ import TrainingPlan from "../models/TrainingPlan";
 import { IBodybuildingPlan } from "../models/BodybuildingPlan";
 import { ICrossfitPlan } from "../models/CrossfitPlan";
 import { IPowerliftingPlan } from "../models/PowerliftingPlan";
-
+import { formatLocalDateYYYYMMDD } from "../utils/controllerUtils";
 // POST /workouts - Log a new workout
 export const createWorkoutLog = async (
   req: AuthenticatedRequest,
@@ -62,6 +62,11 @@ export const createWorkoutLog = async (
       return;
     }
 
+    //normalize date to store and ensure uniqueness upon performed index in mongo
+    const normalizedDate = performed
+      ? formatLocalDateYYYYMMDD(performed)
+      : formatLocalDateYYYYMMDD(new Date());
+
     const loggedWorkout = new WorkoutLog({
       userId,
       trainingPlanId,
@@ -72,7 +77,7 @@ export const createWorkoutLog = async (
       plannedExercises: workoutDay.exercises,
 
       //actual log of workout
-      performed,
+      performed: normalizedDate,
       exercises,
       duration,
       caloriesBurned,
@@ -91,6 +96,12 @@ export const createWorkoutLog = async (
       },
     });
   } catch (error: any) {
+    if (error.code === 11000) {
+      res.status(400).json({
+        error: "Workout log already exists for this day",
+      });
+      return;
+    }
     res
       .status(500)
       .json({ message: "Internal server error", error: error.message });
@@ -124,6 +135,15 @@ export const getWorkoutLogs = async (
     const workouts = await WorkoutLog.find(query).sort({ date: -1 });
     res.status(200).json(workouts);
   } catch (error: any) {
+    console.error(error);
+    if (error.code === 11000) {
+      res
+        .status(400)
+        .json({ error: "Workout log already exists for this day" });
+      return;
+    }
+
+    console.error("Unexpected error creating workout log:", error);
     res
       .status(500)
       .json({ message: "Failed to fetch workouts", error: error.message });

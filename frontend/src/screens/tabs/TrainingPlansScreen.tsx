@@ -131,6 +131,7 @@ export default function TrainingPlansScreen() {
 
     const { rangeLine, yearLine } = formatSplitDateRange(new Date());
     const daysCompleted = completedDays.length;
+    const startDate = currentPlan?.updatedAt ?? new Date();
 
     const handleSavePlan = newPlan => {
         setPlans([...plans, { ...newPlan, date: new Date() }]);
