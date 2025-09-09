@@ -91,7 +91,7 @@ const VHSHeader = () => {
                         </Animated.View>
                         <Text style={styles.recText}>REC {recTime}</Text>
                     </View>
-                    <Text style={styles.recDate}>01/01/1996</Text>
+                    <Text style={styles.recDate}>{(new Date()).toLocaleDateString("en-GB")}</Text>
                 </View>
             </View>
 

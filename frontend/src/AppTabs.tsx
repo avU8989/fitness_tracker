@@ -19,8 +19,8 @@ export default function AppTabs() {
                     let iconName: string;
 
                     switch (route.name) {
-                        case 'DASH':
-                            iconName = focused ? 'speedometer' : 'speedometer-outline';
+                        case 'HOME':
+                            iconName = focused ? 'home' : 'home-outline';
                             break;
                         case 'LOG':
                             iconName = focused ? 'barbell' : 'barbell-outline';
@@ -58,7 +58,7 @@ export default function AppTabs() {
                 headerShown: false,
             })}
         >
-            <Tab.Screen name="DASH" component={HomeScreen} />
+            <Tab.Screen name="HOME" component={HomeScreen} />
             <Tab.Screen name="LOG" component={LogScreen} />
             <Tab.Screen name="SPLIT" component={TrainingPlansScreen} />
             <Tab.Screen name="GAINS" component={GainScreen} />

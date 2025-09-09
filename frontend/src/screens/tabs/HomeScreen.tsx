@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
     View,
     Text,
@@ -9,15 +9,24 @@ import {
 } from 'react-native';
 import VHSHeader from '../../components/VHSHeader';
 import { useState, useEffect } from 'react';
-import WeeklySplitLog from '../../components/WeeklySplitLog';
 import Icon from 'react-native-vector-icons/Ionicons'; // at top
 import VHSGlowDivider from '../../components/VHSGlowDivider';
 import { useHeartRateMonitor } from '../../hooks/useHeartRateMonitor';
 import { usePulseOximeterMonitor } from '../../hooks/usePulseOximeterMonitor';
-
+import { getStatsOverview } from '../../services/statsService';
+import { AuthContext } from '../../context/AuthContext';
+import { useWorkout } from '../../context/WorkoutContext';
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
     const { spo2, pulseRate } = usePulseOximeterMonitor();
+    const { token } = useContext(AuthContext);
+    const [workoutsThisWeek, setWorkoutsThisWeek] = useState(null);
+    const [totalVolume, setTotalVolume] = useState(null);
+    const [lastWorkout, setLastWorkout] = useState("");
+    const [lastSplitType, setLastSplitType] = useState("");
+    const [workoutStreak, setWorkoutStreak] = useState(null);
+    const [nextGoalMessage, setNextGoalMessage] = useState("");
+    const { remainingDays, setRemainingDays } = useWorkout();
     const stats = {
         lastWorkoutDays: '01/04/1996',
         exercisesLogged: 6,
@@ -75,7 +84,7 @@ export default function HardloggerUI() {
                     marginTop: 10,
                 }}
             >
-                {[...Array(20)].map((_, i) => {
+                {[...Array(36)].map((_, i) => {
                     // add random variation around base height
                     const height = baseHeight + Math.random() * 20 - 10;
                     return (
@@ -94,30 +103,40 @@ export default function HardloggerUI() {
         );
     };
 
+    useEffect(() => {
+        loadWorkoutStats();
+    }, []);
+
+    async function loadWorkoutStats() {
+        try {
+            if (token) {
+                const {
+                    workoutsThisWeek,
+                    totalVolume,
+                    lastWorkout,
+                    workoutStreak,
+                    lastSplitType,
+                    nextGoalMessage,
+                    remainingDays,
+                } = await getStatsOverview(token);
+
+                const date = new Date(lastWorkout);
+                const formatted = date.toLocaleDateString("en-GB");
+
+                setRemainingDays(remainingDays ?? 0);
+                setWorkoutsThisWeek(workoutsThisWeek ?? 0);
+                setNextGoalMessage(nextGoalMessage ?? "");
+                setLastSplitType(lastSplitType ?? "");
+                setTotalVolume(totalVolume ?? 0);
+                setLastWorkout(formatted ?? "");
+                setWorkoutStreak(workoutStreak ?? 0);
+            }
+        } catch (err: any) {
+            console.error(err.message);
+        }
+    }
 
     const recoveryCards = [
-        {
-            title: 'MOTIVATION MODULE',
-            lines: [
-                '“NO PAIN >> NO PROGRESS”',
-                '“YOU ARE NOT TIRED — YOU ARE UNDERLOADED”',
-                '“REWIND IS DISABLED // PUSH FORWARD”',
-            ],
-        },
-        {
-            title: 'SYSTEM WARNINGS',
-            lines: [
-                '☠ CNS VOLTAGE SPIKE DETECTED',
-                '⚠ SLEEP SYNC OUT OF PHASE',
-                '!! OVERLOAD SIGNAL RECEIVED',
-            ],
-        },
-        {
-            title: 'TAPE LOADER',
-            render: () => (
-                <Text style={styles.cardText}>TAPE LOAD {'>>'} {useTapeLoader()}</Text>
-            ),
-        },
         {
             title: 'PULSE FEED',
             render: () => (
@@ -133,28 +152,16 @@ export default function HardloggerUI() {
             ),
         },
         {
+            title: 'MOCK STATS',
+            lines: ['HRV // NORMAL', 'SLEEP // 7.5 HRS', 'FATIGUE // LOW'],
+        },
+        {
             title: 'RECOVERY STATUS',
             lines: [
                 `SORE//${stats.recovery.soreness}`,
                 `CNS LOAD: ${stats.recovery.cnsLoad}`,
                 `MENTAL STATE: ${stats.recovery.mental}`,
             ],
-        },
-        {
-            title: 'MOCK STATS',
-            lines: ['HRV // NORMAL', 'SLEEP // 7.5 HRS', 'FATIGUE // LOW'],
-        },
-        {
-            title: 'SUPPLEMENT STACK',
-            lines: ['CREATINE // ✓', 'OMEGA-3 // ✓', 'MAGNESIUM // ✓'],
-        },
-        {
-            title: 'NUTRITION',
-            lines: ['CALORIES // 2450', 'PROTEIN // 170G', 'CARBS // 230G'],
-        },
-        {
-            title: 'HYDRATION STATUS',
-            lines: ['WATER // 3.2L', 'ELECTROLYTES // BALANCED', 'CAFFEINE // 150mg'],
         },
         {
             title: 'SESSION LOG',
@@ -218,27 +225,45 @@ export default function HardloggerUI() {
 
 
                         <View style={styles.overviewRow}>
-                            <Text style={styles.vhsHudTitle}>▓CHANNEL 01 — SYSTEM LOG▓</Text>
+                            <Text style={styles.vhsHudTitle}>▓CHANNEL 01 — WORKOUT FEED▓</Text>
                             <View style={styles.vhsHudPanel}>
                                 <View style={styles.hudRow}>
                                     <Text style={styles.hudLabel}>▌WORKOUTS THIS WEEK:</Text>
-                                    <Text style={[styles.hudValue, { color: "#00ffcc", fontWeight: "bold" }]}> 6</Text>
+                                    <Text style={[styles.hudValue, { color: "#00ffcc", fontWeight: "bold" }]}> {workoutsThisWeek} finished</Text>
                                 </View>
 
                                 <View style={styles.hudRow}>
                                     <Text style={styles.hudLabel}>▌WORKOUT STREAK:</Text>
 
-                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}> 12 Days</Text>
+                                    <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+                                        <Text style={[styles.hudValue, { fontWeight: "bold" }]}>
+                                            {workoutStreak} Days
+                                        </Text>
+                                        <Icon
+                                            name="flame"
+                                            size={18}
+                                            color="#ff3b3b"
+                                            style={{
+                                                marginLeft: 4,
+                                                marginBottom: -2,
+                                                textShadowColor: "#e91109ff", // outer glow orange
+                                                textShadowRadius: 12,            // how soft the glow looks
+                                                textShadowOffset: { width: 0, height: 0 }, // centered glow
+                                            }}
+                                        />
+                                    </View>
+
+
                                 </View>
 
                                 <View style={styles.hudRow}>
                                     <Text style={styles.hudLabel}>▌NEXT GOAL:</Text>
 
-                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}>BENCH → 500 KG</Text>
+                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}></Text>
                                 </View>
 
                                 <Text style={styles.diagnosticNote}>
-                                    {'>>'} KEEP MOMENTUM — NEXT PR IN RANGE  {'<<'}
+                                    {'>>'} {nextGoalMessage}  {'<<'}
                                 </Text>
                             </View>
 
@@ -247,13 +272,13 @@ export default function HardloggerUI() {
                         <View style={styles.doubleRow}>
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>LAST WORKOUT</Text>
-                                <Text style={styles.largeText}>{stats.lastWorkout.date}</Text>
-                                <Text style={styles.bodyText}>{stats.lastWorkout.split}</Text>
+                                <Text style={styles.largeText}>{lastWorkout}</Text>
+                                <Text style={styles.bodyText}>{lastSplitType}</Text>
                             </View>
 
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>THIS WEEK VOLUME</Text>
-                                <Text style={styles.boldText}>{stats.weekVolume.toLocaleString()} lb</Text>
+                                <Text style={styles.boldText}>{totalVolume} kg</Text>
                             </View>
                         </View>
 
@@ -324,7 +349,7 @@ const styles = StyleSheet.create({
         fontFamily: "monospace",
         color: "#BFC7D5",
         fontSize: 13,
-        letterSpacing: 5,
+        letterSpacing: 3,
     },
 
     hudValue: {
@@ -333,7 +358,7 @@ const styles = StyleSheet.create({
         fontSize: 12,             // slightly bigger than labels
         fontWeight: "bold",       // makes numbers pop
         letterSpacing: 2,         // more "digital"
-        marginRight: 12,
+        marginRight: 5,
         textShadowColor: "#00ffcc",
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 4,      // softer glow than diagnosticNote
@@ -429,20 +454,20 @@ const styles = StyleSheet.create({
     vhsHudTitle: {
         fontFamily: 'monospace',
         color: '#00ffcc',
-        fontSize: 16,
+        fontSize: 18,
         paddingVertical: 4,
         paddingHorizontal: 10,
         backgroundColor: 'rgba(0, 255, 204, 0.08)',
         borderLeftWidth: 3,
         borderLeftColor: '#00ffcc',
         borderRadius: 2,
-        letterSpacing: 3,
+        letterSpacing: 0.5,
         textTransform: 'uppercase',
         textShadowColor: '#00ffcc',
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 6,
         marginBottom: 12,
-        alignSelf: 'flex-start',
+        alignSelf: 'center',
         overflow: 'hidden',
     },
 

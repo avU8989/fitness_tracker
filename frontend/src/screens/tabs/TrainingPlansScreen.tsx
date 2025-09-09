@@ -162,7 +162,7 @@ export default function TrainingPlansScreen() {
     return (
         <View style={styles.root}>
             <View style={styles.headerContainer}>
-                <Text style={styles.vhsHudTitle}>▓CHANNEL 05 — TRAINING FEED▓</Text>
+                <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — TRAINING FEED▓</Text>
             </View>
 
             <View style={styles.titleContainer}>
@@ -414,12 +414,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.6,
     },
 
-    modalBackdrop: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     modalContainer: {
         backgroundColor: 'white',
         borderRadius: 10,
@@ -431,19 +425,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginVertical: 2,
     },
-    modalCloseButton: {
-        marginTop: 20,
-        alignSelf: 'center',
-        paddingVertical: 6,
-        paddingHorizontal: 20,
-        backgroundColor: '#ccc',
-        borderRadius: 8,
-    },
-    modalCloseText: {
-        fontSize: 16,
-        fontWeight: '600',
-    },
-
     dateContainer: {
         alignItems: 'center',
         marginBottom: 10,
@@ -579,16 +560,6 @@ const styles = StyleSheet.create({
     scrollArea: {
         backgroundColor: 'transparent',
     },
-    longPressHighlight: {
-        backgroundColor: 'rgba(0, 255, 204, 0.2)',
-        borderColor: '#00ffcc',
-        borderWidth: 1,
-        shadowColor: '#00ffcc',
-        shadowOffset: { width: 0, height: 0 },
-        shadowRadius: 10,
-        shadowOpacity: 0.8,
-    },
-
     tableRow: {
         flexDirection: 'row',
         paddingVertical: 12,

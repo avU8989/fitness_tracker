@@ -11,10 +11,11 @@ import VHSGlowDivider from '../../components/VHSGlowDivider';
 import { AuthContext } from '../../context/AuthContext';
 import { getActivePlan } from '../../services/planAssignmentsService';
 import { getTodayName, toDateFormatFetchActiveTrainingPlans } from '../../utils/apiHelpers';
-import { Exercise } from '../../types/trainingPlan';
+import { Exercise, WorkoutDay } from '../../types/trainingPlan';
 import { CreateWorkoutLogRequest } from '../../requests/CreateWorkoutLogRequest';
-import { createWorkoutLog } from '../../services/workoutLogService';
+import { createWorkoutLog, getNextSkippedDay } from '../../services/workoutLogService';
 import { LoggedExercise, LoggedSet } from '../../types/workoutLog';
+import { useWorkout } from '../../context/WorkoutContext';
 
 type PlannedExercise = {
   name: string;
@@ -33,9 +34,12 @@ const LogPage = () => {
   const [workoutLogged, setWorkoutLogged] = useState(false);
   const [splitName, setSplitName] = useState("");
   const [plannedExercises, setPlannedExercises] = useState<PlannedExercise[]>([]);
+  const [nextSkippedDay, setNextSkippedDay] = useState<WorkoutDay | null>(null);
+  const { remainingDays } = useWorkout();
 
   // Blink animation for session status
   useEffect(() => {
+    console.log(remainingDays);
     const interval = setInterval(() => {
       setBlinkVisible((v) => !v);
     }, 600);
@@ -138,10 +142,28 @@ const LogPage = () => {
     }
   }
 
-  useEffect(() => {
-    loadExercises();
-    console.log("Updated loggedExercises", loggedExercises);
+  const loadSkippedExercises = async () => {
+    if (!token) {
+      alert('You must be logged in to log your workout');
+      return;
+    }
 
+    try {
+      const response = await getNextSkippedDay(token);
+      setNextSkippedDay(response.nextSkippedDay);
+      console.log(nextSkippedDay);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  }
+
+  useEffect(() => {
+    if (remainingDays > 0) {
+      loadSkippedExercises();
+    } else {
+      loadExercises();
+    }
+    console.log("Updated loggedExercises", loggedExercises);
   }, [token]);
 
 
@@ -160,8 +182,8 @@ const LogPage = () => {
       </View>
 
       {/* Header */}
-      <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — SESSION LOG▓</Text>
-      <Text style={styles.vhsSubHeader}>▐ TODAY'S SPLIT: {splitName} ▐</Text>
+      <Text style={styles.vhsHudTitle}>▓CHANNEL 03 — SESSION LOG▓</Text>
+      <Text style={styles.vhsSubHeader}>▐ TODAY'S SPLIT: {nextSkippedDay?.splitType ?? splitName} ▐</Text>
 
 
 
@@ -170,7 +192,7 @@ const LogPage = () => {
       {/* Training Plan List - Supposed Sets, Reps and Load to perform*/}
       <View style={styles.trainingPlanTable}>
         <ScrollView style={styles.scrollArea} nestedScrollEnabled>
-          {currentExercises.map((exercise, i) => {
+          {(nextSkippedDay ? nextSkippedDay.exercises : currentExercises).map((exercise, i) => {
             const isSelected = selectedExercise === exercise.name;
             return (
               <Pressable
@@ -213,7 +235,7 @@ const LogPage = () => {
           visible={!!selectedExercise}
           onClose={() => setSelectedExercise(null)}
           exerciseName={selectedExercise}
-          plannedSets={currentExercises.find(e => e.name === selectedExercise)?.sets ?? []}
+          plannedSets={(nextSkippedDay?.exercises ?? currentExercises).find(e => e.name === selectedExercise)?.sets ?? []}
           onSave={(exerciseName, logs) => {
             setLoggedExercises(prev => {
               const withoutThisExercise = prev.filter(ex => ex.name !== exerciseName);
@@ -265,7 +287,7 @@ const LogPage = () => {
       <View style={styles.logFeed}>
         <Text style={styles.feedHeader}>▓ LOG FEED ▓</Text>
 
-        {plannedExercises.map((planned, i) => {
+        {(nextSkippedDay?.exercises ?? plannedExercises).map((planned, i) => {
           const logged = loggedExercises.find(le => le.name === planned.name);
 
           // planned volume
@@ -306,8 +328,6 @@ const LogPage = () => {
 
               {/* Show logged sets with RPE */}
               {logged && logged.sets.map((set, idx) => {
-
-
                 return (
                   <View key={idx} style={styles.dotRpeContainer}>
                     {/* Set info */}
@@ -322,13 +342,10 @@ const LogPage = () => {
                   </View>
                 );
               })}
-
             </View>
           );
         })}
       </View>
-
-
 
       {/* Tape Stats */}
       <View style={styles.tapeStatRow}>

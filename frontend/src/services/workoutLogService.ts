@@ -25,3 +25,19 @@ export async function createWorkoutLog(
 
   return result;
 }
+
+export async function getNextSkippedDay(token: string) {
+  const response = await fetch(`${URL}/next-skipped`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Fetching next skipped day failed");
+  }
+
+  return response.json();
+}

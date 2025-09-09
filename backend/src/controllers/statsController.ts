@@ -114,6 +114,7 @@ export const getStatsOveriew = async (
                   },
                 },
                 lastWorkout: { $max: "$performedDate" },
+                lastWorkoutDayId: { $first: "$workoutDayId" },
               },
             },
           ],
@@ -128,6 +129,7 @@ export const getStatsOveriew = async (
             $ifNull: [{ $arrayElemAt: ["$workouts.workoutsThisWeek", 0] }, 0],
           },
           lastWorkout: { $arrayElemAt: ["$workouts.lastWorkout", 0] },
+          lastWorkoutDayId: { $arrayElemAt: ["$workouts.lastWorkoutDayId", 0] },
         },
       },
     ]);
@@ -135,29 +137,46 @@ export const getStatsOveriew = async (
     const result = stats[0] || {
       totalVolume: 0,
       workoutsThisWeek: 0,
+      lastWorkoutDayId: null,
       lastWorkout: null,
     };
 
     //get the remaining workout days for the user to finish this week
     //if 0 remaining workout days - congratulate user with message
-    const nextGoal = getNextGoal(
+    const { message, remainingDays } = getNextGoal(
       result.workoutsThisWeek,
       assignment.toObject() as unknown as ITrainingPlanAssignment & {
         trainingPlan: ITrainingPlan;
       }
     );
 
+    const trainingPlan = assignment.trainingPlan as unknown as
+      | IBodybuildingPlan
+      | ICrossfitPlan;
+
+    let lastSplitType;
+
+    //last workout splittype
+    if (result.lastWorkoutDayId && trainingPlan) {
+      const lastWorkoutDay = trainingPlan.days.find(
+        (d) =>
+          (d._id as mongoose.Types.ObjectId).toString() ===
+          result.lastWorkoutDayId.toString()
+      );
+
+      lastSplitType = lastWorkoutDay?.splitType || null;
+    }
+
     //workout streak (consecutive workouts up to today)
     const logs = await WorkoutLog.find({
       userId: userid,
-      trainingPlanId: assignment.trainingPlan._id,
     })
       .sort({
         performed: -1,
       })
       .select("performed");
 
-    console.log(logs.length);
+    console.log(logs);
 
     let streak = 0;
     let currentDate = normalizeDate(new Date());
@@ -177,8 +196,10 @@ export const getStatsOveriew = async (
       workoutsThisWeek: result.workoutsThisWeek,
       totalVolume: result.totalVolume,
       lastWorkout: result.lastWorkout,
+      lastSplitType,
       workoutStreak: streak,
-      nextGoalMessage: nextGoal,
+      nextGoalMessage: message,
+      remainingDays: remainingDays,
     });
   } catch (err: any) {
     console.error(err);
@@ -189,7 +210,7 @@ export const getStatsOveriew = async (
 const getNextGoal = (
   workoutsThisWeek: number,
   assignment: ITrainingPlanAssignment & { trainingPlan: ITrainingPlan }
-): string => {
+): { message: string; remainingDays: number } => {
   //narrow to only bodybuilding and crossfit
   //TO-DO powerlifting comes later
   const trainingPlan = assignment.trainingPlan as unknown as
@@ -212,5 +233,5 @@ const getNextGoal = (
     nextGoal = "All workouts done this week - recovery time!";
   }
 
-  return nextGoal;
+  return { message: nextGoal, remainingDays: remainingDays };
 };

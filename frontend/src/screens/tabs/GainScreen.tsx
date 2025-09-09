@@ -147,9 +147,8 @@ export default function DashboardScreen() {
 
             {/* Header */}
             <View style={styles.headerContainer}>
-                <Text style={[styles.vhsHudTitle]}>
-                    ▓ WORKOUT DASHBOARD ▓
-                </Text>
+                <Text style={styles.vhsHudTitle}>▓CHANNEL 05 — DASHBOARD▓</Text>
+
                 <Text style={[styles.subtitle, { color: colors.primary, opacity: 0.7 }]}>
                     Stay Strong — Stay Sharp
                 </Text>
@@ -278,6 +277,7 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
         overflow: 'hidden',
     },
+
     badgesContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
