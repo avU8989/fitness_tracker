@@ -16,30 +16,6 @@ import { CreateWorkoutLogRequest } from '../../requests/CreateWorkoutLogRequest'
 import { createWorkoutLog } from '../../services/workoutLogService';
 import { LoggedExercise, LoggedSet } from '../../types/workoutLog';
 
-const initialSets = [
-  { exercise: 'BENCH PRESS', reps: '8', weight: '100', rpe: '7' },
-  { exercise: 'DEADLIFT', reps: '5', weight: '140', rpe: '8' },
-];
-
-const trainingPlan = [
-  {
-    name: 'INCLINE BENCH PRESS',
-    sets: [
-      { reps: 10, weight: 80 },
-      { reps: 8, weight: 85 },
-      { reps: 6, weight: 90 },
-    ],
-  },
-  {
-    name: 'DUMBBELL PRESS',
-    sets: [
-      { reps: 12, weight: 26 },
-      { reps: 10, weight: 28 },
-    ],
-  },
-  // Add more exercises as needed
-];
-
 type PlannedExercise = {
   name: string;
   sets: { reps: number; weight: number; unit: string }[];
@@ -47,7 +23,6 @@ type PlannedExercise = {
 
 const LogPage = () => {
   const { token } = useContext(AuthContext);
-  const [sets, setSets] = useState(initialSets);
   const [selectedExercise, setSelectedExercise] = useState<string | null>(null);
   const [blinkVisible, setBlinkVisible] = useState(true);
   const [currentExercises, setCurrentExercises] = useState<Exercise[]>([]);
@@ -278,12 +253,13 @@ const LogPage = () => {
 
       {/* Previous Session Snapshot */}
       {selectedExercise && (
-        <View style={styles.exerciseStatsBox}>
+        < View style={styles.exerciseStatsBox}>
           <Text style={styles.exerciseStatsHeader}>▚ PREVIOUS SESSION SNAPSHOT ▞</Text>
           <Text style={styles.exerciseStatsLine}>▌Top Set: 6 reps @ 92.5kg</Text>
           <Text style={styles.exerciseStatsLine}>▌RPE: 8.5 | Last Logged: 2 Days Ago</Text>
         </View>
-      )}
+      )
+      }
 
       {/* Log Feed */}
       <View style={styles.logFeed}>
@@ -325,29 +301,20 @@ const LogPage = () => {
               </View>
 
               <Text style={styles.volumeBarLabel}>
-                {actualVolume} kg lifted / {plannedVolume} planned
+                {actualVolume} kg lifted / {plannedVolume} kg planned
               </Text>
 
               {/* Show logged sets with RPE */}
-
               {logged && logged.sets.map((set, idx) => {
-                // calculate average RPE for context
-                const rpeValues = logged.sets
-                  .map(s => s.rpe)
-                  .filter(r => r !== undefined) as number[];
 
-                const avgRPE =
-                  rpeValues.length > 0
-                    ? rpeValues.reduce((a, b) => a + b, 0) / rpeValues.length
-                    : null;
 
                 return (
                   <View key={idx} style={styles.dotRpeContainer}>
                     {/* Set info */}
-                    <Text style={styles.exerciseMeta}>
-                      ▍Set {idx + 1}: {set.reps} reps @ {set.weight}kg
+                    {set !== undefined && set.reps > 0 && set.weight > 0 && <Text style={styles.exerciseMeta}>
+                      ▍Set {idx + 1}: {set.reps} reps @ {set.weight} kg
                       {set.rpe !== undefined && ` | RPE ${set.rpe}`}
-                    </Text>
+                    </Text>}
                     {/* RPE dot */}
                     {set.rpe !== undefined && (
                       <View style={[styles.rpeDot, rpeColor(String(set.rpe))]} />
@@ -389,11 +356,11 @@ const LogPage = () => {
         onPress={logWorkout}
       >
         <Text style={styles.endButtonText}>
-          {workoutLogged ? "■ SESSION LOGGED" : "■ FINALIZE & ENCODE SESSION"}
+          {workoutLogged ? "■ WORKOUT LOGGED" : "■ LOG WORKOUT"}
         </Text>
       </Pressable>
 
-    </ScrollView>
+    </ScrollView >
   );
 };
 
@@ -411,8 +378,7 @@ const styles = StyleSheet.create({
   },
 
   savedSetHighlight: {
-    color: '#00ffcc',          // neon green text
-    fontWeight: 'bold',
+    color: '#00ffcc',
     textShadowColor: '#00ffcc',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,

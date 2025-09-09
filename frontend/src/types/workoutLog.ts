@@ -5,6 +5,7 @@ export interface WorkoutLogDTO {
 }
 
 export interface LoggedSet {
+  rpe: undefined;
   reps: number;
   weight: number;
   unit: "kg" | "lbs";
