@@ -220,18 +220,30 @@ export default function HardloggerUI() {
                         <View style={styles.overviewRow}>
                             <Text style={styles.vhsHudTitle}>▓CHANNEL 01 — SYSTEM LOG▓</Text>
                             <View style={styles.vhsHudPanel}>
-                                <Text style={styles.vhsHudLine}>
-                                    ▌LOG SUMMARY // {stats.exercisesLogged} Exercises Logged
-                                </Text>
-                                <Text style={styles.vhsHudLine}>
-                                    ▌VOLUME FEED // {stats.volume} KG Power Output
-                                </Text>
-                                <Text style={styles.vhsHudLine}>
-                                    ▌TRACK TIME  // {stats.duration}
+                                <View style={styles.hudRow}>
+                                    <Text style={styles.hudLabel}>▌WORKOUTS THIS WEEK:</Text>
+                                    <Text style={[styles.hudValue, { color: "#00ffcc", fontWeight: "bold" }]}> 6</Text>
+                                </View>
+
+                                <View style={styles.hudRow}>
+                                    <Text style={styles.hudLabel}>▌WORKOUT STREAK:</Text>
+
+                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}> 12 Days</Text>
+                                </View>
+
+                                <View style={styles.hudRow}>
+                                    <Text style={styles.hudLabel}>▌NEXT GOAL:</Text>
+
+                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}>BENCH → 500 KG</Text>
+                                </View>
+
+                                <Text style={styles.diagnosticNote}>
+                                    {'>>'} KEEP MOMENTUM — NEXT PR IN RANGE  {'<<'}
                                 </Text>
                             </View>
-                        </View>
 
+
+                        </View>
                         <View style={styles.doubleRow}>
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>LAST WORKOUT</Text>
@@ -297,11 +309,38 @@ export default function HardloggerUI() {
                     </ScrollView>
                 </ImageBackground>
             </ImageBackground>
-        </View>
+        </View >
     );
 }
 
 const styles = StyleSheet.create({
+    hudRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginVertical: 2,
+    },
+
+    hudLabel: {
+        fontFamily: "monospace",
+        color: "#BFC7D5",
+        fontSize: 13,
+        letterSpacing: 5,
+    },
+
+    hudValue: {
+        fontFamily: "monospace",
+        color: "#00ffcc",
+        fontSize: 12,             // slightly bigger than labels
+        fontWeight: "bold",       // makes numbers pop
+        letterSpacing: 2,         // more "digital"
+        marginRight: 12,
+        textShadowColor: "#00ffcc",
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 4,      // softer glow than diagnosticNote
+        textAlign: "right",       // values line up like HUD readouts
+    },
+
+
     powerBarContainer: {
         padding: 12,
         backgroundColor: '#0A0F1C',

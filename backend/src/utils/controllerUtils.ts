@@ -7,3 +7,9 @@ export function formatLocalDateYYYYMMDD(input: string | Date): string {
 
   return `${year}-${month}-${day}`;
 }
+
+export function normalizeDate(d: Date): Date {
+  const copy = new Date(d);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}

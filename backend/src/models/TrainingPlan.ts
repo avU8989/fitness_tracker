@@ -55,7 +55,7 @@ export const workoutDaySchema = new Schema<IWorkoutDay>(
   { timestamps: true }
 );
 
-type TrainingPlanType = "Crossfit" | "Bodybuilding" | "Powerlifting";
+export type TrainingPlanType = "Crossfit" | "Bodybuilding" | "Powerlifting";
 
 export interface ITrainingPlan extends Document {
   name: string;
