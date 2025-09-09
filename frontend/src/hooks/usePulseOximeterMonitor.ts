@@ -31,8 +31,9 @@ function parsePlx(
   if (d.length < 5) return null;
   let i = 0;
 
-  const spo2 = sfloat16(d[i++], d[i++]); // % saturation
-  const pulseRate = sfloat16(d[i++], d[i++]); // bpm
+  const flags = d[i++]; // <-- skip flags
+  const spo2 = sfloat16(d[i++], d[i++]); // SpO2 in %
+  const pulseRate = sfloat16(d[i++], d[i++]); // BPM
 
   return { spo2, pulseRate };
 }
@@ -44,6 +45,7 @@ export function usePulseOximeterMonitor() {
 
   useEffect(() => {
     if (!device) return;
+    console.log(spo2);
 
     let lastUpdate = 0;
     const sub = device.monitorCharacteristicForService(
@@ -54,7 +56,7 @@ export function usePulseOximeterMonitor() {
         if (!characteristic?.value) return;
 
         const now = Date.now();
-        if (now - lastUpdate < 1000) return; // only update every 1s
+        if (now - lastUpdate < 2000) return; // only update every 1s
         lastUpdate = now;
 
         const parsed = parsePlx(characteristic.value);

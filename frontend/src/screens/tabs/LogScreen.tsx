@@ -39,12 +39,23 @@ const LogPage = () => {
 
   // Blink animation for session status
   useEffect(() => {
-    console.log(remainingDays);
     const interval = setInterval(() => {
       setBlinkVisible((v) => !v);
     }, 600);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (remainingDays > 0) {
+      //To-Do let user choose which skipped training day he wants to finish 
+      //so nextSkippedWorkoutDay becomes Array of WorkoutDay and also need to update backend to send WorkoutDay[]
+      loadSkippedExercises();
+    } else {
+      loadExercises();
+    }
+    console.log("Updated loggedExercises", loggedExercises);
+  }, [token]);
+
 
   // RPE dot color helper
   const rpeColor = (rpe?: string) => {
@@ -156,16 +167,6 @@ const LogPage = () => {
       alert(err.message);
     }
   }
-
-  useEffect(() => {
-    if (remainingDays > 0) {
-      loadSkippedExercises();
-    } else {
-      loadExercises();
-    }
-    console.log("Updated loggedExercises", loggedExercises);
-  }, [token]);
-
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

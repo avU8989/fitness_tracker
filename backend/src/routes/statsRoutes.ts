@@ -1,6 +1,10 @@
 import { Router } from "express";
-import { getStatsOveriew } from "../controllers/statsController";
+import {
+  getStatsOveriew,
+  getStatsProgress,
+} from "../controllers/statsController";
 const statsRouter = Router();
 
 statsRouter.get("/", getStatsOveriew);
+statsRouter.get("/progress", getStatsProgress);
 export default statsRouter;

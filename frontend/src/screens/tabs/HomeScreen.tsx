@@ -13,7 +13,7 @@ import Icon from 'react-native-vector-icons/Ionicons'; // at top
 import VHSGlowDivider from '../../components/VHSGlowDivider';
 import { useHeartRateMonitor } from '../../hooks/useHeartRateMonitor';
 import { usePulseOximeterMonitor } from '../../hooks/usePulseOximeterMonitor';
-import { getStatsOverview } from '../../services/statsService';
+import { getStatsOverview, getStatsProgress } from '../../services/statsService';
 import { AuthContext } from '../../context/AuthContext';
 import { useWorkout } from '../../context/WorkoutContext';
 export default function HardloggerUI() {
@@ -26,7 +26,9 @@ export default function HardloggerUI() {
     const [lastSplitType, setLastSplitType] = useState("");
     const [workoutStreak, setWorkoutStreak] = useState(null);
     const [nextGoalMessage, setNextGoalMessage] = useState("");
-    const { remainingDays, setRemainingDays } = useWorkout();
+    const { setRemainingDays } = useWorkout();
+    const [progress, setProgress] = useState<ProgressUI>();
+
     const stats = {
         lastWorkoutDays: '01/04/1996',
         exercisesLogged: 6,
@@ -56,19 +58,22 @@ export default function HardloggerUI() {
         ],
     };
 
+    type ProgressUI = {
+        topLift: {
+            name: string;
+            weight: number;
+            unit: string;
+        };
+        weeklyVolumeChange: string;
+        pr: {
+            name: string;
+            weight: number;
+            unit: string;
+        }[];
+    }
+
     const GRAIN_TEXTURE = require('../../assets/home_bg_2.png');
     const SCANLINE_TEXTURE = require('../../assets/abstract-geometric-background-shapes-texture.jpg');
-    const useTapeLoader = () => {
-        const [tapeAnim, setTapeAnim] = useState('▓▓░░░░░░');
-        useEffect(() => {
-            const frames = ['▓░░░░░░░', '▓▓░░░░░░', '▓▓▓░░░░░', '▓▓▓▓░░░░', '▓▓▓▓▓░░░'];
-            const interval = setInterval(() => {
-                setTapeAnim(frames[Math.floor(Math.random() * frames.length)]);
-            }, 300);
-            return () => clearInterval(interval);
-        }, []);
-        return tapeAnim;
-    };
 
     const PulseBarGraph = ({ bpm }: { bpm: number | null }) => {
         // set a baseline height from bpm
@@ -105,7 +110,21 @@ export default function HardloggerUI() {
 
     useEffect(() => {
         loadWorkoutStats();
+        loadWorkoutProgress();
+        console.log(spo2);
     }, []);
+
+    async function loadWorkoutProgress() {
+        try {
+            if (token) {
+                const response: ProgressUI = await getStatsProgress(token);
+                console.log(response);
+                setProgress(response);
+            }
+        } catch (err: any) {
+            alert(err.message);
+        }
+    }
 
     async function loadWorkoutStats() {
         try {
@@ -285,9 +304,14 @@ export default function HardloggerUI() {
                         <View style={styles.doubleRow}>
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>POWER FEED</Text>
-                                <Text style={styles.bodyText}>BENCH ▸ 2501LB</Text>
-                                <Text style={styles.bodyText}>REP ZONE ▸ CLEAN</Text>
+                                <Text style={styles.bodyText}>
+                                    TOP LIFT ▸ {progress?.topLift.name.toUpperCase()} {progress?.topLift.weight}{progress?.topLift.unit}
+                                </Text>
+                                <Text style={styles.bodyText}>
+                                    VOLUME ▸ {progress?.weeklyVolumeChange}
+                                </Text>
                             </View>
+
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>SYS RECOVERY</Text>
                                 <Text style={styles.bodyText}>SORE ▸ OK</Text>

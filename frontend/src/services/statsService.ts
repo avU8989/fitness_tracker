@@ -17,3 +17,19 @@ export const getStatsOverview = async (token: string) => {
 
   return response.json();
 };
+
+export const getStatsProgress = async (token: string) => {
+  const response = await fetch(`${URL}/progress`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch workout log progress stats");
+  }
+
+  return response.json();
+};

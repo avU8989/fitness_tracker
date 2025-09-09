@@ -1,4 +1,4 @@
-import { startOfWeek, endOfWeek } from "date-fns";
+import { startOfWeek, endOfWeek, subWeeks } from "date-fns";
 import { AuthenticatedRequest } from "../middleware/auth";
 import WorkoutLog from "../models/Workout";
 import TrainingPlanAssignment, {
@@ -203,7 +203,7 @@ export const getStatsOveriew = async (
     });
   } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: "Failed to load stats overview" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -234,4 +234,123 @@ const getNextGoal = (
   }
 
   return { message: nextGoal, remainingDays: remainingDays };
+};
+
+export const getStatsProgress = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      console.log(userId);
+      res.status(401).json({ message: "Unauthorized: User Id missing" });
+      return;
+    }
+
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const lastWeekStart = subWeeks(weekStart, 1);
+    const lastWeekEnd = endOfWeek(lastWeekStart, { weekStartsOn: 1 });
+    const mongooseUserId = new mongoose.Types.ObjectId(userId);
+
+    //find total volume for this week and last week
+
+    //this week
+    const [thisWeekStats] = await WorkoutLog.aggregate([
+      { $match: { userId: mongooseUserId } },
+      {
+        $addFields: {
+          performedDate: { $toDate: "$performed" },
+        },
+      },
+      { $unwind: "$exercises" },
+      { $unwind: "$exercises.sets" },
+      {
+        $match: {
+          performedDate: { $gte: weekStart, $lte: new Date() },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalVolume: {
+            $sum: {
+              $multiply: ["$exercises.sets.weight", "$exercises.sets.reps"],
+            },
+          },
+        },
+      },
+    ]);
+
+    const [lastWeekStats] = await WorkoutLog.aggregate([
+      { $match: { userId: mongooseUserId } },
+      {
+        $addFields: {
+          performedDate: { $toDate: "$performed" },
+        },
+      },
+      { $unwind: "$exercises" },
+      { $unwind: "$exercises.sets" },
+      {
+        $match: {
+          performedDate: { $gte: lastWeekStart, $lte: lastWeekEnd },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalVolume: {
+            $sum: {
+              $multiply: ["$exercises.sets.weight", "$exercises.sets.reps"],
+            },
+          },
+        },
+      },
+    ]);
+
+    const thisWeekVol = thisWeekStats?.totalVolume || 0;
+    const lastWeekVol = lastWeekStats?.totalVolume || 0;
+    let weeklyVolumeChange = "";
+    if (lastWeekVol > 0) {
+      weeklyVolumeChange = (
+        ((thisWeekVol - lastWeekVol) / lastWeekVol) *
+        100
+      ).toFixed(1);
+    } else {
+      weeklyVolumeChange = "N/A";
+    }
+
+    const prs = await WorkoutLog.aggregate([
+      { $match: { userId: mongooseUserId } },
+      {
+        $addFields: {
+          performedDate: { $toDate: "$performed" },
+        },
+      },
+      { $unwind: "$exercises" },
+      { $unwind: "$exercises.sets" },
+      {
+        $group: {
+          _id: "$exercises.name",
+          maxWeight: { $max: "$exercises.sets.weight" },
+        },
+      },
+      { $sort: { maxWeight: -1 } },
+    ]);
+
+    const topLift = prs[0] || { _id: "None", maxWeight: 0 };
+    res.json({
+      topLift: { name: topLift._id, weight: topLift.maxWeight, unit: "kg" },
+      weeklyVolumeChange,
+      pr: prs.map((p) => ({ name: p._id, weight: p.maxWeight, unit: "kg" })),
+    });
+    return;
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: err.message });
+    return;
+  }
 };
