@@ -39,7 +39,7 @@ export const createTrainingPlanAssignment = async (
       return;
     }
 
-    //TODO still need to check date
+    //TO-DO still need to check date
 
     //overlap prevention - user cannot have two trainingplans active at the same time
     const start = new Date(startDate);

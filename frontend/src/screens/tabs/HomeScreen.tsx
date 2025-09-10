@@ -16,6 +16,8 @@ import { usePulseOximeterMonitor } from '../../hooks/usePulseOximeterMonitor';
 import { getStatsOverview, getStatsProgress } from '../../services/statsService';
 import { AuthContext } from '../../context/AuthContext';
 import { useWorkout } from '../../context/WorkoutContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
     const { spo2, pulseRate } = usePulseOximeterMonitor();
@@ -65,6 +67,8 @@ export default function HardloggerUI() {
             unit: string;
         };
         weeklyVolumeChange: string;
+        thisWeekVolume: number,
+        lastWeekVolume: number,
         pr: {
             name: string;
             weight: number;
@@ -85,8 +89,7 @@ export default function HardloggerUI() {
                 style={{
                     flexDirection: 'row',
                     alignItems: 'flex-end',
-                    height: 60, // max graph height
-                    marginTop: 10,
+                    height: 53, // max graph height
                 }}
             >
                 {[...Array(36)].map((_, i) => {
@@ -160,20 +163,27 @@ export default function HardloggerUI() {
             title: 'PULSE FEED',
             render: () => (
                 <View>
-                    <View style={{ paddingVertical: 10 }}>
-                        <View style={{ marginTop: 10 }}>
-                            <Text style={styles.vhsHudLine}>▌HEART RATE //  {bpm ?? "--"}</Text>
-                            <Text style={styles.vhsHudLine}>PULSE RATE // {spo2 ?? "--"}</Text>
+                    <View style={styles.cardContent}>
+                        <View style={styles.cardRow}>
+                            <Text style={styles.cardLabel}>HEART RATE</Text>
+                            <Text style={styles.cardValue}>{bpm ?? "--"} bpm</Text>
                         </View>
-                        <PulseBarGraph bpm={bpm} />
+                        <View style={styles.cardRow}>
+                            <Text style={styles.cardLabel}>SPO₂</Text>
+                            <Text style={styles.cardValue}>{spo2 ?? "--"} %</Text>
+                        </View>
                     </View>
+                    <PulseBarGraph bpm={bpm} />
+
                 </View>
             ),
         },
+        //TO-DO right now is mocked should fetch from api --> smartwatch integration
         {
             title: 'MOCK STATS',
             lines: ['HRV // NORMAL', 'SLEEP // 7.5 HRS', 'FATIGUE // LOW'],
         },
+        //TO-DO right now is mocked should fetch from api --> smartwatch integration
         {
             title: 'RECOVERY STATUS',
             lines: [
@@ -183,34 +193,37 @@ export default function HardloggerUI() {
             ],
         },
         {
-            title: 'SESSION LOG',
+            title: 'STATUS REPORT',
             lines: [
-                `LAST PR // ${stats.lastWorkout.split} on ${stats.lastWorkout.date}`,
-                `LAST ENTRY //  2 days ago`,
-                `MENTAL STATE: ${stats.liftProgression}`,
+                `LAST WEEK VOL // ${progress?.lastWeekVolume}`,
+                `THIS WEEK VOL //  ${progress?.thisWeekVolume} kg`,
+                `VOLUME INCREASMENT // ${progress?.weeklyVolumeChange}`,
             ],
         },
         {
             title: 'POWER LEVEL',
             render: () =>
-                stats.pr.map((p) => (
-                    <Text key={p.name} style={[styles.cardText, styles.glow]}>
-                        {p.name}: {p.weight} KG
-                    </Text>
+                progress?.pr.map((p) => (
+                    <View key={p.name} style={styles.cardRow}>
+                        <Text style={styles.cardLabel}>{p.name.toUpperCase()}</Text>
+                        <Text style={styles.cardValue}>
+                            {p.weight} {p.unit}
+                        </Text>
+                    </View>
                 )),
         },
         {
-            title: 'STATUS REPORT',
+            title: 'SESSION LOG',
             lines: [
-                `TOTAL VOL // ${stats.volume}`,
-                `WEEKLY VOL //  ${stats.weekVolume}`,
-                `VOLUME INCREASMENT // ${stats.liftProgression}`,
+                `LAST PR // `,
+                `LAST ENTRY //  2 days ago`,
+                `MENTAL STATE: ${stats.liftProgression}`,
             ],
         },
     ];
 
     return (
-        <View style={styles.root}>
+        <SafeAreaView style={styles.root}>
             <ImageBackground source={GRAIN_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.1 }}>
                 <ImageBackground source={SCANLINE_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.1 }}>
 
@@ -258,19 +271,23 @@ export default function HardloggerUI() {
                                         <Text style={[styles.hudValue, { fontWeight: "bold" }]}>
                                             {workoutStreak} Days
                                         </Text>
-                                        <Icon
-                                            name="flame"
-                                            size={18}
-                                            color="#ff3b3b"
-                                            style={{
-                                                marginLeft: 4,
-                                                marginBottom: -2,
-                                                textShadowColor: "#e91109ff", // outer glow orange
-                                                textShadowRadius: 12,            // how soft the glow looks
-                                                textShadowOffset: { width: 0, height: 0 }, // centered glow
-                                            }}
-                                        />
+                                        {workoutStreak && workoutStreak > 0 && ( // add fire when workoutStreak
+                                            <Icon
+                                                name="flame"
+                                                size={18}
+                                                color="#ff3b3b"
+                                                style={{
+                                                    marginLeft: 4,
+                                                    marginBottom: -2,
+                                                    textShadowColor: "#e91109ff", // outer glow orange
+                                                    textShadowRadius: 12,            // how soft the glow looks
+                                                    textShadowOffset: { width: 0, height: 0 }, // centered glow
+                                                }}
+                                            />
+                                        )
+                                        }
                                     </View>
+
 
 
                                 </View>
@@ -326,9 +343,16 @@ export default function HardloggerUI() {
                             {recoveryCards.map((card, index) => (
                                 <View key={index} style={styles.recoveryCard}>
                                     <Text style={styles.cardTitle}>{card.title}</Text>
-                                    {card.lines?.map((line, i) => (
-                                        <Text key={i} style={styles.cardText}>{line}</Text>
-                                    ))}
+                                    {card.lines?.map((line, i) => {
+                                        const [label, value] = line.split("//"); // split at //
+                                        return (
+                                            <View key={i} style={styles.cardRow}>
+                                                <Text style={styles.cardLabel}>{label?.trim()}</Text>
+                                                <Text style={styles.cardValue}>{value?.trim()}</Text>
+                                            </View>
+                                        );
+                                    })}
+
                                     {card.render?.()}
                                 </View>
                             ))}
@@ -337,11 +361,16 @@ export default function HardloggerUI() {
 
                         <View style={styles.powerBarContainer}>
                             <Text style={styles.powerBarLabel}>▞ GAIN SIGNAL STRENGTH ▚</Text>
-                            <Text style={styles.powerBarSubLabel}>↳ Detected Lift Progression: {stats.liftProgression}</Text>
+                            <Text style={styles.powerBarSubLabel}>↳ Detected Weekly Volume Progression: {progress?.weeklyVolumeChange}</Text>
 
                             <View style={styles.powerBarTrack}>
                                 <View style={[styles.powerBarFill, {
-                                    width: `${Math.min(stats.liftProgression.replace('%', ''), 100)}%`
+                                    width: `${Math.min(
+                                        Number(progress?.weeklyVolumeChange.replace('%', '')) || 0,
+                                        100
+                                    )
+                                        }%`
+
                                 }]} />
                             </View>
 
@@ -358,11 +387,41 @@ export default function HardloggerUI() {
                     </ScrollView>
                 </ImageBackground>
             </ImageBackground>
-        </View >
+        </SafeAreaView >
     );
 }
 
 const styles = StyleSheet.create({
+    cardContent: {
+        marginTop: 10,
+    },
+
+    cardRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginVertical: 2,
+    },
+
+    cardLabel: {
+        fontFamily: "monospace",
+        fontSize: 12,
+        color: "#BFC7D5",
+        opacity: 0.7,
+        letterSpacing: 2,
+    },
+
+    cardValue: {
+        fontFamily: "monospace",
+        fontSize: 12,
+        color: "#00ffcc",
+        fontWeight: "bold",
+        letterSpacing: 2,
+        marginBottom: 10,
+        textShadowColor: "#00ffcc",
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 3,
+    },
+
     hudRow: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -614,7 +673,7 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: 20,
-        paddingBottom: 100,
+        paddingBottom: 35,
     },
     overviewRow: {
         marginBottom: 0,
@@ -760,7 +819,7 @@ const styles = StyleSheet.create({
     },
     glow: {
         textShadowColor: '#E0E0E0',
-        textShadowOffset: { width: 0, height: 0 },
+        textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 6,
     },
     recoveryCard: {
@@ -771,7 +830,7 @@ const styles = StyleSheet.create({
         padding: 16,
         marginRight: 16,
         width: 260,
-        height: 220,
+        height: 180,
         shadowColor: '#00ffcc',
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.35,

@@ -314,12 +314,10 @@ export const getStatsProgress = async (
     const lastWeekVol = lastWeekStats?.totalVolume || 0;
     let weeklyVolumeChange = "";
     if (lastWeekVol > 0) {
-      weeklyVolumeChange = (
-        ((thisWeekVol - lastWeekVol) / lastWeekVol) *
-        100
-      ).toFixed(1);
+      weeklyVolumeChange =
+        (((thisWeekVol - lastWeekVol) / lastWeekVol) * 100).toFixed(1) + " %";
     } else {
-      weeklyVolumeChange = "N/A";
+      weeklyVolumeChange = "0 %";
     }
 
     const prs = await WorkoutLog.aggregate([
@@ -344,7 +342,11 @@ export const getStatsProgress = async (
     res.json({
       topLift: { name: topLift._id, weight: topLift.maxWeight, unit: "kg" },
       weeklyVolumeChange,
-      pr: prs.map((p) => ({ name: p._id, weight: p.maxWeight, unit: "kg" })),
+      thisWeekVolume: thisWeekVol,
+      lastWeekVolume: lastWeekVol,
+      pr: prs
+        .slice(0, 3)
+        .map((p) => ({ name: p._id, weight: p.maxWeight, unit: "kg" })),
     });
     return;
   } catch (err: any) {

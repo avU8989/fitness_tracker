@@ -114,7 +114,6 @@ const styles = StyleSheet.create({
     },
     container: {
         position: 'relative',
-        paddingTop: 30,
         backgroundColor: 'transparent',
     },
 
