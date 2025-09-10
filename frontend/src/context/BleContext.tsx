@@ -18,7 +18,8 @@ const manager = new BleManager();
 const TARGET_NAME = "yourwatch";
 const HR_SERVICE = "0000180d-0000-1000-8000-00805f9b34fb";
 const PLX_SERVICE = "00001822-0000-1000-8000-00805f9b34fb";
-const TARGET_SERVICES = [HR_SERVICE, PLX_SERVICE];
+const SLEEP_SERVICE = "00001111-0000-1000-8000-00805f9b34fb";
+const TARGET_SERVICES = [HR_SERVICE, PLX_SERVICE, SLEEP_SERVICE];
 
 async function requestBlePermission() {
     if (Platform.OS !== "android") return;
@@ -98,6 +99,8 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         const name = (d.name ?? "").toLowerCase();
         const hasHr = (d.serviceUUIDs ?? []).some(u => u?.toLowerCase() === HR_SERVICE);
         const hasPlx = (d.serviceUUIDs ?? []).some(u => u?.toLowerCase() === PLX_SERVICE);
+        const hasSleep = (d.serviceUUIDs ?? []).some(u => u?.toLowerCase() === SLEEP_SERVICE);
+
 
         let match = false;
         switch (filterMode) {

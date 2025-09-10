@@ -17,6 +17,7 @@ import { getStatsOverview, getStatsProgress } from '../../services/statsService'
 import { AuthContext } from '../../context/AuthContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSleepMonitor } from '../../hooks/useSleepMonitor';
 
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
@@ -30,6 +31,7 @@ export default function HardloggerUI() {
     const [nextGoalMessage, setNextGoalMessage] = useState("");
     const { setRemainingDays } = useWorkout();
     const [progress, setProgress] = useState<ProgressUI>();
+    const { stage, duration, heartRate, remRate, lightSleepRate, deepSleepRate } = useSleepMonitor();
 
     const stats = {
         lastWorkoutDays: '01/04/1996',
@@ -114,14 +116,12 @@ export default function HardloggerUI() {
     useEffect(() => {
         loadWorkoutStats();
         loadWorkoutProgress();
-        console.log(spo2);
     }, []);
 
     async function loadWorkoutProgress() {
         try {
             if (token) {
                 const response: ProgressUI = await getStatsProgress(token);
-                console.log(response);
                 setProgress(response);
             }
         } catch (err: any) {
@@ -344,6 +344,7 @@ export default function HardloggerUI() {
                                 <View key={index} style={styles.recoveryCard}>
                                     <Text style={styles.cardTitle}>{card.title}</Text>
                                     {card.lines?.map((line, i) => {
+                                        if (!line) return null;
                                         const [label, value] = line.split("//"); // split at //
                                         return (
                                             <View key={i} style={styles.cardRow}>
