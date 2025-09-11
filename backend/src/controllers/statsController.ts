@@ -4,7 +4,7 @@ import WorkoutLog from "../models/Workout";
 import TrainingPlanAssignment, {
   ITrainingPlanAssignment,
 } from "../models/PlanAssignment";
-import mongoose, { HydratedDocument } from "mongoose";
+import mongoose, { HydratedDocument, Mongoose } from "mongoose";
 import { ITrainingPlan, TrainingPlanType } from "../models/TrainingPlan";
 import { IBodybuildingPlan } from "../models/BodybuildingPlan";
 import { ICrossfitPlan } from "../models/CrossfitPlan";
@@ -167,7 +167,6 @@ export const getStatsOveriew = async (
       lastSplitType = lastWorkoutDay?.splitType || null;
     }
 
-    //workout streak (consecutive workouts up to today)
     const logs = await WorkoutLog.find({
       userId: userid,
     })
@@ -178,6 +177,26 @@ export const getStatsOveriew = async (
 
     console.log(logs);
 
+    //skipped splittype
+    const completedDayIds = logs
+      .map((l) => l.workoutDayId?.toString())
+      .filter(Boolean);
+
+    // Find the first training day in the plan that is not in completedDayIds
+    let skippedSplitType: string | null = null;
+    if (remainingDays > 0) {
+      const uncompletedDay = trainingPlan.days.find((day) => {
+        return (
+          day.exercises.length > 0 &&
+          !completedDayIds.includes(
+            (day._id as mongoose.Types.ObjectId)?.toString()
+          )
+        );
+      });
+      skippedSplitType = uncompletedDay?.splitType || null;
+    }
+
+    //workout streak (consecutive workouts up to today)
     let streak = 0;
     let currentDate = normalizeDate(new Date());
     for (const log of logs) {
@@ -200,6 +219,7 @@ export const getStatsOveriew = async (
       workoutStreak: streak,
       nextGoalMessage: message,
       remainingDays: remainingDays,
+      skippedSplitType,
     });
   } catch (err: any) {
     console.error(err);

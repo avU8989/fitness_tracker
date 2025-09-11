@@ -390,7 +390,7 @@ export default function HardloggerUI() {
                                 <View style={styles.hudRow}>
                                     <Text style={styles.hudLabel}>▌NEXT GOAL:</Text>
 
-                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}></Text>
+                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}>{skippedSplitType}</Text>
                                 </View>
 
                                 <Text style={styles.diagnosticNote}>
