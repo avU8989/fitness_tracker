@@ -34,9 +34,6 @@ export const createTrainingPlan = async (
 
     let newPlan;
     const normalizedType = type?.toLowerCase();
-    console.log("THIW IS THE");
-
-    console.log(normalizedType);
 
     if (!normalizedType) {
       newPlan = new TrainingPlan(baseFields); // fallback

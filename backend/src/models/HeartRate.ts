@@ -27,7 +27,8 @@ heartRateSchema.index({ userId: 1, timestamp: -1 });
 
 const HeartRateLog: Model<IHeartRateLog> = mongoose.model<IHeartRateLog>(
   "HeartRateLog",
-  heartRateSchema
+  heartRateSchema,
+  "heart_rate_logs"
 );
 
 export default HeartRateLog;

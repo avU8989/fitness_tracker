@@ -2,7 +2,7 @@ import mongoose, { Model, Schema, Types } from "mongoose";
 
 export interface ISleepLog {
   userId: Types.ObjectId;
-  date: Date;
+  timestamp: Date;
   duration: number;
   stages: {
     rem: number; // % in REM
@@ -15,7 +15,7 @@ export interface ISleepLog {
 
 const sleepSchema = new Schema<ISleepLog>({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  date: { type: Date, default: Date.now },
+  timestamp: { type: Date, default: Date.now },
   duration: { type: Number, required: true },
   stages: {
     rem: { type: Number, default: 0, required: true },

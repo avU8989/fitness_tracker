@@ -14,6 +14,10 @@ import workoutRoutes from "./routes/workoutRoutes";
 import "reflect-metadata";
 import trainingAssignmentRoutes from "./routes/trainingAssignmentRoutes";
 import statsRoutes from "./routes/statsRoutes";
+import heartRateLogRouter from "./routes/heartRateLogRoutes";
+import physicalActivityRouter from "./routes/physicalActivityLogRoutes";
+import pulseOximeterLogRouter from "./routes/pulseOximeterLogRoutes";
+import sleepLogRouter from "./routes/sleepLogRoutes";
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -41,6 +45,10 @@ app.use("/auth", authenticationRoutes);
 app.use("/workouts", authMiddleware, workoutRoutes);
 app.use("/trainingplan-assignments", authMiddleware, trainingAssignmentRoutes);
 app.use("/stats", authMiddleware, statsRoutes);
+app.use("/healthdata", authMiddleware, heartRateLogRouter);
+app.use("/healthdata", authMiddleware, physicalActivityRouter);
+app.use("/healthdata", authMiddleware, pulseOximeterLogRouter);
+app.use("/healthdata", authMiddleware, sleepLogRouter);
 console.log("AYEE WE STARTING");
 
 // connect to mongodb

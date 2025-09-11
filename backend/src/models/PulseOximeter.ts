@@ -25,7 +25,7 @@ const pulseOximeterSchema = new Schema<IPulseOximeterLog>({
   },
 });
 
-pulseOximeterSchema.index({ userId: 1, timeStamp: -1 });
+pulseOximeterSchema.index({ userId: 1, timestamp: -1 });
 
 const PulseOximeterLog: Model<IPulseOximeterLog> =
   mongoose.model<IPulseOximeterLog>("PulseOximeterLog", pulseOximeterSchema);
