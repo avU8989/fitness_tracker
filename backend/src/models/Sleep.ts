@@ -34,7 +34,8 @@ sleepSchema.index({ userId: 1, date: -1 });
 
 const SleepLog: Model<ISleepLog> = mongoose.model<ISleepLog>(
   "SleepLog",
-  sleepSchema
+  sleepSchema,
+  "sleep_logs"
 );
 
 export default SleepLog;

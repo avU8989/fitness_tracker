@@ -33,7 +33,8 @@ const trainingPlanAssignmentSchema = new Schema<ITrainingPlanAssignment>(
 const TrainingPlanAssignment: Model<ITrainingPlanAssignment> =
   mongoose.model<ITrainingPlanAssignment>(
     "TrainingPlanAssignment",
-    trainingPlanAssignmentSchema
+    trainingPlanAssignmentSchema,
+    "training_plan_assignments"
   );
 
 export default TrainingPlanAssignment;
