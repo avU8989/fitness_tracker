@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useBleDevice } from "../context/BleContext";
 import { Characteristic } from "react-native-ble-plx";
 import { Buffer } from "buffer";
-import { parse } from "path";
+import { handleCharacteristic, Parser } from "../utils/bleParser";
 
 const SLEEP_SERVICE = "00001111-0000-1000-8000-00805f9b34fb";
 const SLEEP_ACTIVITY = "00002b41-0000-1000-8000-00805f9b34fb";
@@ -16,8 +16,11 @@ export interface SleepData {
   deepSleepRate: number | null;
 }
 
+// Mocked sleep data no official Bluetooth SIG spec --> like vendor-specific service
 // [Stage][Duration_Lo][Duration_Hi][HR][REM%][Light%][Deep%]
-function parseSleepActivity(base64Value: string): SleepData | null {
+const parseSleepActivity: Parser<SleepData> = (
+  base64Value: string
+): SleepData | null => {
   try {
     console.log("[Parser] Incoming Base64:", base64Value);
 
@@ -35,14 +38,14 @@ function parseSleepActivity(base64Value: string): SleepData | null {
       deepSleepRate: bytes[6] ?? null,
     };
   } catch (e) {
-    console.error("[Parser] Failed to parse payload:", e);
+    console.warn("[Parser] Failed to parse payload:", e);
     return null;
   }
-}
+};
 
 export function useSleepMonitor() {
   const { device } = useBleDevice();
-  const [data, setData] = useState<SleepData>({
+  const [sleepData, setData] = useState<SleepData>({
     stage: null,
     duration: null,
     heartRate: null,
@@ -53,37 +56,13 @@ export function useSleepMonitor() {
 
   const lastUpdateRef = useRef(0);
 
-  const handleCharacteristic = (
-    char: Characteristic | null,
-    source: string
-  ) => {
-    if (!char?.value) {
-      console.log(`[${source}] Empty characteristic value`);
-      return;
-    }
-
-    const parsed = parseSleepActivity(char.value);
-    if (parsed) {
-      setData(parsed);
-      console.log(
-        `[${source}] Stage: ${parsed.stage}, 
-        Duration: ${parsed.duration} min, 
-        HeartRate: ${parsed.heartRate} bpm, 
-        REM: ${parsed.remRate}%, 
-        Light: ${parsed.lightSleepRate}%, 
-        Deep: ${parsed.deepSleepRate}%
-        ]`
-      );
-    }
-  };
-
   useEffect(() => {
     console.log("[Hook] useSleepMonitor mounted");
     if (!device) {
       console.log("[Hook] No BLE device available yet");
       return;
     }
-
+    let lastUpdate = 0; // local variable survives inside this effect only
     // --- Initial one-time READ (if supported) ---
     (async () => {
       try {
@@ -91,11 +70,14 @@ export function useSleepMonitor() {
           SLEEP_SERVICE,
           SLEEP_ACTIVITY
         );
-        if (initialChar?.value) {
-          handleCharacteristic(initialChar, "InitialRead");
-        }
+        handleCharacteristic(
+          initialChar,
+          parseSleepActivity,
+          (parsed) => setData(parsed),
+          "InitialRead"
+        );
       } catch (err) {
-        console.error("[InitialRead] Failed:", err);
+        console.warn("[InitialRead] Failed:", err);
       }
     })();
 
@@ -106,7 +88,7 @@ export function useSleepMonitor() {
       SLEEP_ACTIVITY,
       (err, characteristic: Characteristic | null) => {
         if (err) {
-          console.error("[Monitor] Could not monitor SleepActivity:", err);
+          console.warn("[Monitor] Could not monitor SleepActivity:", err);
           return;
         }
 
@@ -117,15 +99,20 @@ export function useSleepMonitor() {
         }
         lastUpdateRef.current = now;
 
-        handleCharacteristic(characteristic, "Notify");
+        handleCharacteristic(
+          characteristic,
+          parseSleepActivity,
+          (parsed) => setData(parsed),
+          "Notify"
+        );
       }
     );
 
     return () => {
-      console.log("[Hook] Cleaning up subscription");
+      console.log("[Hook] Cleaning up subscription for Sleep Monitor");
       sub?.remove();
     };
   }, [device]);
 
-  return data;
+  return sleepData;
 }

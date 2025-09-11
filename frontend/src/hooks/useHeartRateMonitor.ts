@@ -7,6 +7,13 @@ const HEARTRATE_SERVICE = "0000180d-0000-1000-8000-00805f9b34fb";
 const HEARTRATE_MEASUREMENT = "00002a37-0000-1000-8000-00805f9b34fb";
 
 //read heartrate measurement decoding
+//Bluetooth SIG specifications are official standards
+/*devices that claims to implement Heart Rate Service must follow spec: 
+same flag struc, 
+same endianness, 
+same meaning for bytes, 
+so devices from different brands can communicate seamlessly as long as they support the same service
+ */
 function parseHeartRateMeasurement(base64Value: string): number | null {
   //decode base64 --> bytes
   const bytes = Buffer.from(base64Value, "base64");
@@ -65,7 +72,10 @@ export function useHeartRateMonitor() {
       }
     );
 
-    return () => sub?.remove();
+    return () => {
+      console.log("[Hook] Cleaning up subscription for Heart Rate Monitor");
+      sub?.remove();
+    };
   }, [device]);
 
   return bpm;

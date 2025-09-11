@@ -18,10 +18,11 @@ import { AuthContext } from '../../context/AuthContext';
 import { useWorkout } from '../../context/WorkoutContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSleepMonitor } from '../../hooks/useSleepMonitor';
+import { usePhysicalActivityMonitor } from '../../hooks/useStepsMonitor';
 
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
-    const { spo2, pulseRate } = usePulseOximeterMonitor();
+    const data = usePulseOximeterMonitor();
     const { token } = useContext(AuthContext);
     const [workoutsThisWeek, setWorkoutsThisWeek] = useState(null);
     const [totalVolume, setTotalVolume] = useState(null);
@@ -31,8 +32,9 @@ export default function HardloggerUI() {
     const [nextGoalMessage, setNextGoalMessage] = useState("");
     const { setRemainingDays } = useWorkout();
     const [progress, setProgress] = useState<ProgressUI>();
-    const { stage, duration, heartRate, remRate, lightSleepRate, deepSleepRate } = useSleepMonitor();
-
+    const sleepData = useSleepMonitor();
+    const physicalActivityData = usePhysicalActivityMonitor();
+    const [skippedSplitType, setSkippedSplitType] = useState(null);
     const stats = {
         lastWorkoutDays: '01/04/1996',
         exercisesLogged: 6,
@@ -140,6 +142,7 @@ export default function HardloggerUI() {
                     lastSplitType,
                     nextGoalMessage,
                     remainingDays,
+                    skippedSplitType,
                 } = await getStatsOverview(token);
 
                 const date = new Date(lastWorkout);
@@ -151,6 +154,7 @@ export default function HardloggerUI() {
                 setLastSplitType(lastSplitType ?? "");
                 setTotalVolume(totalVolume ?? 0);
                 setLastWorkout(formatted ?? "");
+                setSkippedSplitType(skippedSplitType ?? "");
                 setWorkoutStreak(workoutStreak ?? 0);
             }
         } catch (err: any) {
@@ -170,7 +174,7 @@ export default function HardloggerUI() {
                         </View>
                         <View style={styles.cardRow}>
                             <Text style={styles.cardLabel}>SPO₂</Text>
-                            <Text style={styles.cardValue}>{spo2 ?? "--"} %</Text>
+                            <Text style={styles.cardValue}>{data?.spo2 ?? "--"} %</Text>
                         </View>
                     </View>
                     <PulseBarGraph bpm={bpm} />
@@ -178,19 +182,99 @@ export default function HardloggerUI() {
                 </View>
             ),
         },
-        //TO-DO right now is mocked should fetch from api --> smartwatch integration
+        /*TO-DO right now is mocked should fetch from api --> smartwatch integration
+        or BLE Service connection to fetch characteristic values
+        */
         {
-            title: 'MOCK STATS',
-            lines: ['HRV // NORMAL', 'SLEEP // 7.5 HRS', 'FATIGUE // LOW'],
+            title: 'REST FEED',
+            render: () => {
+                const sleepHours =
+                    sleepData.duration != null ? sleepData.duration / 60 : null;
+
+                let fatigue = "--";
+                let fatigueColor = "#BFC7D5"; // default grey
+
+                if (sleepHours != null) {
+                    if (sleepHours < 7) {
+                        fatigue = "HIGH";
+                        fatigueColor = "#ff3b3b"; // red
+                    } else if (sleepHours < 9) {
+                        fatigue = "NORMAL";
+                        fatigueColor = "#ffaa00"; // yellow/orange
+                    } else {
+                        fatigue = "LOW";
+                        fatigueColor = "#33FF66"; // green
+                    }
+                }
+
+                return (
+                    <View style={styles.cardContent}>
+                        <View style={styles.cardRow}>
+                            <Text style={styles.cardLabel}>HEART RATE SLEEP</Text>
+                            <Text style={styles.cardValue}>{sleepData.heartRate ?? "--"} bpm</Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                            <Text style={styles.cardLabel}>SLEEP</Text>
+                            <Text style={styles.cardValue}>
+                                {sleepHours != null ? sleepHours.toFixed(1) + " HRS" : "--"}
+                            </Text>
+                        </View>
+                        <View style={styles.cardRow}>
+                            <Text style={styles.cardLabel}>FATIGUE</Text>
+                            <Text style={[styles.cardValue, { color: fatigueColor, textShadowColor: fatigueColor }]}>
+                                {fatigue}
+                            </Text>
+                        </View>
+                    </View>
+                );
+            },
         },
         //TO-DO right now is mocked should fetch from api --> smartwatch integration
         {
             title: 'RECOVERY STATUS',
             lines: [
-                `SORE//${stats.recovery.soreness}`,
-                `CNS LOAD: ${stats.recovery.cnsLoad}`,
-                `MENTAL STATE: ${stats.recovery.mental}`,
-            ],
+                `SORE // ${workoutsThisWeek && workoutsThisWeek > 4 ? "HIGH" : workoutsThisWeek && workoutsThisWeek > 2 ? "MEDIUM" : "LOW"}`,
+                `CNS LOAD // ${(sleepData.duration != null && (sleepData.duration / 60) < 6) ? "HIGH" : "NORMAL"}`,
+                `MENTAL STATE // ${workoutStreak && workoutStreak > 5 ? "FOCUSED" : workoutStreak && workoutStreak > 0 ? "RECOVERING" : "UNMOTIVATED"}`
+            ]
+        },
+        {
+            title: 'STEP MONITOR',
+            render: () => (
+                <View style={styles.cardContent}>
+                    <View style={styles.cardRow}>
+                        <Text style={styles.cardLabel}>STEPS: </Text>
+                        <Text style={styles.cardValue}>{physicalActivityData.stepCounter ?? "N/A"}</Text>
+                    </View>
+                    <View style={styles.cardRow}>
+                        <Text style={styles.cardLabel}>DISTANCE: </Text>
+                        <Text style={styles.cardValue}>{(physicalActivityData.distance && physicalActivityData.distance / 1000) ?? "N/A"} km</Text>
+                    </View>
+                    <View style={styles.cardRow}>
+                        <Text style={styles.cardLabel}>ENERGY EXPENDED: </Text>
+                        <Text style={styles.cardValue}>{physicalActivityData.energyExpended ?? "N/A"} kJ</Text>
+                    </View>
+                </View>
+            ),
+        },
+        {
+            title: 'SLEEP STATUS',
+            render: () => (
+                <View style={styles.cardContent}>
+                    <View style={styles.cardRow}>
+                        <Text style={styles.cardLabel}>REM %</Text>
+                        <Text style={styles.cardValue}>{sleepData.remRate ?? "--"} %</Text>
+                    </View>
+                    <View style={styles.cardRow}>
+                        <Text style={styles.cardLabel}>LIGHT %</Text>
+                        <Text style={styles.cardValue}>{sleepData.lightSleepRate ?? "--"} %</Text>
+                    </View>
+                    <View style={styles.cardRow}>
+                        <Text style={styles.cardLabel}>DEEP %</Text>
+                        <Text style={styles.cardValue}>{sleepData.deepSleepRate ?? "--"} %</Text>
+                    </View>
+                </View>
+            ),
         },
         {
             title: 'STATUS REPORT',
@@ -221,6 +305,17 @@ export default function HardloggerUI() {
             ],
         },
     ];
+
+    const trainingLoad = (() => {
+        if (!progress?.lastWeekVolume || !progress?.thisWeekVolume) return "N/A";
+
+        const ratio = progress.thisWeekVolume / progress.lastWeekVolume;
+
+        if (ratio < 0.8) return "LIGHT";
+        if (ratio < 1.2) return "MODERATE";
+        return "HEAVY";
+    })();
+
 
     return (
         <SafeAreaView style={styles.root}>
@@ -308,31 +403,44 @@ export default function HardloggerUI() {
                         <View style={styles.doubleRow}>
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>LAST WORKOUT</Text>
-                                <Text style={styles.largeText}>{lastWorkout}</Text>
-                                <Text style={styles.bodyText}>{lastSplitType}</Text>
+                                <View style={{ flex: 1, justifyContent: "center" }}>
+                                    <Text style={[styles.cardValue, {
+                                        fontSize: 18, fontWeight: 'bold', color: "#BFC7D5",
+                                        textShadowColor: "#BFC7D5",
+                                        textShadowOffset: { width: 0, height: 0 },
+                                        textShadowRadius: 3,
+                                    }]}>{lastWorkout}</Text>
+                                    <Text style={[styles.cardValue, { fontSize: 16, fontWeight: 'bold' }]}>{lastSplitType}</Text>
+                                </View>
                             </View>
 
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>THIS WEEK VOLUME</Text>
-                                <Text style={styles.boldText}>{totalVolume} kg</Text>
+                                <View style={{ flex: 1, justifyContent: "center" }}>
+                                    <Text style={[styles.cardValue, {
+                                        fontSize: 26, fontWeight: 'bold', color: "#BFC7D5",
+                                        textShadowColor: "#BFC7D5",
+                                        textShadowOffset: { width: 0, height: 0 },
+                                        textShadowRadius: 3,
+                                    }]}>{totalVolume} kg</Text>
+                                </View>
                             </View>
                         </View>
+
 
                         <View style={styles.doubleRow}>
                             <View style={styles.halfBox}>
                                 <Text style={styles.boxHeader}>POWER FEED</Text>
                                 <Text style={styles.bodyText}>
-                                    TOP LIFT ▸ {progress?.topLift.name.toUpperCase()} {progress?.topLift.weight}{progress?.topLift.unit}
+                                    TOP LIFT:
                                 </Text>
-                                <Text style={styles.bodyText}>
-                                    VOLUME ▸ {progress?.weeklyVolumeChange}
-                                </Text>
+                                <Text style={[styles.cardValue, { fontSize: 14 }]}>{progress?.topLift.name.toUpperCase()} {progress?.topLift.weight}{progress?.topLift.unit}</Text>
                             </View>
 
                             <View style={styles.halfBox}>
-                                <Text style={styles.boxHeader}>SYS RECOVERY</Text>
-                                <Text style={styles.bodyText}>SORE ▸ OK</Text>
-                                <Text style={styles.bodyText}>CNS ▸ NOMINAL</Text>
+                                <Text style={styles.boxHeader}>TRAINING STATUS</Text>
+                                <Text style={styles.bodyText}>TRAINING LOAD: </Text>
+                                <Text style={[styles.cardValue, { fontSize: 14 }]}>{trainingLoad}</Text>
                             </View>
                         </View>
                         <VHSGlowDivider></VHSGlowDivider>
@@ -719,6 +827,7 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         marginBottom: 10,
+
     },
 
     label: {

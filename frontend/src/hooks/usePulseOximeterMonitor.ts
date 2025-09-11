@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { BleManager, Characteristic, Device } from "react-native-ble-plx";
 import { Buffer } from "buffer";
 import { useBleDevice } from "../context/BleContext";
+import { handleCharacteristic, Parser } from "../utils/bleParser";
 
 const PLX_SERVICE = "00001822-0000-1000-8000-00805f9b34fb";
 const PLX_CONT_MEAS = "00002a5f-0000-1000-8000-00805f9b34fb"; // Continuous
@@ -24,9 +24,9 @@ function sfloat16(lo: number, hi: number): number | null {
 
 // Works for both 0x2A5F and 0x2A5E typical layouts:
 // [Flags][SpO2 SFLOAT][PulseRate SFLOAT]...
-function parsePlx(
+const parsePlx: Parser<PulseOximeterData> = (
   base64: string
-): { spo2: number | null; pulseRate: number | null } | null {
+): { spo2: number | null; pulseRate: number | null } | null => {
   const d = b64ToBytes(base64);
   if (d.length < 5) return null;
   let i = 0;
@@ -36,39 +36,54 @@ function parsePlx(
   const pulseRate = sfloat16(d[i++], d[i++]); // BPM
 
   return { spo2, pulseRate };
+};
+
+export interface PulseOximeterData {
+  spo2: number | null;
+  pulseRate: number | null;
 }
 
 export function usePulseOximeterMonitor() {
   const { device } = useBleDevice();
-  const [spo2, setSpo2] = useState<number | null>(null);
-  const [pulseRate, setPulseRate] = useState<number | null>(null);
+  const [data, setData] = useState<PulseOximeterData>();
 
   useEffect(() => {
     if (!device) return;
-    console.log(spo2);
 
+    // --- Initial one-time READ (if supported) ---
+    (async () => {
+      try {
+        const initialChar = await device.readCharacteristicForService(
+          PLX_SERVICE,
+          PLX_CONT_MEAS
+        );
+        handleCharacteristic(initialChar, parsePlx, setData, "InitialRead");
+      } catch (err) {
+        console.error("[InitialRead] Failed: ", err);
+      }
+    })();
+
+    // --- Subscribe for continuous updates ---
     let lastUpdate = 0;
     const sub = device.monitorCharacteristicForService(
       PLX_SERVICE,
       PLX_CONT_MEAS,
       (err, characteristic) => {
         if (err) return console.warn("PLX error", err);
-        if (!characteristic?.value) return;
 
         const now = Date.now();
-        if (now - lastUpdate < 2000) return; // only update every 1s
+        if (now - lastUpdate < 3000) return; // only update every 1s
         lastUpdate = now;
 
-        const parsed = parsePlx(characteristic.value);
-        if (parsed) {
-          setSpo2(parsed.spo2);
-          setPulseRate(parsed.pulseRate);
-        }
+        handleCharacteristic(characteristic, parsePlx, setData, "Notify");
       }
     );
 
-    return () => sub?.remove();
+    return () => {
+      console.log("[Hook] Cleaning up subscription for Pulse Oximeter");
+      sub?.remove();
+    };
   }, [device]);
 
-  return { spo2, pulseRate };
+  return data;
 }
