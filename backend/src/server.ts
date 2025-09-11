@@ -57,7 +57,6 @@ mongoose
     console.error("MongoDB connection error:", err);
   });
 
-console.log(process.env.MONGODB_URI);
 /*
 app.use(
   OpenApiValidator.middleware({

@@ -49,8 +49,10 @@ const LogPage = () => {
     if (remainingDays > 0) {
       //To-Do let user choose which skipped training day he wants to finish 
       //so nextSkippedWorkoutDay becomes Array of WorkoutDay and also need to update backend to send WorkoutDay[]
+      //To-DO let user choose between skipped training day or next working split based on training plan
       loadSkippedExercises();
     } else {
+      //if user hasnt skipped training days, show training days based on plan 
       loadExercises();
     }
     console.log("Updated loggedExercises", loggedExercises);
@@ -64,13 +66,6 @@ const LogPage = () => {
     if (val <= 5) return { backgroundColor: '#33FF66' }; // green
     if (val <= 7) return { backgroundColor: '#FFCC00' }; // yellow
     return { backgroundColor: '#FF3333' }; // red
-  };
-
-  // Calculate progress percent for volume bar
-  const progressPercent = (set: typeof sets[0]) => {
-    const maxLoad = 3000;
-    const load = parseFloat(set.weight) * parseInt(set.reps);
-    return Math.min((load / maxLoad) * 100, 100);
   };
 
   const loadExercises = async () => {
