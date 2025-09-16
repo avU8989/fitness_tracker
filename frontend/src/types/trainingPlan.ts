@@ -71,6 +71,7 @@ export interface TrainingPlanAssignment {
 }
 
 export interface TrainingPlanUI {
+  updatedAt: Date;
   _id: string;
   name: string;
   type: PlanType;

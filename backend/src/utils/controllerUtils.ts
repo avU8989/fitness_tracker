@@ -13,3 +13,16 @@ export function normalizeDate(d: Date): Date {
   copy.setHours(0, 0, 0, 0);
   return copy;
 }
+
+/**
+ * Returns the start and end of a given date in UTC.
+ */
+export const normalizeDayRange = (date: Date = new Date()) => {
+  const startOfDay = new Date(date);
+  startOfDay.setUTCHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(date);
+  endOfDay.setUTCHours(23, 59, 59, 999);
+
+  return { startOfDay, endOfDay };
+};
