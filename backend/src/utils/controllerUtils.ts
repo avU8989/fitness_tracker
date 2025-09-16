@@ -14,9 +14,7 @@ export function normalizeDate(d: Date): Date {
   return copy;
 }
 
-/**
- * Returns the start and end of a given date in UTC.
- */
+//Returns the start and end of a given date in UTC.
 export const normalizeDayRange = (date: Date = new Date()) => {
   const startOfDay = new Date(date);
   startOfDay.setUTCHours(0, 0, 0, 0);

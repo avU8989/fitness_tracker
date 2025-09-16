@@ -12,13 +12,21 @@ import {
 import { Type } from "class-transformer";
 import "reflect-metadata";
 
-const DAYS_OF_WEEK = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"] as const;
-type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
+export const DAYS_OF_WEEK = [
+  "MON",
+  "TUE",
+  "WED",
+  "THU",
+  "FRI",
+  "SAT",
+  "SUN",
+] as const;
+export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
 
 const Units = ["kg", "lbs"] as const;
-type Unit = (typeof Units)[number];
+export type Unit = (typeof Units)[number];
 
-class SetDTO {
+export class SetDTO {
   @IsNumber()
   @IsNotEmpty()
   reps!: number;
@@ -32,7 +40,7 @@ class SetDTO {
   unit!: Unit;
 }
 
-class ExerciseDTO {
+export class ExerciseDTO {
   @IsString()
   @IsNotEmpty()
   name!: string;
