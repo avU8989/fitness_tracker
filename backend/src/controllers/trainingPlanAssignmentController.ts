@@ -1,12 +1,18 @@
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
-import User from "../models/User";
 import TrainingPlan from "../models/TrainingPlan";
 import TrainingPlanAssignment from "../models/PlanAssignment";
-import { start } from "repl";
+import {
+  createTrainingPlanAssignment,
+  findActiveTrainingPlan,
+  findActiveTrainingPlanAssignment,
+  hasOverlappingTrainingPlan,
+} from "../services/trainingPlanAssignment.service";
+import { hasTrainingPlan } from "../services/trainingPlan.service";
 
+//TODO needs refactoring
 //POST /trainingPlanAssignments - Create an assignemnt from a user to a trainigsplan
-export const createTrainingPlanAssignment = async (
+export const postTrainingPlanAssignment = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -26,51 +32,26 @@ export const createTrainingPlanAssignment = async (
       return;
     }
 
-    //find trainingPlan by ID
-    const planExists = await TrainingPlan.exists({
-      _id: trainingPlanId,
-      user: userId,
-    });
-
-    if (!planExists) {
+    if (!hasTrainingPlan(userId, trainingPlanId)) {
       res
-        .status(401)
-        .json({ message: "Trainingplan to be assigned not found" });
+        .status(404)
+        .json({ message: "Cannot assign: training plan not found" });
       return;
     }
 
     //TO-DO still need to check date
 
-    //overlap prevention - user cannot have two trainingplans active at the same time
-    const start = new Date(startDate);
-    const end = endDate ? new Date(endDate) : null;
-
-    const infinity = new Date(8640000000000000);
-    const overlap = await TrainingPlanAssignment.exists({
-      user: userId,
-      $or: [
-        //a trainingplan that has open end is still active
-        {
-          endDate: { $exists: false },
-          startDate: { $lte: end ?? infinity },
-        },
-        //an active trainingplan exists, which ends later than the newly assigned trainingplan
-        { endDate: { $gte: start } },
-      ],
-      startDate: { $lte: end ?? infinity },
-    });
-
-    if (overlap) {
+    if (await hasOverlappingTrainingPlan(userId, startDate, endDate)) {
       res.status(409).json({ message: "Overlapping assignments exists" });
       return;
     }
 
-    const assignedPlan = await TrainingPlanAssignment.create({
-      user: userId,
-      trainingPlan: trainingPlanId,
-      startDate: startDate,
-      endDate: endDate ?? null,
-    });
+    const assignedPlan = await createTrainingPlanAssignment(
+      userId,
+      trainingPlanId,
+      startDate,
+      endDate
+    );
 
     res.status(201).json({ message: "Trainigplan assigned!", assignedPlan });
     return;
@@ -87,20 +68,12 @@ export const getActivePlan = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const userId = req.user?.id;
-  const rawDate = String(req.query.date);
-  const queryDate = rawDate ? new Date(rawDate) : new Date();
-
-  // normalize to start and end of day (UTC)
-  const startOfDay = new Date(queryDate);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(queryDate);
-  endOfDay.setUTCHours(23, 59, 59, 999);
-
   res.setHeader("Cache-Control", "no-store");
   res.removeHeader("ETag");
   res.removeHeader("Last-Modified");
+
+  const userId = req.user?.id;
+  const date = req.query.date as string | undefined;
 
   try {
     if (!userId) {
@@ -108,15 +81,7 @@ export const getActivePlan = async (
       return;
     }
 
-    const assignment = await TrainingPlanAssignment.findOne({
-      user: userId,
-      startDate: { $lte: endOfDay },
-      $or: [
-        { endDate: null },
-        { endDate: { $exists: false } },
-        { endDate: { $gte: startOfDay } },
-      ],
-    }).populate("trainingPlan");
+    const assignment = await findActiveTrainingPlanAssignment(userId, date);
 
     if (!assignment) {
       res.status(404).json({ message: "Could not find active plan" });

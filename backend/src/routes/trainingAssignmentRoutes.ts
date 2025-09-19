@@ -1,11 +1,11 @@
 import { Router } from "express";
 import {
-  createTrainingPlanAssignment,
   getActivePlan,
+  postTrainingPlanAssignment,
 } from "../controllers/trainingPlanAssignmentController";
 import authMiddleware from "../middleware/auth";
 const trainingAssignmentRouter = Router();
 
-trainingAssignmentRouter.post("/", createTrainingPlanAssignment);
+trainingAssignmentRouter.post("/", postTrainingPlanAssignment);
 trainingAssignmentRouter.get("/active", getActivePlan);
 export default trainingAssignmentRouter;

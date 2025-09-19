@@ -152,3 +152,15 @@ export const removeTrainingPlan = async (userId: string, planId: string) => {
 
   return !!deleted;
 };
+
+export const hasTrainingPlan = async (
+  userId: string,
+  trainingPlanId: string
+): Promise<boolean> => {
+  const planExists = await TrainingPlan.exists({
+    _id: trainingPlanId,
+    user: userId,
+  });
+
+  return !!planExists;
+};

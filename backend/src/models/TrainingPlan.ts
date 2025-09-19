@@ -84,6 +84,7 @@ const trainingPlanBase = new Schema<ITrainingPlan>(
 
 const TrainingPlan: Model<ITrainingPlan> = mongoose.model<ITrainingPlan>(
   "TrainingPlan",
-  trainingPlanBase
+  trainingPlanBase,
+  "training_plans"
 );
 export default TrainingPlan;
