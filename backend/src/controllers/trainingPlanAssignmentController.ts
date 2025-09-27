@@ -4,7 +4,6 @@ import TrainingPlan from "../models/TrainingPlan";
 import TrainingPlanAssignment from "../models/PlanAssignment";
 import {
   createTrainingPlanAssignment,
-  findActiveTrainingPlan,
   findActiveTrainingPlanAssignment,
   hasOverlappingTrainingPlan,
 } from "../services/trainingPlanAssignment.service";

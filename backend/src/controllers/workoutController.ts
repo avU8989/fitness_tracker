@@ -1,107 +1,73 @@
 import WorkoutLog from "../models/Workout";
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
-import TrainingPlan, {
-  ITrainingPlan,
-  IWorkoutDay,
-} from "../models/TrainingPlan";
+import { ITrainingPlan, IWorkoutDay } from "../models/TrainingPlan";
 import { IBodybuildingPlan } from "../models/BodybuildingPlan";
 import { ICrossfitPlan } from "../models/CrossfitPlan";
-import { IPowerliftingPlan } from "../models/PowerliftingPlan";
-import { formatLocalDateYYYYMMDD } from "../utils/controllerUtils";
 import { endOfWeek, startOfWeek } from "date-fns";
 import TrainingPlanAssignment from "../models/PlanAssignment";
 import mongoose, { HydratedDocument } from "mongoose";
+import { CreateWorkoutLogRequest } from "../requests/workouts/CreateWorkoutLogRequest";
+import {
+  getTrainingPlanById,
+  getWorkoutDayFromPlan,
+} from "../services/trainingPlan.service";
+import {
+  createWorkoutLog,
+  fetchNextSkippedDay,
+  fetchUserWorkoutLogs,
+  fetchWeeklyWorkoutLogs,
+  removeWorkoutLog,
+} from "../services/workoutLog.service";
+import { findActiveTrainingPlanAssignment } from "../services/trainingPlanAssignment.service";
+
 // POST /workouts - Log a new workout
-export const createWorkoutLog = async (
-  req: AuthenticatedRequest,
+export const postWorkoutLog = async (
+  req: AuthenticatedRequest & { body: CreateWorkoutLogRequest },
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const {
-      trainingPlanId,
-      workoutDayId,
-      performed,
-      exercises,
-      duration,
-      caloriesBurned,
-      notes,
-    } = req.body;
+    const { trainingPlanId, workoutDayId } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
       res.status(401).json({ message: "Unauthorized: User ID missing" });
       return;
     }
-    let workoutDay;
+
+    if (!trainingPlanId) {
+      res.status(400).json({ message: "Training plan ID is required" });
+      return;
+    }
+
     //fetch trainingplan
-    const trainingPlan = await TrainingPlan.findById(trainingPlanId);
+    const trainingPlan = await getTrainingPlanById(trainingPlanId);
     if (!trainingPlan) {
       res.status(404).json({ message: "Trainingplan not found" });
       return;
     }
 
-    if (
-      trainingPlan.type === "Bodybuilding" ||
-      trainingPlan.type === "Crossfit"
-    ) {
-      //cast to unknown because of not exisitng days in ITrainingPlan
-      const plan = trainingPlan as unknown as IBodybuildingPlan | ICrossfitPlan;
-      //IBodyBuildingPlan and ICrossfitPlan has days
-      //need to have days as DocumentArray to fetch the id, so TS knows id exists from mongo
-      workoutDay = plan.days.id(workoutDayId);
-    } else if (trainingPlan.type === "Powerlifting") {
-      const powerliftingPlan = trainingPlan as unknown as IPowerliftingPlan;
-      for (const week of powerliftingPlan.weeks) {
-        const found = week.days.id(workoutDayId);
-
-        if (found) {
-          workoutDay = found;
-          break;
-        }
-      }
-    }
+    const workoutDay = await getWorkoutDayFromPlan(trainingPlan, workoutDayId);
 
     if (!workoutDay) {
       res.status(404).json({ message: "Workout Day not found" });
       return;
     }
 
-    //normalize date to store and ensure uniqueness upon performed index in mongo
-    const normalizedDate = performed
-      ? formatLocalDateYYYYMMDD(performed)
-      : formatLocalDateYYYYMMDD(new Date());
-
-    const loggedWorkout = new WorkoutLog({
-      userId,
-      trainingPlanId,
-      workoutDayId,
-
-      //snapshot
-      dayOfWeek: workoutDay.dayOfWeek,
-      plannedExercises: workoutDay.exercises,
-
-      //actual log of workout
-      performed: normalizedDate,
-      exercises,
-      duration,
-      caloriesBurned,
-      notes,
-    });
-
-    const savedWorkout = await loggedWorkout.save();
+    const loggedWorkout = await createWorkoutLog(userId, req.body, workoutDay);
 
     res.status(201).json({
       message: "Workout logged successfully",
       workout: {
-        id: savedWorkout.id,
-        dayOfWeek: savedWorkout.dayOfWeek,
-        planned: { exercises: savedWorkout.plannedExercises },
-        actual: { exercises: savedWorkout.exercises },
+        id: loggedWorkout.id,
+        dayOfWeek: loggedWorkout.dayOfWeek,
+        planned: { exercises: loggedWorkout.plannedExercises },
+        actual: { exercises: loggedWorkout.exercises },
       },
     });
   } catch (error: any) {
+    console.error("Unexpected error creting workout log:", error);
     if (error.code === 11000) {
       res.status(400).json({
         error: "Workout log already exists for this day",
@@ -120,28 +86,21 @@ export const getWorkoutLogs = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  const userId = req.user?.id;
-
-  if (!userId) {
-    res.status(401).json({ message: "Unauthorized: User ID missing" });
-    return;
-  }
-
   try {
-    const { date } = req.query;
-    const query: any = { userId };
+    const userId = req.user?.id;
 
-    if (date && typeof date === "string") {
-      const start = new Date(date);
-      const end = new Date(date);
-      end.setDate(end.getDate() + 1);
-      query.date = { $gte: start, $lt: end };
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: User ID missing" });
+      return;
     }
 
-    const workouts = await WorkoutLog.find(query).sort({ date: -1 });
+    const workouts = await fetchUserWorkoutLogs(userId, {
+      date: typeof req.query.date === "string" ? req.query.date : undefined,
+    });
+
     res.status(200).json(workouts);
   } catch (error: any) {
-    console.error(error);
+    console.error("Unexpected error fetching workout log:", error);
     if (error.code === 11000) {
       res
         .status(400)
@@ -149,7 +108,6 @@ export const getWorkoutLogs = async (
       return;
     }
 
-    console.error("Unexpected error creating workout log:", error);
     res
       .status(500)
       .json({ message: "Failed to fetch workouts", error: error.message });
@@ -161,88 +119,28 @@ export const getNextSkippedDay = async (
   res: Response,
   next: NextFunction
 ): Promise<void> => {
-  console.log("Hello");
   try {
     const userId = req.user?.id;
     if (!userId) {
       res.status(401).json({ message: "Unauthorized: User ID missing" });
+      return;
     }
 
-    console.log("AMINA");
-    // normalize to start and end of day (UTC)
-    const startOfDay = new Date();
-    startOfDay.setUTCHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setUTCHours(23, 59, 59, 999);
-    const assignment = await TrainingPlanAssignment.findOne({
-      user: userId,
-      startDate: { $lte: endOfDay },
-      $or: [
-        { endDate: null },
-        { endDate: { $exists: false } },
-        { endDate: { $gte: startOfDay } },
-      ],
-    }).populate<{ trainingPlan: HydratedDocument<ITrainingPlan> }>(
-      "trainingPlan"
+    const assignment = await findActiveTrainingPlanAssignment(
+      userId,
+      new Date().toISOString()
     );
 
-    if (!assignment) {
+    if (!assignment || !assignment.trainingPlan) {
       res.status(404).json({ message: "Could not find active plan" });
       return;
     }
 
-    //i have a problem because i store date as a string i have formatting issues, cant compare with .find mongo operation
-    //need to have aggregation pipeline to work :///
-    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
-      .toISOString()
-      .split("T")[0]; // "2025-09-08"
-    const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 })
-      .toISOString()
-      .split("T")[0];
-
-    const trainingPlan = assignment.trainingPlan as unknown as
-      | IBodybuildingPlan
-      | ICrossfitPlan;
-
-    console.log(trainingPlan);
-    const plannedDays: IWorkoutDay[] = trainingPlan.days.filter(
-      (d) => d.exercises?.length > 0
-    );
-
-    //logged workoutDays this week
-    const loggedDays = await WorkoutLog.aggregate([
-      {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          trainingPlanId: assignment.trainingPlan._id,
-        },
-      },
-      {
-        $addFields: {
-          performedDate: { $toDate: "$performed" }, // convert string → Date
-        },
-      },
-      {
-        $match: {
-          performedDate: { $gte: weekStart, $lte: weekEnd }, // safe now
-        },
-      },
-      {
-        $project: {
-          workoutDayId: 1,
-          performed: 1,
-        },
-      },
-    ]);
-
-    const loggedDayIds = loggedDays.map((d) => d.workoutDayId?.toString());
-    console.log(loggedDayIds);
-
-    const nextSkippedDay = plannedDays.find(
-      (day: any) => !loggedDayIds.includes(day._id.toString())
-    );
-    console.log(nextSkippedDay);
+    const nextSkippedDay = await fetchNextSkippedDay(userId, assignment);
+    if (!nextSkippedDay) {
+      res.status(404).json({ message: "Could not find next skipped day" });
+      return;
+    }
 
     res.json({ nextSkippedDay: nextSkippedDay || null });
     return;
@@ -269,21 +167,13 @@ export const deleteWorkoutLog = async (
   }
 
   try {
-    const workout = await WorkoutLog.findOne({ _id: workoutId, userId });
-
-    if (!workout) {
-      res
-        .status(404)
-        .json({ message: "Unable to find workout or unauthorized" });
-      return;
-    }
-
-    await workout.deleteOne();
+    await removeWorkoutLog(workoutId, userId);
 
     res.status(200).json({ message: "Workout deleted successfully" });
   } catch (err: any) {
+    const status = err.statusCode || 500;
     res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+      .status(status)
+      .json({ message: err.message || "Internal server error" });
   }
 };

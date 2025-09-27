@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import User from "../models/User";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { authenticateUser, registerUser } from "../services/user.service";
 
 dotenv.config();
 
@@ -13,43 +14,11 @@ export const createUser = async (
   try {
     const { username, email, age, height, password, weight } = req.body;
 
-    const checkUser = await User.findOne({ email });
+    const result = await registerUser(req.body);
 
-    if (checkUser) {
-      // User already exists - handle error
-      res.status(400).json({ message: "User with this email already exists" });
-      return;
-    }
-
-    const newUser = new User({
-      username,
-      email,
-      age,
-      height,
-      password,
-      weight,
-    });
-
-    const savedUser = await newUser.save();
-    console.log(savedUser);
-
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw new Error("JWT_SECRET is not defined in environment variables");
-    }
-
-    const token = jwt.sign(
-      { id: savedUser._id }, //payload with user id
-      secret, //secret key (set in your environment variables)
-      { expiresIn: "1d" }
-    );
-
-    res.status(201).json({ token, message: "User successfully registered" });
+    res.status(201).json(result);
   } catch (err: any) {
-    res.status(400).json({
-      message: "Bad request",
-      error: err.message,
-    });
+    next(err);
   }
 };
 
@@ -61,39 +30,11 @@ export const loginUser = async (
   try {
     const { email, password } = req.body;
 
-    //find user
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      console.log("Request body:", req.body);
-      res.status(401).json({ message: "Invalid email or password" });
-      return;
-    }
-
-    console.log(`Logging in user ${user.id} with ${email}`);
-
-    //compare password
-    const isMatch = await user.comparePasswords(password);
-    if (!isMatch) {
-      console.log("Request body:", req.body);
-      res.status(401).json({ message: "Invalid email or password" });
-      return;
-    }
-
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw new Error("JWT_SECRET is not defined in environment variables");
-    }
-
-    const token = jwt.sign(
-      { id: user._id }, //payload with user id
-      secret, //secret key (set in your environment variables)
-      { expiresIn: "1d" }
-    );
+    const { token } = await authenticateUser(email, password);
 
     res.status(200).json({ token });
     console.log("User successfully logged in");
   } catch (err: any) {
-    res.status(401).json({ message: "Unauthorized", error: err.message });
+    next(err);
   }
 };

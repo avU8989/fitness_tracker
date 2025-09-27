@@ -5,38 +5,6 @@ import { ITrainingPlan } from "../models/TrainingPlan";
 import mongoose, { HydratedDocument, Document } from "mongoose";
 import { normalizeDayRange } from "../utils/controllerUtils";
 
-export const findActiveTrainingPlan = async (
-  userId: string,
-  date: Date
-): Promise<(HydratedDocument<ITrainingPlan> & any) | null> => {
-  if (!userId) {
-    throw new Error("UserId is required");
-  }
-
-  // normalize to start and end of day (UTC)
-  const startOfDay = new Date(date);
-  startOfDay.setUTCHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(date);
-  endOfDay.setUTCHours(23, 59, 59, 999);
-
-  const assignment = TrainingPlanAssignment.findOne({
-    user: new mongoose.Types.ObjectId(userId),
-    startDate: { $lte: endOfDay },
-    $or: [
-      { endDate: null },
-      { endDate: { $exists: false } },
-      { endDate: { $gte: startOfDay } },
-    ],
-  }).populate<{ trainingPlan: HydratedDocument<ITrainingPlan> }>(
-    "trainingPlan"
-  );
-
-  console.log(assignment);
-
-  return assignment;
-};
-
 //overlap prevention - user cannot have two trainingplans active at the same time
 export const hasOverlappingTrainingPlan = async (
   userId: string,
@@ -87,7 +55,7 @@ export const createTrainingPlanAssignment = async (
 export const findActiveTrainingPlanAssignment = async (
   userId: string,
   date?: string
-): Promise<HydratedDocument<ITrainingPlanAssignment> | null> => {
+): Promise<(HydratedDocument<ITrainingPlan> & any) | null> => {
   const rawDate = date as string | undefined;
   const queryDate = rawDate ? new Date(rawDate) : new Date();
   const { startOfDay, endOfDay } = normalizeDayRange(queryDate);
@@ -100,7 +68,9 @@ export const findActiveTrainingPlanAssignment = async (
       { endDate: { $exists: false } },
       { endDate: { $gte: startOfDay } },
     ],
-  }).populate("trainingPlan");
+  }).populate<{ trainingPlan: HydratedDocument<ITrainingPlan> }>(
+    "trainingPlan"
+  );
 
   return assignment;
 };

@@ -1,7 +1,16 @@
-import BodybuildingPlan from "../models/BodybuildingPlan";
-import CrossfitPlan from "../models/CrossfitPlan";
-import PowerLiftingPlan from "../models/PowerliftingPlan";
-import TrainingPlan, { IExercise, IWorkoutDay } from "../models/TrainingPlan";
+import { HydratedDocument } from "mongoose";
+import BodybuildingPlan, {
+  IBodybuildingPlan,
+} from "../models/BodybuildingPlan";
+import CrossfitPlan, { ICrossfitPlan } from "../models/CrossfitPlan";
+import PowerLiftingPlan, {
+  IPowerliftingPlan,
+} from "../models/PowerliftingPlan";
+import TrainingPlan, {
+  IExercise,
+  ITrainingPlan,
+  IWorkoutDay,
+} from "../models/TrainingPlan";
 import {
   CreateBaseTrainingPlanRequest,
   CreatePowerliftingPlanRequest,
@@ -61,6 +70,10 @@ export const createTrainingPlan = async (
 
 export const getTrainingPlansByUserId = async (userId: string) => {
   return TrainingPlan.find({ user: userId });
+};
+
+export const getTrainingPlanById = async (trainingPlanId: string) => {
+  return TrainingPlan.findById(trainingPlanId);
 };
 
 interface UpdateExerciseParams {
@@ -163,4 +176,31 @@ export const hasTrainingPlan = async (
   });
 
   return !!planExists;
+};
+
+export const getWorkoutDayFromPlan = async (
+  trainingPlan: HydratedDocument<ITrainingPlan>,
+  workoutDayId: string
+): Promise<IWorkoutDay | null> => {
+  if (
+    trainingPlan.type === "Bodybuilding" ||
+    trainingPlan.type === "Crossfit"
+  ) {
+    //cast to unknown because of not exisitng days in ITrainingPlan
+    const plan = trainingPlan as unknown as IBodybuildingPlan | ICrossfitPlan;
+    //IBodyBuildingPlan and ICrossfitPlan has days
+    //need to have days as DocumentArray to fetch the id, so TS knows id exists from mongo
+    return plan.days.id(workoutDayId) ?? null;
+  }
+
+  if (trainingPlan.type === "Powerlifting") {
+    const powerliftingPlan = trainingPlan as unknown as IPowerliftingPlan;
+    for (const week of powerliftingPlan.weeks) {
+      const found = week.days.id(workoutDayId);
+
+      if (found) return found;
+    }
+  }
+
+  return null;
 };

@@ -3,13 +3,13 @@ import { Router } from "express";
 import authMiddleware from "../middleware/auth";
 import {
   getWorkoutLogs,
-  createWorkoutLog,
+  postWorkoutLog,
   getNextSkippedDay,
 } from "../controllers/workoutController";
 
 const workoutRouter = Router();
 
-workoutRouter.post("/", createWorkoutLog);
+workoutRouter.post("/", postWorkoutLog);
 workoutRouter.get("/", getWorkoutLogs);
 workoutRouter.get("/next-skipped", getNextSkippedDay);
 

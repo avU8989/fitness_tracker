@@ -11,7 +11,7 @@ import { ICrossfitPlan } from "../models/CrossfitPlan";
 import { Response, NextFunction } from "express";
 import trainingAssignmentRouter from "../routes/trainingAssignmentRoutes";
 import { normalizeDate } from "../utils/controllerUtils";
-import { findActiveTrainingPlan } from "../services/trainingPlanAssignment.service";
+import { findActiveTrainingPlanAssignment } from "../services/trainingPlanAssignment.service";
 import {
   calculateStreak,
   findSkippedSplit,
@@ -20,7 +20,7 @@ import {
   getWeeklyStats,
 } from "../services/stats.services";
 import {
-  findUserWorkoutLogs,
+  fetchUserWorkoutLogs,
   getPRs,
   getTotalVolumeCurrentWeek,
   getTotalVolumeLastWeek,
@@ -40,7 +40,10 @@ export const getStatsOveriew = async (
       return;
     }
 
-    const assignment = await findActiveTrainingPlan(userId, new Date());
+    const assignment = await findActiveTrainingPlanAssignment(
+      userId,
+      new Date().toISOString()
+    );
 
     if (!assignment) {
       res.json({
@@ -74,7 +77,7 @@ export const getStatsOveriew = async (
       trainingPlan
     );
 
-    const logs = await findUserWorkoutLogs(userId, {
+    const logs = await fetchUserWorkoutLogs(userId, {
       fields: ["performed", "workoutDayId"],
     });
 
