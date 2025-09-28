@@ -1,12 +1,22 @@
 import mongoose, { FilterQuery, HydratedDocument } from "mongoose";
 import WorkoutLog, { IWorkoutLog } from "../models/Workout";
-import { endOfWeek, startOfWeek, subWeeks } from "date-fns";
+import {
+  endOfWeek,
+  endOfYear,
+  startOfWeek,
+  startOfYear,
+  subWeeks,
+} from "date-fns";
 import { CreateWorkoutLogRequest } from "../requests/workouts/CreateWorkoutLogRequest";
-import { IWorkoutDay } from "../models/TrainingPlan";
+import { ITrainingPlan, IWorkoutDay } from "../models/TrainingPlan";
 import { IBodybuildingPlan } from "../models/BodybuildingPlan";
 import { ICrossfitPlan } from "../models/CrossfitPlan";
-import { formatLocalDateYYYYMMDD } from "../utils/controllerUtils";
+import {
+  formatLocalDateYYYYMMDD,
+  normalizeDate,
+} from "../utils/controllerUtils";
 import { ITrainingPlanAssignment } from "../models/PlanAssignment";
+import { findActiveTrainingPlanAssignment } from "./trainingPlanAssignment.service";
 
 export const createWorkoutLog = async (
   userId: string,
@@ -22,9 +32,7 @@ export const createWorkoutLog = async (
     caloriesBurned,
     notes,
   } = req;
-  const normalizedDate = req.performed
-    ? formatLocalDateYYYYMMDD(req.performed)
-    : formatLocalDateYYYYMMDD(new Date());
+  const normalizedDate = req.performed ? req.performed : new Date();
 
   const loggedWorkout = new WorkoutLog({
     userId,
@@ -63,12 +71,8 @@ export const removeWorkoutLog = async (workoutId: string, userId: string) => {
 //only works for bodybuilding and crossfit plan right now
 export const fetchNextSkippedDay = async (
   userId: string,
-  assignment: ITrainingPlanAssignment
+  trainingPlan: ITrainingPlan & (IBodybuildingPlan | ICrossfitPlan)
 ): Promise<IWorkoutDay | null> => {
-  const trainingPlan = assignment.trainingPlan as unknown as
-    | IBodybuildingPlan
-    | ICrossfitPlan;
-
   const plannedDays: IWorkoutDay[] = trainingPlan.days.filter(
     (d) => d.exercises?.length > 0
   );
@@ -86,46 +90,51 @@ export const fetchNextSkippedDay = async (
   return nextSkippedDay ?? null;
 };
 
+export const fetchCompletedWorkoutThisYear = async (userId: string) => {
+  const start = startOfYear(new Date());
+  const end = endOfYear(new Date());
+
+  return WorkoutLog.find({
+    userId: new mongoose.Types.ObjectId(userId),
+    performed: { $gte: start, $lte: end },
+  }).select("workoutDayId performed");
+};
+
+export const fetchUpcomingWorkoutDay = async (
+  userId: string,
+  trainingPlan: ITrainingPlan & (IBodybuildingPlan | ICrossfitPlan)
+) => {
+  const today = new Date();
+  const formattedDate = new Date().toISOString();
+  //
+  const plannedDays = trainingPlan.days.filter(
+    (d: any) => d.exercises.length > 0
+  );
+
+  const logged = await fetchWeeklyWorkoutLogs(userId, trainingPlan.id);
+  const loggedIds = logged.map((l) => l.workoutDayId?.toString());
+
+  const nextDay = plannedDays.find((d) => !loggedIds.includes(d.id));
+
+  return nextDay || null;
+};
+
 export const fetchWeeklyWorkoutLogs = async (
   userId: string,
   trainingPlanId: string
-): Promise<HydratedDocument<IWorkoutLog>[]> => {
-  //i have a problem because i store date as a string i have formatting issues, cant compare with .find mongo operation
-  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
-    .toISOString()
-    .split("T")[0]; // "2025-09-08"
-  const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 })
-    .toISOString()
-    .split("T")[0];
+): Promise<IWorkoutLog[]> => {
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
 
-  const loggedDays = await WorkoutLog.aggregate([
-    {
-      $match: {
-        userId: new mongoose.Types.ObjectId(userId),
-        trainingPlanId: trainingPlanId,
-      },
-    },
-    {
-      $addFields: {
-        performedDate: { $toDate: "$performed" }, // convert string → Date
-      },
-    },
-    {
-      $match: {
-        performedDate: { $gte: weekStart, $lte: weekEnd }, // safe now
-      },
-    },
-    {
-      $project: {
-        workoutDayId: 1,
-        performed: 1,
-      },
-    },
-  ]);
-
-  return loggedDays;
+  return WorkoutLog.find({
+    userId: new mongoose.Types.ObjectId(userId),
+    trainingPlanId,
+    performed: { $gte: weekStart, $lte: weekEnd },
+  }).select("workoutDayId performed");
 };
 
+//works for 2025-09-08 to fetch WorkoutDay
+//supports limit and projection
 export const fetchUserWorkoutLogs = async (
   userId: string,
   options?: { date?: string; limit?: number; fields?: string[] }
@@ -162,11 +171,14 @@ const getTotalVolumeForRange = async (
   end: Date
 ): Promise<number> => {
   const result = await WorkoutLog.aggregate([
-    { $match: { userId: new mongoose.Types.ObjectId(userId) } },
-    { $addFields: { performedDate: { $toDate: "$performed" } } },
+    {
+      $match: {
+        userId: new mongoose.Types.ObjectId(userId),
+        performed: { $gte: start, $lte: end },
+      },
+    },
     { $unwind: "$exercises" },
     { $unwind: "$exercises.sets" },
-    { $match: { performedDate: { $gte: start, $lte: end } } },
     {
       $group: {
         _id: null,

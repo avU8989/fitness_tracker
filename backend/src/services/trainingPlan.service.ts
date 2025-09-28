@@ -76,6 +76,10 @@ export const getTrainingPlanById = async (trainingPlanId: string) => {
   return TrainingPlan.findById(trainingPlanId);
 };
 
+export const fetchTotalPlans = async (userId: string): Promise<number> => {
+  return TrainingPlan.countDocuments({ user: userId });
+};
+
 interface UpdateExerciseParams {
   userId: string;
   planId: string;

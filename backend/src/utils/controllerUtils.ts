@@ -8,12 +8,6 @@ export function formatLocalDateYYYYMMDD(input: string | Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function normalizeDate(d: Date): Date {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
 //Returns the start and end of a given date in UTC.
 export const normalizeDayRange = (date: Date = new Date()) => {
   const startOfDay = new Date(date);
@@ -24,3 +18,13 @@ export const normalizeDayRange = (date: Date = new Date()) => {
 
   return { startOfDay, endOfDay };
 };
+
+export function normalizeDate(input: string | Date): Date {
+  const d = input instanceof Date ? input : new Date(input);
+
+  if (isNaN(d.getTime())) {
+    throw new Error(`Invalid date passed to normalizeDate: ${input}`);
+  }
+
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}

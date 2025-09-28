@@ -98,9 +98,12 @@ export const getWeeklyStats = async (
 
 export const calculateStreak = (logs: any[]) => {
   let streak = 0;
-  let currentDate = normalizeDate(new Date());
+  let currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+
   for (const log of logs) {
-    const logDate = normalizeDate(new Date(log.performed));
+    const logDate = new Date(log.performed);
+    logDate.setHours(0, 0, 0, 0);
     const diffDays = Math.floor(
       (currentDate.getTime() - logDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -118,12 +121,8 @@ export const calculateStreak = (logs: any[]) => {
 //if 0 remaining workout days - congratulate user with message
 export const getNextGoal = (
   workoutsThisWeek: number,
-  assignment: ITrainingPlanAssignment & { trainingPlan: ITrainingPlan }
-): { message: string; remainingDays: number } => {
-  const trainingPlan = assignment.trainingPlan as unknown as
-    | IBodybuildingPlan
-    | ICrossfitPlan;
-
+  trainingPlan: ITrainingPlan & (IBodybuildingPlan | ICrossfitPlan)
+): { message: string; remainingDays: number; plannedDays: number } => {
   //planned sessions this week
   const plannedDays = trainingPlan.days.filter(
     (day) => day.exercises.length > 0
@@ -138,7 +137,11 @@ export const getNextGoal = (
     nextGoal = "All workouts done this week - recovery time!";
   }
 
-  return { message: nextGoal, remainingDays: remainingDays };
+  return {
+    message: nextGoal,
+    remainingDays: remainingDays,
+    plannedDays: plannedDays,
+  };
 };
 
 export const findSkippedSplit = (
@@ -167,6 +170,7 @@ export const findSkippedSplit = (
   return skippedSplitType;
 };
 
+//returns the name of the split ("PULL, PUSH, LEGS, etc")
 export const getLastWorkoutSplitType = (
   lastWorkoutDayId: string,
   trainingPlan: ITrainingPlan & (IBodybuildingPlan | ICrossfitPlan)

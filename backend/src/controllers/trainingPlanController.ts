@@ -11,6 +11,7 @@ import {
   getTrainingPlansByUserId,
   updateExercise,
   removeTrainingPlan,
+  fetchTotalPlans,
 } from "../services/trainingPlan.service";
 import { UpdateExerciseRequest } from "../requests/trainingplans/UpdateExerciseRequest";
 import { UpdateWorkoutDayRequest } from "../requests/trainingplans/UpdateWorkoutDayRequest";
@@ -145,6 +146,27 @@ export const putWorkoutDay = async (
       message: "Internal server error",
       error: err.message,
     });
+  }
+};
+
+export const getTotalPlans = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user?.id) {
+      res.status(401).json({ messge: "Unauthorized: User id missing" });
+      return;
+    }
+
+    const totalPlans = await fetchTotalPlans(req.user.id);
+
+    res.status(200).json({ totalPlans: totalPlans });
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
   }
 };
 

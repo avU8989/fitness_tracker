@@ -24,7 +24,7 @@ export interface IWorkoutLog extends Document {
   // Snapshots (at time of logging)
   dayOfWeek?: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
   plannedExercises?: IExercise[]; // snapshot of planned exercises
-  performed: string;
+  performed: Date;
   exercises: IExerciseLog[];
   duration?: number;
   caloriesBurned?: number;
@@ -56,7 +56,7 @@ const workoutLogSchema = new Schema<IWorkoutLog>(
       enum: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
     },
     plannedExercises: [exerciseSchema],
-    performed: { type: String, required: true },
+    performed: { type: Date, required: true },
     exercises: [exerciseLogSchema],
     duration: Number,
     caloriesBurned: Number,
@@ -66,7 +66,10 @@ const workoutLogSchema = new Schema<IWorkoutLog>(
 );
 
 //ensure uniqueness
-workoutLogSchema.index({ userId: 1, performed: 1 }, { unique: true });
+workoutLogSchema.index(
+  { userId: 1, trainingPlanId: 1, performed: 1 },
+  { unique: true }
+);
 
 const WorkoutLog: Model<IWorkoutLog> = mongoose.model<IWorkoutLog>(
   "Workout",

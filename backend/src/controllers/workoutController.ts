@@ -1,7 +1,10 @@
 import WorkoutLog from "../models/Workout";
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
-import { ITrainingPlan, IWorkoutDay } from "../models/TrainingPlan";
+import TrainingPlan, {
+  ITrainingPlan,
+  IWorkoutDay,
+} from "../models/TrainingPlan";
 import { IBodybuildingPlan } from "../models/BodybuildingPlan";
 import { ICrossfitPlan } from "../models/CrossfitPlan";
 import { endOfWeek, startOfWeek } from "date-fns";
@@ -15,6 +18,7 @@ import {
 import {
   createWorkoutLog,
   fetchNextSkippedDay,
+  fetchUpcomingWorkoutDay,
   fetchUserWorkoutLogs,
   fetchWeeklyWorkoutLogs,
   removeWorkoutLog,
@@ -114,7 +118,7 @@ export const getWorkoutLogs = async (
   }
 };
 
-export const getNextSkippedDay = async (
+export const getNextSkippedWorkoutDay = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
@@ -136,13 +140,61 @@ export const getNextSkippedDay = async (
       return;
     }
 
-    const nextSkippedDay = await fetchNextSkippedDay(userId, assignment);
+    const nextSkippedDay = await fetchNextSkippedDay(
+      userId,
+      assignment.trainingPlan
+    );
+
     if (!nextSkippedDay) {
       res.status(404).json({ message: "Could not find next skipped day" });
       return;
     }
 
     res.json({ nextSkippedDay: nextSkippedDay || null });
+    return;
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+    return;
+  }
+};
+
+export const getUpcomingWorkoutDay = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: User ID missing" });
+      return;
+    }
+
+    const assignment = await findActiveTrainingPlanAssignment(
+      userId,
+      new Date().toISOString()
+    );
+
+    if (!assignment || !assignment.trainingPlan) {
+      res.status(404).json({ message: "Could not find active plan" });
+      return;
+    }
+
+    const nextUpcomingWorkout = await fetchUpcomingWorkoutDay(
+      userId,
+      assignment.trainingPlan
+    );
+
+    if (!nextUpcomingWorkout) {
+      res
+        .status(404)
+        .json({ message: "Could not find upcoming Workout in training plan" });
+      return;
+    }
+
+    res.status(200).json({ nextUpcomingWorkout: nextUpcomingWorkout });
     return;
   } catch (err: any) {
     res

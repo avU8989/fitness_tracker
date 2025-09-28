@@ -1,6 +1,7 @@
 import { Express, Router } from "express";
 import {
   deleteTrainingPlan,
+  getTotalPlans,
   patchExercise,
   postTrainingPlan,
   putWorkoutDay,
@@ -20,5 +21,6 @@ trainingPlanRouter.delete("/:planId", deleteTrainingPlan);
 //Sub-resources
 trainingPlanRouter.patch("/:planId/exercises/:exerciseId", patchExercise);
 trainingPlanRouter.put("/:planId/days/:dayId", putWorkoutDay);
+trainingPlanRouter.get("/total", getTotalPlans);
 
 export default trainingPlanRouter;

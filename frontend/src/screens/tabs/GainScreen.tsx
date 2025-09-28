@@ -21,7 +21,7 @@ const { width } = Dimensions.get('window');
 const stats = [
     { label: 'TOTAL PLANS', value: '5', detailData: [12, 15, 11, 18] },
     { label: 'COMPLETED WORKOUTS', value: '12', detailData: [3, 5, 2, 2] },
-    { label: 'EST. VOLUME', value: '15,000 kg', detailData: [12000, 15000, 13000, 17000] },
+    { label: 'CURRENT PLAN', value: 'Training Plan name 1', detailData: [12000, 15000, 13000, 17000] },
     { label: 'NEXT PLAN', value: 'Hypertrophy Week 3', detailData: [] },
 ];
 
@@ -247,11 +247,6 @@ export default function DashboardScreen() {
                     )}
                     showsVerticalScrollIndicator={false}
                 />
-            </View>
-
-            {/* Notification Ticker */}
-            <View style={{ marginTop: 0 }}>
-                <Ticker />
             </View>
         </ScrollView>
     );
