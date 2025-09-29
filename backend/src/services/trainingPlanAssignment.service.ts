@@ -74,3 +74,21 @@ export const findActiveTrainingPlanAssignment = async (
 
   return assignment;
 };
+
+export const findUpcomingTrainingPlanAssignment = async (
+  userId: string,
+  afterDate?: Date
+) => {
+  const baseDate = afterDate ?? new Date();
+
+  const assignment = await TrainingPlanAssignment.findOne({
+    user: new mongoose.Types.ObjectId(userId),
+    startDate: { $gte: baseDate },
+  })
+    .sort({ startDate: 1 })
+    .populate<{ trainingPlan: HydratedDocument<ITrainingPlan> }>(
+      "trainingPlan"
+    );
+
+  return assignment;
+};

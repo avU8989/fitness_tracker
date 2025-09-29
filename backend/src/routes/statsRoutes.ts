@@ -5,6 +5,6 @@ import {
 } from "../controllers/statsController";
 const statsRouter = Router();
 
-statsRouter.get("/", getStatsOveriew);
+statsRouter.get("/overview", getStatsOveriew);
 statsRouter.get("/progress", getStatsProgress);
 export default statsRouter;

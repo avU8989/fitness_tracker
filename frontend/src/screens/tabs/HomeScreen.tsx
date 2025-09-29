@@ -19,6 +19,7 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSleepMonitor } from '../../hooks/useSleepMonitor';
 import { usePhysicalActivityMonitor } from '../../hooks/useStepsMonitor';
+import { useDashboard } from '../../context/DashboardContext';
 
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
@@ -31,6 +32,7 @@ export default function HardloggerUI() {
     const [workoutStreak, setWorkoutStreak] = useState(null);
     const [nextGoalMessage, setNextGoalMessage] = useState("");
     const { setRemainingDays } = useWorkout();
+    const { state, setState } = useDashboard();
     const [progress, setProgress] = useState<ProgressUI>();
     const sleepData = useSleepMonitor();
     const physicalActivityData = usePhysicalActivityMonitor();
@@ -143,10 +145,18 @@ export default function HardloggerUI() {
                     nextGoalMessage,
                     remainingDays,
                     skippedSplitType,
+                    plannedWorkoutDaysForWeek,
                 } = await getStatsOverview(token);
 
                 const date = new Date(lastWorkout);
                 const formatted = date.toLocaleDateString("en-GB");
+
+                //update Dashboard Context
+                setState(prev => ({
+                    ...prev,
+                    workoutsThisWeek: workoutsThisWeek ?? 0,
+                    plannedWorkoutDaysForWeek: plannedWorkoutDaysForWeek ?? 0,
+                }));
 
                 setRemainingDays(remainingDays ?? 0);
                 setWorkoutsThisWeek(workoutsThisWeek ?? 0);

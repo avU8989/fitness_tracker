@@ -22,15 +22,9 @@ export const getWeeklyStats = async (
       $match: {
         userId: new mongoose.Types.ObjectId(userId),
         trainingPlanId: new mongoose.Types.ObjectId(trainingPlanId),
+        performed: { $gte: weekStart, $lte: weekEnd },
       },
     },
-
-    {
-      $addFields: {
-        performedDate: { $toDate: "$performed" },
-      },
-    },
-
     {
       $facet: {
         volume: [
@@ -51,22 +45,7 @@ export const getWeeklyStats = async (
           {
             $group: {
               _id: null,
-              workoutsThisWeek: {
-                $sum: {
-                  $cond: [
-                    {
-                      $and: [
-                        { $gte: ["$performedDate", weekStart] },
-                        { $lte: ["$performedDate", weekEnd] },
-                      ],
-                    },
-                    1,
-                    0,
-                  ],
-                },
-              },
-              lastWorkout: { $max: "$performedDate" },
-              lastWorkoutDayId: { $first: "$workoutDayId" },
+              workoutsThisWeek: { $sum: 1 },
             },
           },
         ],
@@ -80,8 +59,6 @@ export const getWeeklyStats = async (
         workoutsThisWeek: {
           $ifNull: [{ $arrayElemAt: ["$workouts.workoutsThisWeek", 0] }, 0],
         },
-        lastWorkout: { $arrayElemAt: ["$workouts.lastWorkout", 0] },
-        lastWorkoutDayId: { $arrayElemAt: ["$workouts.lastWorkoutDayId", 0] },
       },
     },
   ]);
@@ -90,8 +67,6 @@ export const getWeeklyStats = async (
     stats[0] || {
       totalVolume: 0,
       workoutsThisWeek: 0,
-      lastWorkoutDayId: null,
-      lastWorkout: null,
     }
   );
 };

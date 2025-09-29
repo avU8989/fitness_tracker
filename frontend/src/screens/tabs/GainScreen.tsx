@@ -16,6 +16,8 @@ import Ticker from '../../components/Ticker'; // Your ticker component
 import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import Badge from '../../components/Badge';
+import { useDashboard } from '../../context/DashboardContext';
+
 const { width } = Dimensions.get('window');
 
 const stats = [
@@ -75,9 +77,10 @@ export default function DashboardScreen() {
     const [darkMode, setDarkMode] = useState(true);
     const [recentActivities, setRecentActivities] = useState(recentActivitiesInitial);
     const [expandedStats, setExpandedStats] = useState(null);
-    const [weeklyProgress, setWeeklyProgress] = useState(0.65); // example progress 65%
+    const [weeklyProgress, setWeeklyProgress] = useState(0); // example progress 65%
     const [nextWorkoutTime, setNextWorkoutTime] = useState(new Date(Date.now() + 3600 * 1000 * 26)); // 26 hours later
     const [timeLeft, setTimeLeft] = useState('');
+    const { state } = useDashboard();
 
     // Countdown timer update
     useEffect(() => {
@@ -94,6 +97,15 @@ export default function DashboardScreen() {
         }, 60000); // update every minute
         return () => clearInterval(interval);
     }, [nextWorkoutTime]);
+
+    useEffect(() => {
+        if (state.plannedWorkoutDaysForWeek > 0) {
+            setWeeklyProgress(state.workoutsThisWeek / state.plannedWorkoutDaysForWeek);
+        } else {
+            setWeeklyProgress(0);
+        }
+    }, [state]);
+
 
     // Dark mode styles toggle helper
     const colors = {
@@ -156,7 +168,7 @@ export default function DashboardScreen() {
 
             {/* Progress Bar */}
             <View style={[styles.progressBarContainer, { borderColor: colors.primary }]}>
-                <View style={[styles.progressBarFill, { width: `${weeklyProgress * 100}%`, backgroundColor: colors.primary }]} />
+                <View style={[styles.progressBarFill, { width: `${Math.min(weeklyProgress * 100, 100)}%`, backgroundColor: colors.primary }]} />
                 <Text style={[styles.progressText, { color: '#00ffcc' }]}>
                     Weekly Goal: {(weeklyProgress * 100).toFixed(0)}%
                 </Text>
@@ -246,6 +258,7 @@ export default function DashboardScreen() {
                         </TouchableOpacity>
                     )}
                     showsVerticalScrollIndicator={false}
+                    scrollEnabled={false}
                 />
             </View>
         </ScrollView>

@@ -71,6 +71,9 @@ workoutLogSchema.index(
   { unique: true }
 );
 
+//index for scanning for latest workouts, etc
+workoutLogSchema.index({ userId: 1, trainingPlanId: 1, performed: -1 });
+
 const WorkoutLog: Model<IWorkoutLog> = mongoose.model<IWorkoutLog>(
   "Workout",
   workoutLogSchema

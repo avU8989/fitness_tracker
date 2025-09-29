@@ -1,4 +1,4 @@
-import mongoose, { FilterQuery, HydratedDocument } from "mongoose";
+import mongoose, { FilterQuery, HydratedDocument, Types } from "mongoose";
 import WorkoutLog, { IWorkoutLog } from "../models/Workout";
 import {
   endOfWeek,
@@ -94,10 +94,10 @@ export const fetchCompletedWorkoutThisYear = async (userId: string) => {
   const start = startOfYear(new Date());
   const end = endOfYear(new Date());
 
-  return WorkoutLog.find({
+  return WorkoutLog.countDocuments({
     userId: new mongoose.Types.ObjectId(userId),
     performed: { $gte: start, $lte: end },
-  }).select("workoutDayId performed");
+  });
 };
 
 export const fetchUpcomingWorkoutDay = async (
@@ -131,6 +131,25 @@ export const fetchWeeklyWorkoutLogs = async (
     trainingPlanId,
     performed: { $gte: weekStart, $lte: weekEnd },
   }).select("workoutDayId performed");
+};
+
+export const fetchLastWorkoutLog = async (
+  userId: string,
+  trainingPlanId: string
+): Promise<{
+  workoutDayId: Types.ObjectId | undefined;
+  performed: Date;
+} | null> => {
+  return WorkoutLog.findOne(
+    {
+      userId: new mongoose.Types.ObjectId(userId),
+      trainingPlanId,
+    },
+    { performed: 1, workoutDayId: 1 }
+  )
+    .sort({ performed: -1 })
+    .lean<{ workoutDayId: Types.ObjectId; performed: Date }>()
+    .exec();
 };
 
 //works for 2025-09-08 to fetch WorkoutDay

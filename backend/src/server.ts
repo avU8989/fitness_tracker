@@ -8,9 +8,9 @@ import mongoose from "mongoose";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 import authMiddleware from "./middleware/auth";
-import authenticationRoutes from "./routes/authenticationRoutes";
-import trainingPlanRoutes from "./routes/trainingPlanRoutes";
-import workoutRoutes from "./routes/workoutRoutes";
+import authenticationRouter from "./routes/authenticationRoutes";
+import trainingPlanRouter from "./routes/trainingPlanRoutes";
+import workoutRouter from "./routes/workoutRoutes";
 import "reflect-metadata";
 import trainingAssignmentRoutes from "./routes/trainingAssignmentRoutes";
 import statsRoutes from "./routes/statsRoutes";
@@ -18,6 +18,7 @@ import heartRateLogRouter from "./routes/heartRateLogRoutes";
 import physicalActivityRouter from "./routes/physicalActivityLogRoutes";
 import pulseOximeterLogRouter from "./routes/pulseOximeterLogRoutes";
 import sleepLogRouter from "./routes/sleepLogRoutes";
+import dashboardRouter from "./routes/dashboardRoutes";
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -40,15 +41,16 @@ app.use(
 );
 app.use(express.json());
 // route protection with middleware
-app.use("/training-plans", authMiddleware, trainingPlanRoutes);
-app.use("/auth", authenticationRoutes);
-app.use("/workouts", authMiddleware, workoutRoutes);
+app.use("/training-plans", authMiddleware, trainingPlanRouter);
+app.use("/auth", authenticationRouter);
+app.use("/workouts", authMiddleware, workoutRouter);
 app.use("/trainingplan-assignments", authMiddleware, trainingAssignmentRoutes);
 app.use("/stats", authMiddleware, statsRoutes);
 app.use("/healthdata", authMiddleware, heartRateLogRouter);
 app.use("/healthdata", authMiddleware, physicalActivityRouter);
 app.use("/healthdata", authMiddleware, pulseOximeterLogRouter);
 app.use("/healthdata", authMiddleware, sleepLogRouter);
+app.use("/dashboard", authMiddleware, dashboardRouter);
 console.log("AYEE WE STARTING");
 
 // connect to mongodb

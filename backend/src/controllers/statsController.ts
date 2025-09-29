@@ -2,7 +2,10 @@ import { AuthenticatedRequest } from "../middleware/auth";
 import { IBodybuildingPlan } from "../models/BodybuildingPlan";
 import { ICrossfitPlan } from "../models/CrossfitPlan";
 import { Response, NextFunction } from "express";
-import { findActiveTrainingPlanAssignment } from "../services/trainingPlanAssignment.service";
+import {
+  findActiveTrainingPlanAssignment,
+  findUpcomingTrainingPlanAssignment,
+} from "../services/trainingPlanAssignment.service";
 import {
   calculateStreak,
   findSkippedSplit,
@@ -11,8 +14,7 @@ import {
   getWeeklyStats,
 } from "../services/stats.services";
 import {
-  fetchCompletedWorkoutThisYear,
-  fetchUpcomingWorkoutDay,
+  fetchLastWorkoutLog,
   fetchUserWorkoutLogs,
   getPRs,
   getTotalVolumeCurrentWeek,
@@ -64,8 +66,20 @@ export const getStatsOveriew = async (
       trainingPlan
     );
 
+    const lastLog = await fetchLastWorkoutLog(
+      userId,
+      assignment.trainingPlan._id
+    );
+    let lastWorkoutDayId;
+    let lastPerformed;
+    if (lastLog) {
+      const { workoutDayId, performed } = lastLog;
+      lastWorkoutDayId = workoutDayId ? workoutDayId.toString() : undefined;
+      lastPerformed = performed;
+    }
+
     const lastSplitType = getLastWorkoutSplitType(
-      statsResult.lastWorkoutDayId,
+      lastWorkoutDayId ?? "",
       trainingPlan
     );
 
@@ -87,7 +101,8 @@ export const getStatsOveriew = async (
     res.json({
       workoutsThisWeek: statsResult.workoutsThisWeek,
       totalVolume: statsResult.totalVolume,
-      lastWorkout: statsResult.lastWorkout,
+      lastWorkout: lastPerformed,
+      lastWorkoutDayId,
       lastSplitType,
       workoutStreak: streak,
       nextGoalMessage: message,
@@ -136,65 +151,6 @@ export const getStatsProgress = async (
         .map((p) => ({ name: p._id, weight: p.maxWeight, unit: "kg" })),
     });
     return;
-  } catch (err: any) {
-    res
-      .status(500)
-      .json({ error: "Internal server error", message: err.message });
-    return;
-  }
-};
-
-export const getDashboardOverview = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    //fetch number of total plans
-    const userId = req.user?.id;
-    if (!userId) {
-      res.status(401).json({ message: "Unauthorized: User Id missing" });
-      return;
-    }
-    const totalPlans = await fetchTotalPlans(userId);
-    //fetch number of completed workouts
-
-    const completedWorkouts = (await fetchCompletedWorkoutThisYear(userId))
-      .length;
-
-    const assignment = await findActiveTrainingPlanAssignment(
-      userId,
-      new Date().toISOString()
-    );
-
-    if (!assignment) {
-      res
-        .status(404)
-        .json({ message: "Could not find active Training Plan Assignment" });
-      return;
-    }
-
-    const trainingPlan = assignment.trainingPlan as unknown as
-      | IBodybuildingPlan
-      | ICrossfitPlan;
-
-    //fetch upcoming workout
-    const upcomingWorkoutDay = await fetchUpcomingWorkoutDay(
-      userId,
-      trainingPlan
-    );
-
-    //streak of consecutive workout days
-    //heavies list this week
-    //muscle group distribution
-    //last workout summary
-
-    res.status(200).json({
-      totalPlans,
-      completedWorkouts,
-      upcomingWorkoutDay,
-      currentPlan: assignment.trainigsplan.name,
-    });
   } catch (err: any) {
     res
       .status(500)

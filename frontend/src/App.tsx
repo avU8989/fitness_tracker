@@ -10,6 +10,7 @@ import SignUpProfileScreen from './screens/auth/SignUpProfileScreen';
 import { RootStackParameterList } from './navigation/navtypes';
 import { BleProvider } from './context/BleContext';
 import { WorkoutProvider } from './context/WorkoutContext';
+import { DashboardProvider } from './context/DashboardContext';
 const Stack = createNativeStackNavigator<RootStackParameterList>();
 
 function RootNavigator() {
@@ -38,11 +39,13 @@ export default function App() {
     <AuthProvider>
       <BleProvider>
         <WorkoutProvider>
-          <NavigationContainer>
-            <View style={styles.appWrapper}>
-              <RootNavigator />
-            </View >
-          </NavigationContainer>
+          <DashboardProvider>
+            <NavigationContainer>
+              <View style={styles.appWrapper}>
+                <RootNavigator />
+              </View >
+            </NavigationContainer>
+          </DashboardProvider>
         </WorkoutProvider>
       </BleProvider>
     </AuthProvider>

@@ -30,6 +30,11 @@ const trainingPlanAssignmentSchema = new Schema<ITrainingPlanAssignment>(
   { timestamps: true }
 );
 
+//useful for finding the next training plan assignment
+trainingPlanAssignmentSchema.index({ user: 1, startDate: 1 });
+//useful for finding active training plan assignment and overlap checks
+trainingPlanAssignmentSchema.index({ user: 1, startDate: 1, endDate: 1 });
+
 const TrainingPlanAssignment: Model<ITrainingPlanAssignment> =
   mongoose.model<ITrainingPlanAssignment>(
     "TrainingPlanAssignment",
