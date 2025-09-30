@@ -23,37 +23,6 @@ import { WorkoutDay } from '../../types/trainingPlan';
 
 const { width } = Dimensions.get('window');
 
-// VHS Button with press animation
-function VHSButton({ title, onPress }) {
-    const scaleAnim = useRef(new Animated.Value(1)).current;
-
-    const onPressIn = () => {
-        Animated.spring(scaleAnim, {
-            toValue: 0.95,
-            useNativeDriver: true,
-        }).start();
-    };
-    const onPressOut = () => {
-        Animated.spring(scaleAnim, {
-            toValue: 1,
-            friction: 3,
-            useNativeDriver: true,
-        }).start();
-    };
-
-    return (
-        <Animated.View style={{ transform: [{ scale: scaleAnim }], flex: 1, marginHorizontal: 5 }}>
-            <Pressable
-                onPress={onPress}
-                onPressIn={onPressIn}
-                onPressOut={onPressOut}
-                style={styles.vhsButton}
-            >
-                <Text style={styles.vhsButtonText}>{title.toUpperCase()}</Text>
-            </Pressable>
-        </Animated.View>
-    );
-}
 
 const recentActivitiesInitial = [
     { id: '1', text: 'MON: Chest PUSH 4x10 @ 80kg' },
@@ -66,6 +35,7 @@ const recentActivitiesInitial = [
 export default function DashboardScreen() {
     const [darkMode, setDarkMode] = useState(true);
     const { token } = useContext(AuthContext);
+    const [blinkVisible, setBlinkVisible] = useState(true);
     const [recentActivities, setRecentActivities] = useState(recentActivitiesInitial);
     const [expandedStats, setExpandedStats] = useState(null);
     const [weeklyProgress, setWeeklyProgress] = useState(0);
@@ -117,6 +87,13 @@ export default function DashboardScreen() {
         const interval = setInterval(updateCountDown, 60000);
         return () => clearInterval(interval);
     }, [upcomingWorkoutDay]);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setBlinkVisible(v => !v);
+        }, 600);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         if (state.plannedWorkoutDaysForWeek > 0) {
@@ -203,29 +180,22 @@ export default function DashboardScreen() {
     return (
         <ScrollView
             style={[styles.root, { backgroundColor: colors.background }]}
-            contentContainerStyle={{ paddingBottom: 40 }}
+            contentContainerStyle={{ padding: 20 }}
         >
-            {/* Dark Mode Toggle */}
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 10, paddingTop: 30 }}>
-                <Text style={{ color: colors.primary, fontFamily: 'monospace', marginRight: 10, paddingTop: 14 }}>
-                    {darkMode ? 'Dark Mode' : 'Light Mode'}
+
+            <View style={styles.progressMonitorContainer}>
+                <View style={[styles.progressDot, { opacity: blinkVisible ? 1 : 0.3 }]} />
+                <Text style={styles.progressMonitorText}>
+                    PROGRESS MONITOR: {weeklyProgress > 0 ? "ACTIVE" : "IDLE"}
                 </Text>
-                <Switch
-                    value={darkMode}
-                    onValueChange={setDarkMode}
-                    thumbColor={darkMode ? colors.primary : '#ccc'}
-                    trackColor={{ false: '#aaa', true: '#007f66' }}
-                />
             </View>
 
             {/* Header */}
-            <View style={styles.headerContainer}>
-                <Text style={styles.vhsHudTitle}>▓CHANNEL 05 — DASHBOARD▓</Text>
+            <Text style={styles.vhsHudTitle}>▓CHANNEL 05 — DASHBOARD▓</Text>
 
-                <Text style={[styles.subtitle, { color: colors.primary, opacity: 0.7 }]}>
-                    Your Training Summary
-                </Text>
-            </View>
+            <Text style={[styles.subtitle, { color: colors.primary, opacity: 0.7 }]}>
+                Your Training Summary
+            </Text>
 
             {/* Progress Bar */}
             <View style={[styles.progressBarContainer, { borderColor: colors.primary }]}>
@@ -321,6 +291,37 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+
+    progressMonitorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 30,
+        marginBottom: 10,
+        alignSelf: 'center',
+    },
+    progressDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#ff0055',
+        marginRight: 8,
+        shadowColor: '#ff0055',
+        shadowOpacity: 0.9,
+        shadowRadius: 6,
+    },
+    progressMonitorText: {
+        fontFamily: 'monospace',
+        fontSize: 13,
+        color: '#ff0055',
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        textShadowColor: '#ff0055',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 6,
+    },
+
+
     exercisePreview: {
         fontFamily: 'monospace',
         fontSize: 13,
@@ -401,6 +402,8 @@ const styles = StyleSheet.create({
         fontFamily: 'monospace',
         fontSize: 14,
         letterSpacing: 3,
+        textAlign: 'center',
+        marginBottom: 12,
         marginTop: 6,
         opacity: 0.7,
     },
