@@ -7,6 +7,7 @@ import {
     Pressable,
     RefreshControl,
     Modal,
+    FlatList,
 } from 'react-native';
 import TrainingPlanModal from '../../components/modals/TrainingPlanModal';
 import Ticker from '../../components/Ticker';
@@ -16,23 +17,38 @@ import VHSButton from '../../components/VHSButton';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../../context/AuthContext';
 import { getTrainingPlans } from '../../services/trainingPlanService';
-import { DayOfWeek, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../types/trainingPlan';
+import { BasePlanDTO, DayOfWeek, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../types/trainingPlan';
 import * as Haptics from 'expo-haptics';
 import { getActivePlan } from '../../services/planAssignmentsService';
 import { toUIPlan } from '../../utils/apiHelpers';
+import { homeStyles } from './HomeScreen';
+import { useDashboard } from '../../context/DashboardContext';
 
 export default function TrainingPlansScreen() {
     const { token } = useContext(AuthContext);
     const [plans, setPlans] = useState<TrainingPlanUI[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [blinkVisible, setBlinkVisible] = useState(true);
     const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
     const [activePlan, setActivePlan] = useState<TrainingPlanAssignment | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [completedDays, setCompletedDays] = useState<DayOfWeek[]>([]);
     const [datePickerVisible, setDatePickerVisible] = useState(false);
+    const { state } = useDashboard();
 
+    const progress = state.plannedWorkoutDaysForWeek
+        ? state.workoutsThisWeek / state.plannedWorkoutDaysForWeek
+        : 0;
+
+    // Blink animation for session status
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setBlinkVisible((v) => !v);
+        }, 600);
+        return () => clearInterval(interval);
+    }, []);
 
     const loadPlans = async () => {
         if (!token) {
@@ -108,8 +124,6 @@ export default function TrainingPlansScreen() {
         }, 0) ?? 0;
     }, [currentPlan]);
 
-
-
     const formatSplitDateRange = (startDate: Date) => {
         const pad = (n: number) => n.toString().padStart(2, "0");
 
@@ -119,15 +133,37 @@ export default function TrainingPlansScreen() {
 
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + 6);
+
         const dayEnd = pad(endDate.getDate());
         const monthEnd = pad(endDate.getMonth() + 1);
         const yearEnd = endDate.getFullYear();
 
         return {
             rangeLine: `${dayStart}.${monthStart} — ${dayEnd}.${monthEnd}`,
-            yearLine: yearStart === yearEnd ? yearStart.toString() : `${yearStart}/${yearEnd}`,
+            yearLine: yearStart === yearEnd ? `${yearStart}` : `${yearStart}/${yearEnd}`,
         };
     };
+
+    const formatFullDateRange = (startDate: Date) => {
+        const pad = (n: number) => n.toString().padStart(2, "0");
+
+        const dayStart = pad(startDate.getDate());
+        const monthStart = pad(startDate.getMonth() + 1);
+        const yearStart = startDate.getFullYear();
+
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+
+        const dayEnd = pad(endDate.getDate());
+        const monthEnd = pad(endDate.getMonth() + 1);
+        const yearEnd = endDate.getFullYear();
+
+        return `${dayStart}.${monthStart}.${yearStart} — ${dayEnd}.${monthEnd}.${yearEnd}`;
+    };
+
+
+
+
 
     const { rangeLine, yearLine } = formatSplitDateRange(new Date());
     const daysCompleted = completedDays.length;
@@ -139,6 +175,27 @@ export default function TrainingPlansScreen() {
         setCurrentIndex(plans.length);
         setCompletedDays([]);
     };
+
+    const getPlanStatus = () => {
+        if (activePlan) {
+            // if endDate is missing, treat as ongoing/active
+            if (!activePlan.endDate) return "ACTIVE";
+
+            const now = new Date();
+            const start = new Date(activePlan.startDate);
+            const end = new Date(activePlan.endDate);
+
+            if (now >= start && now <= end) return "ACTIVE";
+            if (now >= start && end === null) return "ACTIVE";
+            if (now > end) return "COMPLETED";
+            if (now < start) return "UPCOMING";
+        }
+
+        return "UPCOMING";
+    };
+
+    const planStatus = getPlanStatus();
+
 
     const handleWeekChange = async (start: Date, end: Date) => {
         console.log(start);
@@ -160,13 +217,44 @@ export default function TrainingPlansScreen() {
     }
 
     return (
-        <View style={styles.root}>
-            <View style={styles.headerContainer}>
-                <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — TRAINING FEED▓</Text>
+        <ScrollView style={styles.root} contentContainerStyle={styles.rootcontent}>
+
+            <View style={styles.planStatusContainer}>
+                <View
+                    style={[
+                        styles.recIndicator,
+                        {
+                            backgroundColor:
+                                planStatus === "ACTIVE"
+                                    ? "limegreen"
+                                    : planStatus === "COMPLETED"
+                                        ? "gray"
+                                        : "orange",
+                            opacity: blinkVisible ? 1 : 0.3,
+                        },
+                    ]}
+                />
+                <Text
+                    style={[
+                        styles.planStatusText,
+                        {
+                            color:
+                                planStatus === "ACTIVE"
+                                    ? "limegreen"
+                                    : planStatus === "COMPLETED"
+                                        ? "gray"
+                                        : "orange",
+                        },
+                    ]}
+                >
+                    {`TRAINING PLAN: ${planStatus}`}
+                </Text>
             </View>
 
+
+            <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — TRAIN PLAN▓</Text>
             <View style={styles.titleContainer}>
-                <Text style={styles.splitName}>{activePlan ? toUIPlan(activePlan.trainingPlan).name : currentPlan?.name ?? "No plan"}</Text>
+                <Text style={styles.vhsSubHeader}>↳ {activePlan ? toUIPlan(activePlan.trainingPlan).name : currentPlan?.name ?? "No plan"} ↲</Text>
 
                 <View style={styles.dateContainer}>
                     <Pressable
@@ -181,16 +269,16 @@ export default function TrainingPlansScreen() {
                         <View style={styles.dateRow}>
                             <Text style={styles.dateRangeText}>
                                 {activePlan
-                                    ? `${new Date(activePlan.startDate).toLocaleDateString("en-GB")} — ${activePlan.endDate
-                                        ? new Date(activePlan.endDate).toLocaleDateString("en-GB")
+                                    ? `${new Date(activePlan.startDate).toLocaleDateString("de-DE")}—${activePlan.endDate
+                                        ? new Date(activePlan.endDate).toLocaleDateString("de-DE")
                                         : "ongoing"
                                     }`
-                                    : rangeLine}
+                                    : formatFullDateRange(new Date())}
                             </Text>
+
 
                             <Ionicons name="calendar-outline" size={24} color="#00ffcc" style={styles.calendarIcon} />
                         </View>
-                        <Text style={styles.dateYearText}>{yearLine}</Text>
                     </Pressable>
                 </View>
             </View>
@@ -203,40 +291,54 @@ export default function TrainingPlansScreen() {
             />
 
             <View style={styles.carouselContainer}>
-                <Pressable onPress={goPrev} style={styles.arrowButton}>
-                    <Text style={styles.arrowText}>‹</Text>
-                </Pressable>
 
-                <ScrollView style={styles.tableContainer}
-                    refreshControl={<RefreshControl refreshing={loading} onRefresh={loadPlans} />}>
-
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.weekContainer}
+                >
                     {(activePlan ? toUIPlan(activePlan.trainingPlan) : currentPlan)?.days.map(
                         (day, idx) => {
-                            if (!day.dayOfWeek) {
-                                return null;
-                            }
-
                             const isCompleted = completedDays.includes(day.dayOfWeek);
 
                             return (
-                                <Pressable key={idx} onLongPress={() => {
-                                    setHighlightedIndex(idx);
-                                    setSelectedDay((activePlan ? toUIPlan(activePlan.trainingPlan).days : currentPlan?.days)[idx]);
-                                    setTrainingPlanModalVisible(true);
-                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                }}
-                                    style={[styles.tableRow, isCompleted && styles.completedDayRow, highlightedIndex === idx && styles.longPressHighlight]}>
-                                    <Text style={styles.tableDay}>{day.dayOfWeek}</Text>
-                                    <Text style={styles.tableType}>{day.splitType}</Text>
+                                <Pressable
+                                    key={idx}
+                                    onLongPress={() => {
+                                        setHighlightedIndex(idx);
+                                        setSelectedDay(day);
+                                        setTrainingPlanModalVisible(true);
+                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    }}
+                                    style={[
+                                        styles.dayCard,
+                                        isCompleted && styles.completedCard,
+                                        highlightedIndex === idx && styles.highlightedCard,
+                                    ]}
+                                >
+                                    {/* Header */}
+                                    <View style={styles.dayHeader}>
+                                        <Text style={styles.dayTitle}>{day.dayOfWeek}</Text>
+                                        <Text style={styles.splitType}>{day.splitType}</Text>
+                                    </View>
 
-                                    <Text
-                                        style={[
-                                            styles.completionToggle
-                                            && styles.completedToggle,
-                                        ]}
-                                    >
-                                        █
-                                    </Text>
+                                    {/* Exercises */}
+                                    {day.exercises?.length > 0 ? (
+                                        <View style={styles.exercisePreview}>
+                                            {day.exercises.slice(0, 2).map((ex, exIdx) => (
+                                                <Text key={exIdx} style={styles.exerciseLine}>
+                                                    ▸ {ex.name} — {ex.sets[0].reps} x {ex.sets[0].weight}{ex.sets[0].unit}
+                                                </Text>
+                                            ))}
+                                            {day.exercises.length > 2 && (
+                                                <Text style={styles.moreExercises}>
+                                                    + {day.exercises.length - 2} more...
+                                                </Text>
+                                            )}
+                                        </View>
+                                    ) : (
+                                        <Text style={styles.restText}>Rest Day</Text>
+                                    )}
                                 </Pressable>
                             );
                         }
@@ -291,23 +393,54 @@ export default function TrainingPlansScreen() {
                     </View>
 
                 </Modal>
-
-                <Pressable onPress={goNext} style={styles.arrowButton}>
-                    <Text style={styles.arrowText}>›</Text>
-                </Pressable>
             </View>
 
             <VHSGlowDivider />
 
-            <View style={styles.summaryContainer}>
-                <Text style={styles.summaryText}>Total Exercises Planned: {totalExercises}</Text>
-                <Text style={styles.summaryText}>Estimated Volume: {estimatedVolume.toLocaleString()} kg</Text>
-                <Text style={styles.summaryText}>Days Completed: {daysCompleted} / {currentPlan?.days?.length}</Text>
+
+
+            <View style={styles.powerBarContainer}>
+                <View style={styles.logFeed}>
+
+                    <Text style={styles.feedHeader}>▓ TRAINING FEED ▓</Text>
+
+                    <Text style={styles.summaryText}>Total Exercises Planned: {totalExercises}</Text>
+                    <Text style={styles.summaryText}>Estimated Volume: {estimatedVolume.toLocaleString()} kg</Text>
+                </View>
+
+                <Text style={styles.powerBarSubLabel}>
+                    ↳ Workouts Completed: {state.workoutsThisWeek} / {state.plannedWorkoutDaysForWeek}
+                </Text>
+
+                <View style={styles.powerBarTrack}>
+                    <View
+                        style={[
+                            styles.powerBarFill,
+                            { width: `${Math.min(progress * 100, 100)}%` },
+                        ]}
+                    />
+                </View>
+
+                <View style={homeStyles.barTickRow}>
+                    <Text style={homeStyles.tickLabel}>NONE</Text>
+                    <Text style={homeStyles.tickLabel}>PLAN GOAL</Text>
+                </View>
+
+                <Text style={styles.diagnosticNote}>
+                    &gt;&gt;KEEP PUSHING — FINISH STRONG&lt;&lt;
+                </Text>
             </View>
 
+
             <View style={styles.newPlanContainer}>
-                <Pressable onPress={() => setModalVisible(true)}>
-                    <VHSButton title="+ Create New Plan" onPress={() => setModalVisible(true)} />
+                <Pressable
+                    onPress={() => setModalVisible(true)}
+                    style={({ pressed }) => [
+                        styles.endButton,
+                        pressed && { opacity: 0.7 }, // little feedback when pressed
+                    ]}
+                >
+                    <Text style={styles.endButtonText}>■ CREATE NEW PLAN</Text>
                 </Pressable>
 
                 <TrainingPlanModal
@@ -317,12 +450,222 @@ export default function TrainingPlansScreen() {
                 />
             </View>
 
-            <Ticker />
-        </View >
+        </ScrollView >
     );
 }
 
 const styles = StyleSheet.create({
+    vhsSubHeader: {
+        fontFamily: 'monospace',
+        color: '#00ffcc',
+        fontSize: 20,
+        marginTop: 10,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+        opacity: 0.6,
+    },
+    root: {
+        flex: 1,
+        backgroundColor: '#0A0F1C',
+    },
+    planStatusText: {
+        color: "#BFC7D5",
+        fontFamily: "monospace",
+        fontSize: 13,
+        letterSpacing: 2,
+        textTransform: "uppercase",
+        textShadowColor: "#00ffcc",
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 4,
+    },
+
+    planStatusContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 30,
+        marginBottom: 10,
+        alignSelf: 'center',
+    },
+    recIndicator: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: '#ff0055',
+        marginRight: 10,
+        shadowColor: '#ff0055',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 6,
+    },
+    endButton: {
+        backgroundColor: '#00ffcc',
+        marginTop: 20,
+        padding: 14,
+        borderRadius: 8,
+        alignItems: 'center',
+        shadowColor: '#00ffcc',
+        shadowOpacity: 0.4,
+        shadowRadius: 10,
+        width: '100%',
+    },
+    endButtonText: {
+        color: '#0A0F1C',
+        fontFamily: 'monospace',
+        fontSize: 13,
+        fontWeight: 'bold',
+        letterSpacing: 2,
+    },
+    powerBarContainer: {
+        padding: 12,
+        backgroundColor: '#0A0F1C',
+        borderColor: '#rgba(0, 255, 204, 0.1)',
+        borderWidth: 1.2,
+        borderRadius: 6,
+        shadowColor: '#00ffcc',
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
+    },
+    powerBarLabel: {
+        fontFamily: 'monospace',
+        fontSize: 13,
+        color: '#00ffcc',
+        letterSpacing: 2,
+        marginBottom: 4,
+    },
+    feedHeader: {
+        color: '#00ffcc',
+        fontSize: 13,
+        fontFamily: 'monospace',
+        marginBottom: 6,
+        letterSpacing: 2,
+    },
+    container: {
+        height: 400,
+    },
+    weekContainer: {
+        flexDirection: "row",
+        paddingVertical: 12,
+    },
+    powerBarSubLabel: {
+        fontFamily: 'monospace',
+        fontSize: 11,
+        color: '#BFC7D5',
+        marginBottom: 8,
+        opacity: 0.8,
+    },
+    powerBarTrack: {
+        height: 10,
+        backgroundColor: '#1A1F2C',
+        borderRadius: 4,
+        overflow: 'hidden',
+        marginBottom: 4,
+    },
+    powerBarFill: {
+        height: '100%',
+        backgroundColor: '#00ffcc',
+        shadowColor: '#00ffcc',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 10,
+    },
+    diagnosticNote: {
+        fontFamily: 'monospace',
+        color: '#00ffcc',
+        fontSize: 11,
+        letterSpacing: 0.88,
+        opacity: 0.9,
+        textAlign: 'center',
+        marginTop: 6,
+        textShadowColor: '#00ffcc',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 6,
+        textTransform: 'uppercase',
+    },
+
+    dayCard: {
+        width: 160,
+        height: 200,
+        marginRight: 14,
+        borderWidth: 1,
+        borderColor: "#rgba(0, 255, 204, 0.1)",
+        borderRadius: 12,
+        padding: 14,
+        backgroundColor: "#111622",
+    },
+
+    dayHeader: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 8,
+    },
+
+    dayTitle: {
+        fontFamily: "monospace",
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#00ffcc",
+    },
+
+    splitType: {
+        fontFamily: "monospace",
+        fontSize: 14,
+        color: "#BFC7D5",
+    },
+
+    exercisePreview: {
+        marginTop: 4,
+    },
+
+    exerciseLine: {
+        fontFamily: "monospace",
+        fontSize: 12,
+        color: "#BFC7D5",
+        marginBottom: 2,
+    },
+
+    moreExercises: {
+        fontFamily: "monospace",
+        fontSize: 12,
+        fontStyle: "italic",
+        color: "#7ACFCF",
+        marginTop: 4,
+    },
+
+    restText: {
+        fontFamily: "monospace",
+        fontSize: 12,
+        fontStyle: "italic",
+        color: "#888",
+    },
+
+    completedCard: {
+        backgroundColor: "rgba(0,255,204,0.08)",
+    },
+
+    highlightedCard: {
+        borderColor: "#ff4444",
+        shadowColor: "#ff4444",
+        shadowOpacity: 0.8,
+        shadowRadius: 8,
+    },
+
+    summaryCard: {
+        borderWidth: 1,
+        borderColor: "#00ffcc",
+        borderRadius: 12,
+        padding: 16,
+        marginTop: 20,
+        backgroundColor: "#0A0F1C",
+    },
+
+    summaryTitle: {
+        fontFamily: "monospace",
+        fontSize: 14,
+        fontWeight: "bold",
+        color: "#00ffcc",
+        marginBottom: 6,
+    },
+
 
     modalCloseButton: {
         position: 'absolute',
@@ -350,6 +693,9 @@ const styles = StyleSheet.create({
         textShadowRadius: 6,
     },
 
+    rootcontent: {
+        padding: 20,
+    },
 
     modalBackdrop: {
         flex: 1,
@@ -443,8 +789,8 @@ const styles = StyleSheet.create({
     dateRangeText: {
         fontFamily: 'monospace',
         color: '#00ffcc',
-        fontSize: 20,
-        letterSpacing: 3,
+        fontSize: 16,
+        letterSpacing: 0,
         textShadowColor: '#00ffcc',
         textShadowRadius: 8,
         textTransform: 'uppercase',
@@ -473,16 +819,8 @@ const styles = StyleSheet.create({
         textShadowRadius: 6,
     },
 
-    root: {
-        flex: 1,
-        backgroundColor: '#0A0F1C',
-        paddingTop: 30,
-        justifyContent: 'flex-start',
-    },
     headerContainer: {
         alignItems: 'center',
-        marginBottom: 12,
-        paddingTop: 30,
     },
     vhsHudTitle: {
         fontFamily: 'monospace',
@@ -532,7 +870,7 @@ const styles = StyleSheet.create({
         textDecorationLine: 'underline',
     },
     carouselContainer: {
-        flexDirection: 'row',
+        flex: 1,
         alignItems: 'center',
     },
     arrowButton: {
@@ -620,20 +958,16 @@ const styles = StyleSheet.create({
         transform: [{ scale: 1.05 }],
     },
 
-    summaryContainer: {
-        padding: 12,
-        marginHorizontal: 30,
-        paddingHorizontal: 20,
-        marginBottom: 10,
-        borderWidth: 1,
-        borderColor: '#00ffcc',
-        borderRadius: 10,
-        opacity: 0.85,
+    logFeed: {
+        marginTop: 0,
+        flex: 1,
     },
+
     summaryText: {
         fontFamily: 'monospace',
-        color: '#00ffcc',
+        color: '#BFC7D5',
         fontSize: 12,
+        paddingVertical: 3,
         letterSpacing: 2,
         marginBottom: 2,
     },

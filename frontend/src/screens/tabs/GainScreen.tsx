@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
     View,
     Text,
@@ -17,29 +17,11 @@ import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import Badge from '../../components/Badge';
 import { useDashboard } from '../../context/DashboardContext';
+import { AuthContext } from '../../context/AuthContext';
+import { getDashboardOverview } from '../../services/dashboardService';
+import { WorkoutDay } from '../../types/trainingPlan';
 
 const { width } = Dimensions.get('window');
-
-const stats = [
-    { label: 'TOTAL PLANS', value: '5', detailData: [12, 15, 11, 18] },
-    { label: 'COMPLETED WORKOUTS', value: '12', detailData: [3, 5, 2, 2] },
-    { label: 'CURRENT PLAN', value: 'Training Plan name 1', detailData: [12000, 15000, 13000, 17000] },
-    { label: 'NEXT PLAN', value: 'Hypertrophy Week 3', detailData: [] },
-];
-
-const badges = [
-    { id: '1', label: 'Consistency King', color: '#00ffcc', icon: '✓' },
-    { id: '2', label: 'Volume Master', color: '#ff0055', icon: '💪' },
-    { id: '3', label: 'PR Breaker', color: '#ffaa00', icon: '🔥' },
-];
-
-const recentActivitiesInitial = [
-    { id: '1', text: 'MON: Chest PUSH 4x10 @ 80kg' },
-    { id: '2', text: 'TUE: Legs 5x8 @ 100kg' },
-    { id: '3', text: 'WED: Rest' },
-    { id: '4', text: 'THU: Back PULL 4x12 @ 70kg' },
-    { id: '5', text: 'FRI: Shoulders PUSH 3x10 @ 30kg' },
-];
 
 // VHS Button with press animation
 function VHSButton({ title, onPress }) {
@@ -73,30 +55,68 @@ function VHSButton({ title, onPress }) {
     );
 }
 
+const recentActivitiesInitial = [
+    { id: '1', text: 'MON: Chest PUSH 4x10 @ 80kg' },
+    { id: '2', text: 'TUE: Legs 5x8 @ 100kg' },
+    { id: '3', text: 'WED: Rest' },
+    { id: '4', text: 'THU: Back PULL 4x12 @ 70kg' },
+    { id: '5', text: 'FRI: Shoulders PUSH 3x10 @ 30kg' },
+];
+
 export default function DashboardScreen() {
     const [darkMode, setDarkMode] = useState(true);
+    const { token } = useContext(AuthContext);
     const [recentActivities, setRecentActivities] = useState(recentActivitiesInitial);
     const [expandedStats, setExpandedStats] = useState(null);
-    const [weeklyProgress, setWeeklyProgress] = useState(0); // example progress 65%
+    const [weeklyProgress, setWeeklyProgress] = useState(0);
     const [nextWorkoutTime, setNextWorkoutTime] = useState(new Date(Date.now() + 3600 * 1000 * 26)); // 26 hours later
     const [timeLeft, setTimeLeft] = useState('');
+    const [totalPlans, setTotalPlans] = useState<number>(0);
+    const [completedWorkouts, setCompletedWorkouts] = useState<number>(0);
+    const [upcomingWorkoutDay, setUpcomingWorkoutDay] = useState<WorkoutDay | null>(null);
+    const [currentPlan, setCurrentPlan] = useState<string>("");
+    const [nextPlan, setNextPlan] = useState<string>("");
+    const nextPlanLabel = nextPlan || "None planned";
     const { state } = useDashboard();
+    const stats = [
+        { label: 'TOTAL TRAINING PLANS', value: String(totalPlans), detailData: [12, 15, 11, 18] },
+        { label: 'WORKOUTS THIS YEAR', value: String(completedWorkouts), detailData: [3, 5, 2, 2] },
+        { label: 'CURRENT TRAINING PLAN', value: currentPlan || "—", detailData: [12000, 15000, 13000, 17000] },
+        { label: 'NEXT TRAINING PLAN', value: nextPlanLabel, detailData: [] },
+    ];
+
+    const dayMap: Record<string, number> = {
+        SUN: 0,
+        MON: 1,
+        TUE: 2,
+        WED: 3,
+        THU: 4,
+        FRI: 5,
+        SAT: 6,
+    }
 
     // Countdown timer update
     useEffect(() => {
-        const interval = setInterval(() => {
-            const diff = nextWorkoutTime - new Date();
-            if (diff <= 0) {
-                setTimeLeft('NOW');
-                clearInterval(interval);
-                return;
+        if (!upcomingWorkoutDay)
+            return;
+
+        const updateCountDown = () => {
+            const { status, date } = getNextWorkoutStatus(upcomingWorkoutDay.dayOfWeek, 18);
+
+            if (status === "past") {
+                setTimeLeft("Workout already started!");
+            } else {
+                const diff = date.getTime() - Date.now();
+                const h = Math.floor(diff / 1000 / 3600);
+                const m = Math.floor((diff / 1000 % 3600) / 60);
+                setTimeLeft(`Starts in: ${h}h ${m}m`);
             }
-            const h = Math.floor(diff / 1000 / 3600);
-            const m = Math.floor((diff / 1000 % 3600) / 60);
-            setTimeLeft(`${h}h ${m}m`);
-        }, 60000); // update every minute
+        };
+
+        updateCountDown();
+        const interval = setInterval(updateCountDown, 60000);
         return () => clearInterval(interval);
-    }, [nextWorkoutTime]);
+    }, [upcomingWorkoutDay]);
 
     useEffect(() => {
         if (state.plannedWorkoutDaysForWeek > 0) {
@@ -106,6 +126,47 @@ export default function DashboardScreen() {
         }
     }, [state]);
 
+    useEffect(() => {
+        loadDashboardOverview();
+    }, []);
+
+    async function loadDashboardOverview() {
+        try {
+            if (token) {
+                const {
+                    totalPlans,
+                    completedWorkouts,
+                    upcomingWorkoutDay,
+                    currentPlan,
+                    nextPlan
+                } = await getDashboardOverview(token);
+
+                setTotalPlans(totalPlans);
+                setCompletedWorkouts(completedWorkouts);
+                setUpcomingWorkoutDay(upcomingWorkoutDay);
+                setCurrentPlan(currentPlan);
+                setNextPlan(nextPlan);
+            }
+        } catch (err: any) {
+            console.error(err.message);
+        }
+    }
+
+    function getNextWorkoutStatus(dayOfWeek: string, workoutHour = 18) {
+        const targetDay = dayMap[dayOfWeek];
+        const now = new Date();
+        const result = new Date(now);
+
+        const diff = (targetDay - now.getDay() + 7) % 7;
+        result.setDate(now.getDate() + diff);
+        result.setHours(workoutHour, 0, 0, 0);
+
+        if (diff === 0 && now >= result) {
+            return { status: "past", date: result };
+        }
+
+        return { status: "upcoming", date: result };
+    }
 
     // Dark mode styles toggle helper
     const colors = {
@@ -162,7 +223,7 @@ export default function DashboardScreen() {
                 <Text style={styles.vhsHudTitle}>▓CHANNEL 05 — DASHBOARD▓</Text>
 
                 <Text style={[styles.subtitle, { color: colors.primary, opacity: 0.7 }]}>
-                    Stay Strong — Stay Sharp
+                    Your Training Summary
                 </Text>
             </View>
 
@@ -212,8 +273,7 @@ export default function DashboardScreen() {
                                         color: (opacity = 1) => `rgba(0, 255, 204, ${opacity})`,
                                         labelColor: () => colors.primary,
                                     }}
-                                    style={{ marginTop: 10, borderRadius: 8 }}
-                                />
+                                    style={{ marginTop: 10, borderRadius: 8 }} yAxisLabel={''} />
                             )}
                         </Pressable>
                     );
@@ -223,21 +283,16 @@ export default function DashboardScreen() {
             {/* Stats Carousel */}
             <StatsCarousel />
 
-            {/* Motivational Tip */}
-            <View style={[styles.tipContainer, { borderColor: colors.primary, backgroundColor: colors.cardBg }]}>
-                <View style={styles.badgesContainer}>
-                    {badges.map(badge => (
-                        <Badge key={badge.id} {...badge} />
-                    ))}
-                </View>
-
-            </View>
-
             {/* Upcoming Workout Card */}
             <View style={[styles.upcomingContainer, { borderColor: colors.primary, backgroundColor: colors.cardBg }]}>
                 <Text style={[styles.upcomingTitle, { color: colors.primary }]}>NEXT WORKOUT</Text>
-                <Text style={[styles.upcomingWorkout, { color: colors.primary }]}>Chest PUSH 4x10 @ 90kg</Text>
-                <Text style={[styles.upcomingCountdown, { color: colors.primary }]}>Starts in: {timeLeft}</Text>
+                <Text style={[styles.upcomingWorkout, { color: colors.primary }]}>{upcomingWorkoutDay?.dayOfWeek} {upcomingWorkoutDay?.splitType}</Text>
+                {upcomingWorkoutDay?.exercises?.[0] && (
+                    <Text style={[styles.activityText, { color: colors.textSecondary }]}>
+                        › {upcomingWorkoutDay.exercises[0].name} — {upcomingWorkoutDay.exercises[0].sets[0].reps} x {upcomingWorkoutDay.exercises[0].sets[0].weight} {upcomingWorkoutDay.exercises[0].sets[0].unit}
+                    </Text>
+                )}
+                <Text style={[styles.upcomingCountdown, { color: colors.primary }]}>{timeLeft}</Text>
             </View>
 
             {/* Recent Activity with swipe delete */}
@@ -266,6 +321,16 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
+    exercisePreview: {
+        fontFamily: 'monospace',
+        fontSize: 13,
+        letterSpacing: 1.5,
+        marginTop: 4,
+        opacity: 0.9,
+        textShadowColor: '#00ffcc',
+        textShadowOffset: { width: 0, height: 0 },
+        textShadowRadius: 4,
+    },
     vhsHudTitle: {
         fontFamily: 'monospace',
         color: '#00ffcc',
@@ -416,6 +481,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         marginBottom: 30,
         padding: 15,
+        marginTop: 20,
         borderWidth: 1,
         borderRadius: 12,
     },

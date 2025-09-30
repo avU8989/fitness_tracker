@@ -3,7 +3,7 @@ import { API_URL } from "@env";
 const URL = `${API_URL}/stats`;
 
 export const getStatsOverview = async (token: string) => {
-  const response = await fetch(`${URL}/`, {
+  const response = await fetch(`${URL}/overview`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -12,7 +12,7 @@ export const getStatsOverview = async (token: string) => {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch workout log history stats");
+    throw new Error("Failed to fetch stats overview");
   }
 
   return response.json();

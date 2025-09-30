@@ -178,8 +178,8 @@ const LogPage = () => {
       </View>
 
       {/* Header */}
-      <Text style={styles.vhsHudTitle}>▓CHANNEL 03 — SESSION LOG▓</Text>
-      <Text style={styles.vhsSubHeader}>▐ TODAY'S SPLIT: {nextSkippedDay?.splitType ?? splitName} ▐</Text>
+      <Text style={styles.vhsHudTitle}>▓CHANNEL 03 — WORKOUT LOG▓</Text>
+      <Text style={styles.vhsSubHeader}>↳ TODAY'S SPLIT: {nextSkippedDay?.splitType ?? splitName} ↲</Text>
 
 
 
@@ -265,6 +265,8 @@ const LogPage = () => {
             // Mark exercise as completed if at least one set has been logged
             setCompletedExercises(prev => [...new Set([...prev, exerciseName])]);
           }}
+
+
 
         />
       )}
@@ -494,7 +496,7 @@ const styles = StyleSheet.create({
 
   trainingPlanTable: {
     borderWidth: 1,
-    borderColor: '#00ffcc',
+    borderColor: '#rgba(0, 255, 204, 0.1)',
     borderRadius: 10,
     backgroundColor: 'transparent',
     height: 260,

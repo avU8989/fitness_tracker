@@ -26,7 +26,7 @@ export default function HardloggerUI() {
     const data = usePulseOximeterMonitor();
     const { token } = useContext(AuthContext);
     const [workoutsThisWeek, setWorkoutsThisWeek] = useState(null);
-    const [totalVolume, setTotalVolume] = useState(null);
+    const [thisWeekVolume, setThisWeekVolume] = useState(null);
     const [lastWorkout, setLastWorkout] = useState("");
     const [lastSplitType, setLastSplitType] = useState("");
     const [workoutStreak, setWorkoutStreak] = useState(null);
@@ -37,34 +37,6 @@ export default function HardloggerUI() {
     const sleepData = useSleepMonitor();
     const physicalActivityData = usePhysicalActivityMonitor();
     const [skippedSplitType, setSkippedSplitType] = useState(null);
-    const stats = {
-        lastWorkoutDays: '01/04/1996',
-        exercisesLogged: 6,
-        volume: 500,
-        liftProgression: '30 %',
-        duration: '01:15:43',
-        lastWorkout: { date: '01/04/1996', split: 'BACK' },
-        weekVolume: 1200,
-        pr: [
-            { name: 'Deadlift', weight: 170 },
-            { name: 'Bench Press', weight: 100 },
-            { name: 'Squat', weight: 140 },
-        ],
-        recovery: {
-            soreness: 'OK',
-            cnsLoad: 'MEDIUM',
-            mental: 'FOCUSED',
-        },
-        split: [
-            { day: 'MON', type: 'PUSH', status: '▶ PLAY // Chst_A1' },
-            { day: 'TUE', type: 'PULL', status: 'RECORDED // Bck_A1' },
-            { day: 'WED', type: 'LEGS', status: 'RECORDED // Leg_A1' },
-            { day: 'THU', type: 'REST', status: '' },
-            { day: 'FRI', type: 'PUSH', status: 'IN QUEUE // Chst_A2' },
-            { day: 'SAT', type: 'REST', status: '' },
-            { day: 'SUN', type: 'PULL', status: '' },
-        ],
-    };
 
     type ProgressUI = {
         topLift: {
@@ -138,7 +110,7 @@ export default function HardloggerUI() {
             if (token) {
                 const {
                     workoutsThisWeek,
-                    totalVolume,
+                    thisWeekVolume,
                     lastWorkout,
                     workoutStreak,
                     lastSplitType,
@@ -162,7 +134,7 @@ export default function HardloggerUI() {
                 setWorkoutsThisWeek(workoutsThisWeek ?? 0);
                 setNextGoalMessage(nextGoalMessage ?? "");
                 setLastSplitType(lastSplitType ?? "");
-                setTotalVolume(totalVolume ?? 0);
+                setThisWeekVolume(thisWeekVolume ?? 0);
                 setLastWorkout(formatted ?? "");
                 setSkippedSplitType(skippedSplitType ?? "");
                 setWorkoutStreak(workoutStreak ?? 0);
@@ -177,14 +149,14 @@ export default function HardloggerUI() {
             title: 'PULSE FEED',
             render: () => (
                 <View>
-                    <View style={styles.cardContent}>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>HEART RATE</Text>
-                            <Text style={styles.cardValue}>{bpm ?? "--"} bpm</Text>
+                    <View style={homeStyles.cardContent}>
+                        <View style={homeStyles.cardRow}>
+                            <Text style={homeStyles.cardLabel}>HEART RATE</Text>
+                            <Text style={homeStyles.cardValue}>{bpm ?? "--"} bpm</Text>
                         </View>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>SPO₂</Text>
-                            <Text style={styles.cardValue}>{data?.spo2 ?? "--"} %</Text>
+                        <View style={homeStyles.cardRow}>
+                            <Text style={homeStyles.cardLabel}>SPO₂</Text>
+                            <Text style={homeStyles.cardValue}>{data?.spo2 ?? "--"} %</Text>
                         </View>
                     </View>
                     <PulseBarGraph bpm={bpm} />
@@ -192,9 +164,6 @@ export default function HardloggerUI() {
                 </View>
             ),
         },
-        /*TO-DO right now is mocked should fetch from api --> smartwatch integration
-        or BLE Service connection to fetch characteristic values
-        */
         {
             title: 'REST FEED',
             render: () => {
@@ -218,20 +187,20 @@ export default function HardloggerUI() {
                 }
 
                 return (
-                    <View style={styles.cardContent}>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>HEART RATE SLEEP</Text>
-                            <Text style={styles.cardValue}>{sleepData.heartRate ?? "--"} bpm</Text>
+                    <View style={homeStyles.cardContent}>
+                        <View style={homeStyles.cardRow}>
+                            <Text style={homeStyles.cardLabel}>HEART RATE SLEEP</Text>
+                            <Text style={homeStyles.cardValue}>{sleepData.heartRate ?? "--"} bpm</Text>
                         </View>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>SLEEP</Text>
-                            <Text style={styles.cardValue}>
+                        <View style={homeStyles.cardRow}>
+                            <Text style={homeStyles.cardLabel}>SLEEP</Text>
+                            <Text style={homeStyles.cardValue}>
                                 {sleepHours != null ? sleepHours.toFixed(1) + " HRS" : "--"}
                             </Text>
                         </View>
-                        <View style={styles.cardRow}>
-                            <Text style={styles.cardLabel}>FATIGUE</Text>
-                            <Text style={[styles.cardValue, { color: fatigueColor, textShadowColor: fatigueColor }]}>
+                        <View style={homeStyles.cardRow}>
+                            <Text style={homeStyles.cardLabel}>FATIGUE</Text>
+                            <Text style={[homeStyles.cardValue, { color: fatigueColor, textShadowColor: fatigueColor }]}>
                                 {fatigue}
                             </Text>
                         </View>
@@ -239,7 +208,6 @@ export default function HardloggerUI() {
                 );
             },
         },
-        //TO-DO right now is mocked should fetch from api --> smartwatch integration
         {
             title: 'RECOVERY STATUS',
             lines: [
@@ -251,18 +219,18 @@ export default function HardloggerUI() {
         {
             title: 'STEP MONITOR',
             render: () => (
-                <View style={styles.cardContent}>
-                    <View style={styles.cardRow}>
-                        <Text style={styles.cardLabel}>STEPS: </Text>
-                        <Text style={styles.cardValue}>{physicalActivityData.stepCounter ?? "N/A"}</Text>
+                <View style={homeStyles.cardContent}>
+                    <View style={homeStyles.cardRow}>
+                        <Text style={homeStyles.cardLabel}>STEPS: </Text>
+                        <Text style={homeStyles.cardValue}>{physicalActivityData.stepCounter ?? "N/A"}</Text>
                     </View>
-                    <View style={styles.cardRow}>
-                        <Text style={styles.cardLabel}>DISTANCE: </Text>
-                        <Text style={styles.cardValue}>{(physicalActivityData.distance && physicalActivityData.distance / 1000) ?? "N/A"} km</Text>
+                    <View style={homeStyles.cardRow}>
+                        <Text style={homeStyles.cardLabel}>DISTANCE: </Text>
+                        <Text style={homeStyles.cardValue}>{(physicalActivityData.distance && physicalActivityData.distance / 1000) ?? "N/A"} km</Text>
                     </View>
-                    <View style={styles.cardRow}>
-                        <Text style={styles.cardLabel}>ENERGY EXPENDED: </Text>
-                        <Text style={styles.cardValue}>{physicalActivityData.energyExpended ?? "N/A"} kJ</Text>
+                    <View style={homeStyles.cardRow}>
+                        <Text style={homeStyles.cardLabel}>ENERGY EXPENDED: </Text>
+                        <Text style={homeStyles.cardValue}>{physicalActivityData.energyExpended ?? "N/A"} kJ</Text>
                     </View>
                 </View>
             ),
@@ -270,18 +238,18 @@ export default function HardloggerUI() {
         {
             title: 'SLEEP STATUS',
             render: () => (
-                <View style={styles.cardContent}>
-                    <View style={styles.cardRow}>
-                        <Text style={styles.cardLabel}>REM %</Text>
-                        <Text style={styles.cardValue}>{sleepData.remRate ?? "--"} %</Text>
+                <View style={homeStyles.cardContent}>
+                    <View style={homeStyles.cardRow}>
+                        <Text style={homeStyles.cardLabel}>REM %</Text>
+                        <Text style={homeStyles.cardValue}>{sleepData.remRate ?? "--"} %</Text>
                     </View>
-                    <View style={styles.cardRow}>
-                        <Text style={styles.cardLabel}>LIGHT %</Text>
-                        <Text style={styles.cardValue}>{sleepData.lightSleepRate ?? "--"} %</Text>
+                    <View style={homeStyles.cardRow}>
+                        <Text style={homeStyles.cardLabel}>LIGHT %</Text>
+                        <Text style={homeStyles.cardValue}>{sleepData.lightSleepRate ?? "--"} %</Text>
                     </View>
-                    <View style={styles.cardRow}>
-                        <Text style={styles.cardLabel}>DEEP %</Text>
-                        <Text style={styles.cardValue}>{sleepData.deepSleepRate ?? "--"} %</Text>
+                    <View style={homeStyles.cardRow}>
+                        <Text style={homeStyles.cardLabel}>DEEP %</Text>
+                        <Text style={homeStyles.cardValue}>{sleepData.deepSleepRate ?? "--"} %</Text>
                     </View>
                 </View>
             ),
@@ -298,9 +266,9 @@ export default function HardloggerUI() {
             title: 'POWER LEVEL',
             render: () =>
                 progress?.pr.map((p) => (
-                    <View key={p.name} style={styles.cardRow}>
-                        <Text style={styles.cardLabel}>{p.name.toUpperCase()}</Text>
-                        <Text style={styles.cardValue}>
+                    <View key={p.name} style={homeStyles.cardRow}>
+                        <Text style={homeStyles.cardLabel}>{p.name.toUpperCase()}</Text>
+                        <Text style={homeStyles.cardValue}>
                             {p.weight} {p.unit}
                         </Text>
                     </View>
@@ -311,7 +279,7 @@ export default function HardloggerUI() {
             lines: [
                 `LAST PR // `,
                 `LAST ENTRY //  2 days ago`,
-                `MENTAL STATE: ${stats.liftProgression}`,
+
             ],
         },
     ];
@@ -328,11 +296,11 @@ export default function HardloggerUI() {
 
 
     return (
-        <SafeAreaView style={styles.root}>
-            <ImageBackground source={GRAIN_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.1 }}>
-                <ImageBackground source={SCANLINE_TEXTURE} style={styles.bg} imageStyle={{ opacity: 0.1 }}>
+        <SafeAreaView style={homeStyles.root}>
+            <ImageBackground source={GRAIN_TEXTURE} style={homeStyles.bg} imageStyle={{ opacity: 0.1 }}>
+                <ImageBackground source={SCANLINE_TEXTURE} style={homeStyles.bg} imageStyle={{ opacity: 0.1 }}>
 
-                    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+                    <ScrollView style={homeStyles.container} contentContainerStyle={homeStyles.content}>
                         <Image
                             source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
                             style={{
@@ -361,19 +329,19 @@ export default function HardloggerUI() {
                         <VHSHeader />
 
 
-                        <View style={styles.overviewRow}>
-                            <Text style={styles.vhsHudTitle}>▓CHANNEL 01 — WORKOUT FEED▓</Text>
-                            <View style={styles.vhsHudPanel}>
-                                <View style={styles.hudRow}>
-                                    <Text style={styles.hudLabel}>▌WORKOUTS THIS WEEK:</Text>
-                                    <Text style={[styles.hudValue, { color: "#00ffcc", fontWeight: "bold" }]}> {workoutsThisWeek} finished</Text>
+                        <View style={homeStyles.overviewRow}>
+                            <Text style={homeStyles.vhsHudTitle}>▓CHANNEL 01 — WORKOUT FEED▓</Text>
+                            <View style={homeStyles.vhsHudPanel}>
+                                <View style={homeStyles.hudRow}>
+                                    <Text style={homeStyles.hudLabel}>WORKOUTS THIS WEEK:</Text>
+                                    <Text style={[homeStyles.hudValue, { color: "#00ffcc", fontWeight: "bold" }]}> {workoutsThisWeek} finished</Text>
                                 </View>
 
-                                <View style={styles.hudRow}>
-                                    <Text style={styles.hudLabel}>▌WORKOUT STREAK:</Text>
+                                <View style={homeStyles.hudRow}>
+                                    <Text style={homeStyles.hudLabel}>WORKOUT STREAK:</Text>
 
                                     <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-                                        <Text style={[styles.hudValue, { fontWeight: "bold" }]}>
+                                        <Text style={[homeStyles.hudValue, { fontWeight: "bold" }]}>
                                             {workoutStreak} Days
                                         </Text>
                                         {workoutStreak && workoutStreak > 0 && ( // add fire when workoutStreak
@@ -397,77 +365,77 @@ export default function HardloggerUI() {
 
                                 </View>
 
-                                <View style={styles.hudRow}>
-                                    <Text style={styles.hudLabel}>▌NEXT GOAL:</Text>
+                                <View style={homeStyles.hudRow}>
+                                    <Text style={homeStyles.hudLabel}>NEXT GOAL:</Text>
 
-                                    <Text style={[styles.hudValue, { fontWeight: "bold" }]}>{skippedSplitType}</Text>
+                                    <Text style={[homeStyles.hudValue, { fontWeight: "bold" }]}>{skippedSplitType}</Text>
                                 </View>
 
-                                <Text style={styles.diagnosticNote}>
-                                    {'>>'} {nextGoalMessage}  {'<<'}
+                                <Text style={homeStyles.diagnosticNote}>
+                                    {`>> ${nextGoalMessage} <<`}
                                 </Text>
                             </View>
 
 
                         </View>
-                        <View style={styles.doubleRow}>
-                            <View style={styles.halfBox}>
-                                <Text style={styles.boxHeader}>LAST WORKOUT</Text>
+                        <View style={homeStyles.doubleRow}>
+                            <View style={homeStyles.halfBox}>
+                                <Text style={homeStyles.boxHeader}>LAST WORKOUT</Text>
                                 <View style={{ flex: 1, justifyContent: "center" }}>
-                                    <Text style={[styles.cardValue, {
+                                    <Text style={[homeStyles.cardValue, {
                                         fontSize: 18, fontWeight: 'bold', color: "#BFC7D5",
                                         textShadowColor: "#BFC7D5",
                                         textShadowOffset: { width: 0, height: 0 },
                                         textShadowRadius: 3,
                                     }]}>{lastWorkout}</Text>
-                                    <Text style={[styles.cardValue, { fontSize: 16, fontWeight: 'bold' }]}>{lastSplitType}</Text>
+                                    <Text style={[homeStyles.cardValue, { fontSize: 16, fontWeight: 'bold' }]}>{lastSplitType}</Text>
                                 </View>
                             </View>
 
-                            <View style={styles.halfBox}>
-                                <Text style={styles.boxHeader}>THIS WEEK VOLUME</Text>
+                            <View style={homeStyles.halfBox}>
+                                <Text style={homeStyles.boxHeader}>THIS WEEK VOLUME</Text>
                                 <View style={{ flex: 1, justifyContent: "center" }}>
-                                    <Text style={[styles.cardValue, {
+                                    <Text style={[homeStyles.cardValue, {
                                         fontSize: 26, fontWeight: 'bold', color: "#BFC7D5",
                                         textShadowColor: "#BFC7D5",
                                         textShadowOffset: { width: 0, height: 0 },
                                         textShadowRadius: 3,
-                                    }]}>{totalVolume} kg</Text>
+                                    }]}>{thisWeekVolume} kg</Text>
                                 </View>
                             </View>
                         </View>
 
 
-                        <View style={styles.doubleRow}>
-                            <View style={styles.halfBox}>
-                                <Text style={styles.boxHeader}>POWER FEED</Text>
-                                <Text style={styles.bodyText}>
+                        <View style={homeStyles.doubleRow}>
+                            <View style={homeStyles.halfBox}>
+                                <Text style={homeStyles.boxHeader}>POWER FEED</Text>
+                                <Text style={homeStyles.bodyText}>
                                     TOP LIFT:
                                 </Text>
-                                <Text style={[styles.cardValue, { fontSize: 14 }]}>{progress?.topLift.name.toUpperCase()} {progress?.topLift.weight}{progress?.topLift.unit}</Text>
+                                <Text style={[homeStyles.cardValue, { fontSize: 14 }]}>{progress?.topLift.name.toUpperCase()} {progress?.topLift.weight}{progress?.topLift.unit}</Text>
                             </View>
 
-                            <View style={styles.halfBox}>
-                                <Text style={styles.boxHeader}>TRAINING STATUS</Text>
-                                <Text style={styles.bodyText}>TRAINING LOAD: </Text>
-                                <Text style={[styles.cardValue, { fontSize: 14 }]}>{trainingLoad}</Text>
+                            <View style={homeStyles.halfBox}>
+                                <Text style={homeStyles.boxHeader}>TRAINING STATUS</Text>
+                                <Text style={homeStyles.bodyText}>TRAINING LOAD: </Text>
+                                <Text style={[homeStyles.cardValue, { fontSize: 14 }]}>{trainingLoad}</Text>
                             </View>
                         </View>
                         <VHSGlowDivider></VHSGlowDivider>
 
-                        <Text style={styles.vhsHudTitle}>▓CHANNEL 02 — VITAL FEED▓</Text>
+                        <Text style={homeStyles.vhsHudTitle}>▓CHANNEL 02 — VITAL FEED▓</Text>
 
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
                             {recoveryCards.map((card, index) => (
-                                <View key={index} style={styles.recoveryCard}>
-                                    <Text style={styles.cardTitle}>{card.title}</Text>
+                                <View key={index} style={homeStyles.recoveryCard}>
+                                    <Text style={homeStyles.cardTitle}>{card.title}</Text>
                                     {card.lines?.map((line, i) => {
                                         if (!line) return null;
                                         const [label, value] = line.split("//"); // split at //
                                         return (
-                                            <View key={i} style={styles.cardRow}>
-                                                <Text style={styles.cardLabel}>{label?.trim()}</Text>
-                                                <Text style={styles.cardValue}>{value?.trim()}</Text>
+                                            <View key={i} style={homeStyles.cardRow}>
+                                                <Text style={homeStyles.cardLabel}>{label?.trim()}</Text>
+                                                <Text style={homeStyles.cardValue}>{value?.trim()}</Text>
                                             </View>
                                         );
                                     })}
@@ -476,14 +444,14 @@ export default function HardloggerUI() {
                                 </View>
                             ))}
                         </ScrollView>
-                        <Text style={styles.transitionLabel}>▶ ANALYZING SYSTEM FEED...</Text>
+                        <Text style={homeStyles.transitionLabel}>▶ ANALYZING SYSTEM FEED...</Text>
 
-                        <View style={styles.powerBarContainer}>
-                            <Text style={styles.powerBarLabel}>▞ GAIN SIGNAL STRENGTH ▚</Text>
-                            <Text style={styles.powerBarSubLabel}>↳ Detected Weekly Volume Progression: {progress?.weeklyVolumeChange}</Text>
+                        <View style={homeStyles.powerBarContainer}>
+                            <Text style={homeStyles.powerBarLabel}>▞ GAIN SIGNAL STRENGTH ▚</Text>
+                            <Text style={homeStyles.powerBarSubLabel}>↳ Detected Weekly Volume Progression: {progress?.weeklyVolumeChange}</Text>
 
-                            <View style={styles.powerBarTrack}>
-                                <View style={[styles.powerBarFill, {
+                            <View style={homeStyles.powerBarTrack}>
+                                <View style={[homeStyles.powerBarFill, {
                                     width: `${Math.min(
                                         Number(progress?.weeklyVolumeChange.replace('%', '')) || 0,
                                         100
@@ -493,13 +461,13 @@ export default function HardloggerUI() {
                                 }]} />
                             </View>
 
-                            <View style={styles.barTickRow}>
-                                <Text style={styles.tickLabel}>LOW</Text>
-                                <Text style={styles.tickLabel}>MED</Text>
-                                <Text style={styles.tickLabel}>HIGH</Text>
+                            <View style={homeStyles.barTickRow}>
+                                <Text style={homeStyles.tickLabel}>LOW</Text>
+                                <Text style={homeStyles.tickLabel}>MED</Text>
+                                <Text style={homeStyles.tickLabel}>HIGH</Text>
                             </View>
 
-                            <Text style={styles.diagnosticNote}>
+                            <Text style={homeStyles.diagnosticNote}>
                                 &gt;&gt;STRENGTH SIGNAL LOCKED — HOLD THE LINE&lt;&lt;
                             </Text>
                         </View>
@@ -510,7 +478,7 @@ export default function HardloggerUI() {
     );
 }
 
-const styles = StyleSheet.create({
+export const homeStyles = StyleSheet.create({
     cardContent: {
         marginTop: 10,
     },
@@ -571,7 +539,7 @@ const styles = StyleSheet.create({
     powerBarContainer: {
         padding: 12,
         backgroundColor: '#0A0F1C',
-        borderColor: '#00ffcc',
+        borderColor: '#rgba(0, 255, 204, 0.1)',
         borderWidth: 1.2,
         borderRadius: 6,
         shadowColor: '#00ffcc',
@@ -676,7 +644,7 @@ const styles = StyleSheet.create({
 
     vhsHudPanel: {
         backgroundColor: '#0A0F1C',
-        borderColor: '#00ffcc',
+        borderColor: '#rgba(0, 255, 204, 0.1)',
         borderWidth: 1,
         padding: 10,
         borderRadius: 6,
