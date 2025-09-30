@@ -31,8 +31,8 @@ export default function AppTabs() {
                         case 'GAINS':
                             iconName = focused ? 'trending-up' : 'trending-up-outline';
                             break;
-                        case 'SETUP':
-                            iconName = focused ? 'settings' : 'settings-outline';
+                        case 'PROFILE':
+                            iconName = focused ? 'person' : 'person-outline';
                             break;
                         default:
                             iconName = 'help';
@@ -62,7 +62,7 @@ export default function AppTabs() {
             <Tab.Screen name="LOG" component={LogScreen} />
             <Tab.Screen name="SPLIT" component={TrainingPlansScreen} />
             <Tab.Screen name="GAINS" component={GainScreen} />
-            <Tab.Screen name="SETUP" component={SetupScreen} />
+            <Tab.Screen name="PROFILE" component={SetupScreen} />
         </Tab.Navigator>
     );
 }
