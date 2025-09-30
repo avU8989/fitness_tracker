@@ -6,7 +6,7 @@ import { createPulseOximeterLog } from "../controllers/pulseOximeterLogControlle
 const pulseOximeterLogRouter = Router();
 
 pulseOximeterLogRouter.post(
-  "/pulse-oximter",
+  "/pulse-oximeter",
   validationMiddleware(CreatePulseOximeterLogRequest),
   createPulseOximeterLog
 );

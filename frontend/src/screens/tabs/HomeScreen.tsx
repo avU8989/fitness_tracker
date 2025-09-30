@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useRef } from 'react';
 import {
     View,
     Text,
@@ -20,10 +20,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSleepMonitor } from '../../hooks/useSleepMonitor';
 import { usePhysicalActivityMonitor } from '../../hooks/useStepsMonitor';
 import { useDashboard } from '../../context/DashboardContext';
+import { createPhysicalActivityLog } from '../../services/physicalActivityService';
+import { createHeartRateLog } from '../../services/heartRateService';
+import { CreateHeartRateLogRequest } from '../../requests/CreateHeartRateLogRequest';
+import { CreatePulseOximeterLogRequest } from '../../requests/CreatePulseOximeterLogRequest';
+import { createPulseOximeterLog } from '../../services/pulseOximeterService';
+import { CreateSleepLogRequest, SleepStagesDTO } from '../../requests/CreateSleepLogRequest';
+import { createSleepLog } from '../../services/sleepService';
+import { CreatePhysicalActivityLogRequest } from '../../requests/CreatePhysicalActivityLogRequest';
 
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
-    const data = usePulseOximeterMonitor();
+    const pulseOximeterData = usePulseOximeterMonitor();
     const { token } = useContext(AuthContext);
     const [workoutsThisWeek, setWorkoutsThisWeek] = useState(null);
     const [thisWeekVolume, setThisWeekVolume] = useState(null);
@@ -37,6 +45,10 @@ export default function HardloggerUI() {
     const sleepData = useSleepMonitor();
     const physicalActivityData = usePhysicalActivityMonitor();
     const [skippedSplitType, setSkippedSplitType] = useState(null);
+    const lastSentRefHeartRate = useRef<number>(0);
+    const lastSentRefSleep = useRef<number>(0);
+    const lastSentRefPulseOximeter = useRef<number>(0);
+    const lastSentRefPhysicalActivity = useRef<number>(0);
 
     type ProgressUI = {
         topLift: {
@@ -105,6 +117,116 @@ export default function HardloggerUI() {
         }
     }
 
+    //useEffect for sending BLE data to backend
+    useEffect(() => {
+        if (bpm != null && bpm !== 0 && token) {
+            const now = Date.now();
+            if (now - lastSentRefHeartRate.current > 60000) { // send every 60s
+                lastSentRefHeartRate.current = now;
+
+                const sendData = async () => {
+                    try {
+                        const request: CreateHeartRateLogRequest = { bpm, source: "BLE" };
+                        await createHeartRateLog(token, request);
+                    } catch (err) {
+                        console.error("Failed to send heart rate log:", err);
+                    }
+                }
+
+                sendData();
+            }
+        }
+    }, [bpm, token]);
+
+    //useEffect for sending BLE data to backend
+    useEffect(() => {
+        if (pulseOximeterData != null && pulseOximeterData?.spo2 != null && token) {
+            const now = Date.now();
+            if (now - lastSentRefPulseOximeter.current > 60000) { // send every 60s
+                lastSentRefPulseOximeter.current = now;
+
+                const sendData = async () => {
+                    try {
+                        const request: CreatePulseOximeterLogRequest = {
+                            spo2: pulseOximeterData.spo2!,
+                            bpm: pulseOximeterData?.pulseRate ?? undefined,
+                            source: "BLE"
+                        };
+
+                        await createPulseOximeterLog(token, request);
+                    } catch (err) {
+                        console.error("Failed to send pulse oximeter log:", err);
+                    }
+                }
+
+                sendData();
+            }
+        }
+    }, [pulseOximeterData, token]);
+
+    //useEffect for sending BLE data to backend
+    useEffect(() => {
+        if (sleepData != null && sleepData.heartRate != null && sleepData.duration != null && token) {
+            const now = Date.now();
+            if (now - lastSentRefSleep.current > 60000) { // send every 60s
+                lastSentRefSleep.current = now;
+
+                const sendData = async () => {
+                    try {
+                        const stages: SleepStagesDTO = {
+                            rem: sleepData.remRate ?? 0,
+                            light: sleepData.lightSleepRate ?? 0,
+                            deep: sleepData.deepSleepRate ?? 0,
+                        }
+                        const request: CreateSleepLogRequest = {
+                            duration: sleepData.duration!,
+                            stages,
+                            source: "BLE",
+                            heartRateDuringSleep: sleepData.heartRate!
+                        };
+
+                        console.log("Sending sleep log:", JSON.stringify(request));
+
+                        await createSleepLog(token, request);
+                    } catch (err) {
+                        console.error("Failed to send sleep log:", err);
+                    }
+                }
+
+                sendData();
+            }
+        }
+    }, [sleepData, token]);
+
+    //useEffect for sending BLE data to backend
+    useEffect(() => {
+        if (physicalActivityData != null && physicalActivityData.stepCounter != null && physicalActivityData != null && token) {
+            const now = Date.now();
+            if (now - lastSentRefPhysicalActivity.current > 60000) { // send every 60s
+                lastSentRefPhysicalActivity.current = now;
+
+                const sendData = async () => {
+                    try {
+                        const request: CreatePhysicalActivityLogRequest = {
+                            steps: physicalActivityData.stepCounter!,
+                            distance: physicalActivityData.distance ?? undefined,
+                            energyExpended: physicalActivityData.energyExpended ?? undefined,
+                            source: "BLE",
+                        };
+                        await createPhysicalActivityLog(token, request);
+                    } catch (err) {
+                        console.error("Failed to send physical activity log:", err);
+                    }
+                }
+
+                sendData();
+            }
+        }
+    }, [physicalActivityData, token]);
+
+
+
+
     async function loadWorkoutStats() {
         try {
             if (token) {
@@ -156,7 +278,7 @@ export default function HardloggerUI() {
                         </View>
                         <View style={homeStyles.cardRow}>
                             <Text style={homeStyles.cardLabel}>SPO₂</Text>
-                            <Text style={homeStyles.cardValue}>{data?.spo2 ?? "--"} %</Text>
+                            <Text style={homeStyles.cardValue}>{pulseOximeterData?.spo2 ?? "--"} %</Text>
                         </View>
                     </View>
                     <PulseBarGraph bpm={bpm} />

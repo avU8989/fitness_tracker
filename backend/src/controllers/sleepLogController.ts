@@ -40,6 +40,7 @@ export const createSleepLog = async (
       sleepData: sleepLog,
     });
   } catch (err: any) {
+    console.error(err.message);
     res.status(500).json({
       message: "Internal server error",
       error: err.message,
