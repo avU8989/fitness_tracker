@@ -1,7 +1,46 @@
-# Node modules
-/node_modules/
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
 # Build output
-/dist/
-build/
+dist/
+*.tsbuildinfo
+
+# Tests & coverage
+coverage/
+.vitest/
+.vite/
+.junit/
+.tap/
+
+# Mongo Memory Server (binaries/cache)
+.cache/
+mongodb-binaries/
+**/mongodb-memory-server*/**/mongod-*
+
+# Env/config
+.env
+.env.*
+!.env.example
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Logs & pids
+logs/
+*.log
+*.pid
+*.pid.lock
+
+# Misc
+tmp/
+temp/
 

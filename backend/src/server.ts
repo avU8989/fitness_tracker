@@ -55,7 +55,7 @@ console.log("AYEE WE STARTING");
 
 // connect to mongodb
 mongoose
-  .connect(process.env.MONGODB_URI || "", {})
+  .connect(process.env.MONGODB_URI || "", { dbName: 'fitness_tracker' })
   .then(() => {
     console.log("Connected to MongoDB");
 
