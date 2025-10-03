@@ -3,7 +3,7 @@ import { generateToken } from "../utils/jwt";
 
 export const registerUser = async (data: any) => {
   const { username, email, age, height, password, weight } = data;
-  const checkUser = await User.findOne(email);
+  const checkUser = await User.findOne({ email });
 
   if (checkUser) {
     const err = new Error("User with this email already exists");
