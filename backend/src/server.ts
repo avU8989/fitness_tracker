@@ -19,6 +19,9 @@ import physicalActivityRouter from "./routes/physicalActivityLogRoutes";
 import pulseOximeterLogRouter from "./routes/pulseOximeterLogRoutes";
 import sleepLogRouter from "./routes/sleepLogRoutes";
 import dashboardRouter from "./routes/dashboardRoutes";
+import fs from 'fs';
+
+
 const app = express();
 const port = process.env.PORT || 5000;
 

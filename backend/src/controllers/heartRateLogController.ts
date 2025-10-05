@@ -3,6 +3,7 @@ import { AuthenticatedRequest } from "../middleware/auth";
 import { CreateHeartRateLogRequest } from "../requests/healthdata/CreateHeartRateLogRequest";
 import { Request, Response, NextFunction } from "express";
 import HeartRateLog from "../models/HeartRate";
+import { logIngest } from "@utils/logger-helper";
 
 export const createHeartRateLog = async (
   req: AuthenticatedRequest & {
@@ -25,6 +26,17 @@ export const createHeartRateLog = async (
       timestamp: timestamp,
       bpm,
       source,
+    });
+
+    //log incoming heart-rate payload before saving
+    logIngest({
+      user_id: userId,
+      device_id: source || "unknown-device",
+      seq: req.body.seq || "", // optional: include sequence number if BLE sends one
+      hr: bpm,
+      accepted: true, // later you can set false for invalid payloads
+      reason: "received via /healthdata/heart-rate endpoint",
+      raw_body: req.body
     });
 
     //save heartrate data in db
