@@ -15,7 +15,7 @@ interface BleContextType {
 const BleContext = createContext<BleContextType | undefined>(undefined);
 const manager = new BleManager();
 
-const TARGET_NAME = "yourwatch";
+const TARGET_NAME = "FitTrack";
 const HR_SERVICE = "0000180d-0000-1000-8000-00805f9b34fb";
 const PLX_SERVICE = "00001822-0000-1000-8000-00805f9b34fb";
 const SLEEP_SERVICE = "00001111-0000-1000-8000-00805f9b34fb";
@@ -27,12 +27,13 @@ async function requestBlePermission() {
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
         PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE
     ]);
 }
 
 export function BleProvider({ children }: { children: React.ReactNode }) {
     const [device, setDevice] = useState<Device | null>(null);
-    const [filterMode, setFilterMode] = useState<FilterMode>("SERVICE");
+    const [filterMode, setFilterMode] = useState<FilterMode>("NAME_ONLY");
 
     // guards
     const scanningRef = useRef(false);
@@ -96,6 +97,8 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         }
         if (!d || connectingRef.current) return;
 
+        console.log("Discovered:", d.name, d.id, d.serviceUUIDs);
+
         const name = (d.name ?? "").toLowerCase();
         const hasHr = (d.serviceUUIDs ?? []).some(u => u?.toLowerCase() === HR_SERVICE);
         const hasPlx = (d.serviceUUIDs ?? []).some(u => u?.toLowerCase() === PLX_SERVICE);
@@ -105,7 +108,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         let match = false;
         switch (filterMode) {
             case "NAME_ONLY":
-                match = name.includes(TARGET_NAME);
+                match = name.includes(TARGET_NAME.toLowerCase());
                 break;
             case "SERVICE":
                 // If serviceFilter was set, OS already filtered; still fine to double-check:
@@ -129,11 +132,12 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         try {
             const connected = await d.connect(); // you can pass { requestMTU: 185 } if you need bigger MTU
             // Small settle delay helps certain stacks
-            await delay(150);
+            console.log("Connected to: ", d.name, d.id)
+            await delay(1000);
             await connected.discoverAllServicesAndCharacteristics();
 
             // DO NOT call servicesForDevice before discoverAll... completes
-            await delay(150);
+            await delay(1000);
             const services = await manager.servicesForDevice(connected.id);
             console.log("Discovered services:", services.map(s => s.uuid));
 
