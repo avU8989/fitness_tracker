@@ -101,7 +101,7 @@ export const updateExercise = async (
     throw new Error("Training plan not found");
   }
 
-  const { day } = findWorkoutDay(trainingPlan, {
+  const { day } = await findWorkoutDay(trainingPlan, {
     dayId,
     weekId,
     weekNumber,
@@ -142,7 +142,7 @@ export const updateWorkoutDay = async (
     throw new Error("Training plan not found");
   }
 
-  const { day } = findWorkoutDay(trainingPlan, {
+  const { day } = await findWorkoutDay(trainingPlan, {
     dayId,
     weekId,
     weekNumber,
