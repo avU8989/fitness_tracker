@@ -1,4 +1,16 @@
 services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - "27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - mongodb_data:/data/db
+
   api:
     build:
       context: ./backend
@@ -10,3 +22,11 @@ services:
       - "5000:5000"
     env_file:
       - ./backend/.env
+    environment:
+      # override the MONGODB_URI from .env
+      MONGODB_URI: "mongodb://root:example@mongodb:27017/fitness_tracker?authSource=admin"
+    depends_on:
+      - mongodb
+
+volumes:
+  mongodb_data:

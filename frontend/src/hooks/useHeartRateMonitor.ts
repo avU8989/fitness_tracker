@@ -64,6 +64,11 @@ export function useHeartRateMonitor() {
           const heartMeasurement = parseHeartRateMeasurement(
             characteristic.value
           );
+          const hex = Buffer.from(characteristic.value, "base64").toString("hex");
+
+          console.log(
+            `[BLE_RECV] ts=${now} device=${device?.id} svc=${HEARTRATE_SERVICE} char=${HEARTRATE_MEASUREMENT} hr=${heartMeasurement} base64=${characteristic.value} hex=${hex}`
+          );
 
           if (heartMeasurement != null) {
             setBpm(heartMeasurement);
