@@ -1,5 +1,6 @@
 import { parse } from "@babel/core";
 import { Characteristic } from "react-native-ble-plx";
+import { Buffer } from "buffer";
 
 export type Parser<T> = (base64Value: string) => T | null;
 
@@ -28,3 +29,7 @@ export function handleCharacteristic<T>(
     console.error(`[${source}] Failed to parse characteristic:`, e);
   }
 }
+
+// helper for parsing
+export const bytesToBase64 = (b: Uint8Array) => Buffer.from(b).toString("base64")
+export const base64ToBytes = (base64: string) => new Uint8Array(Buffer.from(base64, "base64"));
