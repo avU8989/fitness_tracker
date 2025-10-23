@@ -220,6 +220,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
 
         if (!name.includes(TARGET_NAME.toLowerCase())) {
             return;
+        }
 
         const bond: BondRecord | null = await loadBond();
 
