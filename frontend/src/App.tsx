@@ -1,5 +1,5 @@
 import AppTabs from './AppTabs';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -14,9 +14,16 @@ import { DashboardProvider } from './context/DashboardContext';
 const Stack = createNativeStackNavigator<RootStackParameterList>();
 
 function RootNavigator() {
-  const { isLoggedIn } = useContext(AuthContext);
+  const { isLoggedIn, loading } = useContext(AuthContext);
 
-  console.log(isLoggedIn);
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0A0F1C' }}>
+        <ActivityIndicator size="large" color="#00FFCC" />
+        <Text style={{ color: '#00FFCC', marginTop: 10 }}>Checking session...</Text>
+      </View>
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -27,31 +34,36 @@ function RootNavigator() {
           <Stack.Screen name="SignUpProfile" component={SignUpProfileScreen} />
         </>
       ) : (
-        <Stack.Screen name="Main" component={AppTabs} />
+        <Stack.Screen
+          name="Main"
+          children={() => (
+            <BleProvider>
+              <WorkoutProvider>
+                <DashboardProvider>
+                  <AppTabs />
+                </DashboardProvider>
+              </WorkoutProvider>
+            </BleProvider>
+          )}
+        />
       )}
     </Stack.Navigator >
   )
 
 }
-export default function App() {
 
+export default function App() {
   return (
     <AuthProvider>
-      <BleProvider>
-        <WorkoutProvider>
-          <DashboardProvider>
-            <NavigationContainer>
-              <View style={styles.appWrapper}>
-                <RootNavigator />
-              </View >
-            </NavigationContainer>
-          </DashboardProvider>
-        </WorkoutProvider>
-      </BleProvider>
+      <NavigationContainer>
+        <View style={styles.appWrapper}>
+          <RootNavigator />
+        </View>
+      </NavigationContainer>
     </AuthProvider>
   );
-
 }
+
 
 const styles = StyleSheet.create({
   appWrapper: {
