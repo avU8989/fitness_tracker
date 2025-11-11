@@ -14,7 +14,6 @@ export async function login(email: string, password: string) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: email, password: password }),
   });
-  console.log(response.json);
 
   return handleResponse(response, "Login failed");
 }

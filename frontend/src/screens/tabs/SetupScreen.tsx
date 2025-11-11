@@ -210,7 +210,7 @@ export default function ProfileScreen({ navigation }) {
 
     const handleLogout = () => {
         logout();
-        navigation.replace('Login');
+        navigation.getParent()?.replace('Login');
     };
 
     const colors = {
