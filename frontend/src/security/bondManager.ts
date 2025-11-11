@@ -7,7 +7,7 @@ https://oblador.github.io/react-native-keychain/docs/usage
 import * as Keychain from "react-native-keychain"
 import { BondRecord } from "./types";
 import { Device } from "react-native-ble-plx";
-/*react native keychain provides persistent dat storage, it is noted that it should not be relied upon as sole source of truth for irreplacable critical data */
+/*react native keychain provides persistent data storage, it is noted that it should not be relied upon as sole source of truth for irreplacable critical data */
 
 //load the credentials and return a bond record
 export async function loadBond(): Promise<BondRecord | null> {
@@ -30,7 +30,7 @@ export async function loadBond(): Promise<BondRecord | null> {
 
 }
 
-//store credentials and save the bond
+//store credentials and save the bonding metadata for handling the logic in the challenge response protocol in our final secured BLE peripheral
 export async function saveBond(device: Device, pubkeyFingerPrint?: string): Promise<BondRecord | null> {
     const bondRecord: BondRecord = {
         deviceId: device.id,
@@ -47,7 +47,9 @@ export async function saveBond(device: Device, pubkeyFingerPrint?: string): Prom
             "bondKey", // username
             JSON.stringify(bondRecord), // password string
             {
+                authenticationPrompt: { title: "Authenticate to manage bond" },
                 accessible: Keychain.ACCESSIBLE.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY,
+                accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_ANY_OR_DEVICE_PASSCODE,
                 service: "com.example.bond", // optional but safer
                 storage: Keychain.STORAGE_TYPE.AES_GCM, // instead of AES_GCM_NoAuth
             }

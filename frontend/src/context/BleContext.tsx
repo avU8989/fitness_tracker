@@ -1,6 +1,6 @@
 // BleProvider.tsx
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { Platform, PermissionsAndroid } from "react-native";
+import { NativeModules, Platform, PermissionsAndroid } from "react-native";
 import { BleManager, Device, State } from "react-native-ble-plx";
 import { delay } from "../utils/apiHelpers";
 import { deleteBond, loadBond, saveBond } from "../security/bondManager";
@@ -44,6 +44,9 @@ async function requestBlePermission() {
 }
 
 export function BleProvider({ children }: { children: React.ReactNode }) {
+    //Native module for bonding state
+
+    const { AndroidBonding } = NativeModules;
     const [device, setDevice] = useState<Device | null>(null);
     const [filterMode, setFilterMode] = useState<FilterMode>("NAME_ONLY");
     // guards
@@ -75,6 +78,34 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         if (scanningRef.current) {
             manager.stopDeviceScan();
             scanningRef.current = false;
+        }
+    }
+
+    async function getBondState(deviceId: String) {
+        if (Platform.OS !== "android") {
+            console.warn("[BLE] Fetching bonding state only allowed on Android")
+            return null;
+        }
+
+        try {
+            const state = await AndroidBonding.getBondState(deviceId);
+
+            switch (state) {
+                case 12:
+                    console.log(`[BLE] Device ${deviceId} is BONDED`)
+                    return "BONDED";
+                case 11:
+                    console.log(`[BLE] Device ${deviceId} is BONDING`)
+                    return "BONDING"
+                case 10:
+                default:
+                    console.log(`[BLE] Device ${deviceId} is NOT_BONDED`)
+                    return "NOT_BONDED"
+            }
+
+        } catch (err) {
+            console.error("[BLE] Bond state error: ", err)
+            return "ERROR"
         }
     }
 
@@ -189,13 +220,17 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (!status) {
-            console.warn("❌ Signature invalid.");
+            console.warn("Signature invalid.");
             return { status: false };
 
         }
 
         const fingerprint = bytesToHex(sha256(formattedDER));
         console.log(`[SEC] Public key fingerprint: ${fingerprint}`);
+
+        //zeroize sensitive data after usage 
+        challenge.fill(0);
+        signBytes.fill(0)
 
 
         return { status: true, fingerprint };
@@ -224,20 +259,17 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
 
         const bond: BondRecord | null = await loadBond();
 
-        // If we have a bond, and addresses match, fast path
-        if (bond && bond.deviceId === d.id) {
+        if (bond) {
+            // If we have a bond, and addresses match, fast path
+            if (bond.deviceId == d.id) {
+                console.log("[SEC] known bonded device found (same MAC)");
+            } else {
+                // if bond exists but deviceId differs, DON'T trust yet
+                // either the peripheral is using RPA (expected) or this is a spoof
+                // attempt a guarded connect and run app-level verification (challenge-response)
+                console.warn("[SEC] Possible RPA or spoof detected -> verifying identity")
+            }
             await connectAndDiscover(d, bond);
-            return;
-        }
-
-        //TO-DO add auto connect behaviour upon same fingerprint and bonded device
-
-        // if bond exists but deviceId differs, DON'T trust yet
-        // either the peripheral is using RPA (expected) or this is a spoof
-        // attempt a guarded connect and run app-level verification (challenge-response)
-        if (bond && bond.deviceId !== d.id) {
-            console.log("[SEC] Bond exists for", bond.deviceId, "but discovered", d.id);
-            await connectAndDiscover(d, bond); // connectAndDiscover should perform auth verification and disconnect on fail
             return;
         }
 
@@ -254,17 +286,12 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
             console.log("[BLE] Connecting to:", d.name, d.id);
             const connected: Device = await d.connect();
 
-            if (bond) {
-                // we have a previously bonded device stored in secure Keychain.
-                // android automatically encrypts bonded connections; if discover succeeds, encryption is in effect.
-                console.log("[POLICY] Bonded device detected, trusting Android's secure link establishment.");
+            const bondState = await getBondState(d.id);
 
-                // delay slightly to let encryption handshake finish
-                await delay(800)
-
+            if (bondState == "BONDED") {
+                console.log("[BLE] Bonded device detected, trusting Android's secure link establishment.");
             } else {
-                // dont overwrite an existing bond 
-                await delay(1000)
+                console.log("[BLE] Not bonded yet");
             }
             console.log("[BLE] Connected!");
             await delay(1000);
@@ -296,7 +323,7 @@ export function BleProvider({ children }: { children: React.ReactNode }) {
                     throw new Error("Peripheral identity verification failed");
                 }
             }
-            console.log("[SECURITY] Peripheral identity verified ✅");
+            console.log("[SECURITY] Peripheral identity verified");
 
             if (!bond) {
                 const newBond = await saveBond(d, fingerprint);
