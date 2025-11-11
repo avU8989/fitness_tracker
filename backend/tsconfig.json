@@ -12,7 +12,7 @@
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
 
-    "baseUrl": "./src",
+    "baseUrl": "src",
     "paths": {
       "@services/*": ["services/*"],
       "@models/*": ["models/*"],
