@@ -12,7 +12,11 @@ export const hasOverlappingTrainingPlan = async (
   endDate?: Date
 ): Promise<boolean> => {
   const start = new Date(startDate);
+  if (isNaN(start.getTime())) throw new Error("Invalid startDate!");
+
   const end = endDate ? new Date(endDate) : null;
+
+  if (endDate && end && isNaN(end.getTime())) throw new Error("Invalid endDate!");
 
   const infinity = new Date(8640000000000000);
   const overlap = await TrainingPlanAssignment.exists({
@@ -35,6 +39,15 @@ export const hasOverlappingTrainingPlan = async (
 
   return false;
 };
+
+export const removeTrainingPlanAssignment = async (userId: string, planId: string) => {
+  const deleted = await TrainingPlanAssignment.findOneAndDelete({
+    user: userId,
+    trainingPlan: planId
+  });
+
+  return !!deleted;
+}
 
 export const createTrainingPlanAssignment = async (
   userId: string,

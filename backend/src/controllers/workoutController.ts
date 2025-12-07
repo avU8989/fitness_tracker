@@ -19,8 +19,9 @@ import {
   createWorkoutLog,
   fetchNextSkippedDay,
   fetchUpcomingWorkoutDay,
+  fetchUserMostRecentWorkout,
   fetchUserWorkoutLogs,
-  fetchWeeklyWorkoutLogs,
+  hasUserLoggedWorkoutToday,
   removeWorkoutLog,
 } from "../services/workoutLog.service";
 import { findActiveTrainingPlanAssignment } from "../services/trainingPlanAssignment.service";
@@ -196,6 +197,34 @@ export const getUpcomingWorkoutDay = async (
 
     res.status(200).json({ nextUpcomingWorkout: nextUpcomingWorkout });
     return;
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ message: "Internal server error", error: err.message });
+    return;
+  }
+};
+
+export const getUserWorkoutLoggedToday = async (req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: User ID missing" });
+      return;
+    }
+
+    const loggedToday = await hasUserLoggedWorkoutToday(userId);
+
+    const lastWorkout = await fetchUserMostRecentWorkout(userId);
+
+    res.status(200).json({
+      loggedToday: !!loggedToday,
+      lastWorkout: lastWorkout || null
+    });
+    return
+
   } catch (err: any) {
     res
       .status(500)

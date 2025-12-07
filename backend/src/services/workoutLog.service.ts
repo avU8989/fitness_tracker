@@ -41,6 +41,7 @@ export const createWorkoutLog = async (
 
     //snapshot
     dayOfWeek: workoutDay.dayOfWeek,
+    splitType: workoutDay.splitType,
     //to prevent changes later when trainingplan changes, workout logs should not magically reflect those changes
     //by ensuring immutability we prevent that --> TODO still need to test it
     plannedExercises: workoutDay.exercises.map((e) => e.toObject()),
@@ -100,24 +101,53 @@ export const fetchCompletedWorkoutThisYear = async (userId: string) => {
   });
 };
 
+const DAY_ORDER = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
 export const fetchUpcomingWorkoutDay = async (
   userId: string,
   trainingPlan: ITrainingPlan & (IBodybuildingPlan | ICrossfitPlan)
 ) => {
-  const today = new Date();
-  const formattedDate = new Date().toISOString();
-  //
-  const plannedDays = trainingPlan.days.filter(
-    (d: any) => d.exercises.length > 0
+  if (!trainingPlan?.days) return null;
+
+  const todayIndex = DAY_ORDER.indexOf(
+    new Date().toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()
   );
 
-  const logged = await fetchWeeklyWorkoutLogs(userId, trainingPlan.id);
-  const loggedIds = logged.map((l) => l.workoutDayId?.toString());
+  // Filter only days that actually have exercises
+  const plannedDays = trainingPlan.days
+    .filter(day => day.exercises?.length > 0)
+    .sort(
+      (a, b) =>
+        DAY_ORDER.indexOf(a.dayOfWeek) -
+        DAY_ORDER.indexOf(b.dayOfWeek)
+    );
 
-  const nextDay = plannedDays.find((d) => !loggedIds.includes(d.id));
+  if (plannedDays.length === 0) return null;
 
-  return nextDay || null;
+  // 1. Look for first day AFTER today
+  const upcoming = plannedDays.find(
+    (day) => DAY_ORDER.indexOf(day.dayOfWeek) > todayIndex
+  );
+
+  // 2. If none found → wrap around → return first workout next week
+  return upcoming ?? plannedDays[0];
 };
+
+
+export const hasUserLoggedWorkoutToday = async (userId: string) => {
+  const now = new Date();
+
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
+
+  return await WorkoutLog.findOne({
+    userId,
+    performed: { $gte: start, $lte: end }
+  });
+}
 
 export const fetchWeeklyWorkoutLogs = async (
   userId: string,
@@ -133,6 +163,14 @@ export const fetchWeeklyWorkoutLogs = async (
   }).select("workoutDayId performed");
 };
 
+export const fetchUserMostRecentWorkout = async (userId: string) => {
+  return WorkoutLog.findOne({ userId })
+    .sort({ performed: -1 })
+    .lean()
+    .exec();
+};
+
+//only searches for acctive training plan 
 export const fetchLastWorkoutLog = async (
   userId: string,
   trainingPlanId: string

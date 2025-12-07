@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  deleteTrainingPlanAssignment,
   getActivePlan,
   postTrainingPlanAssignment,
 } from "../controllers/trainingPlanAssignmentController";
@@ -8,4 +9,5 @@ const trainingAssignmentRouter = Router();
 
 trainingAssignmentRouter.post("/", postTrainingPlanAssignment);
 trainingAssignmentRouter.get("/active", getActivePlan);
+trainingAssignmentRouter.delete("/:planId", deleteTrainingPlanAssignment);
 export default trainingAssignmentRouter;

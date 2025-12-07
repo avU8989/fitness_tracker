@@ -89,7 +89,7 @@ export const getStatsOveriew = async (
 
     console.log(logs);
 
-    const skippedSplitType = findSkippedSplit(
+    const { firstUncompletedWorkoutDaySplitType, skippedDayCount } = findSkippedSplit(
       remainingDays,
       trainingPlan,
       logs
@@ -107,7 +107,8 @@ export const getStatsOveriew = async (
       workoutStreak: streak,
       nextGoalMessage: message,
       remainingDays: remainingDays,
-      skippedSplitType,
+      firstUncompletedWorkoutDaySplitType,
+      skippedDayCount,
       plannedWorkoutDaysForWeek: plannedDays,
     });
   } catch (err: any) {

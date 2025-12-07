@@ -128,21 +128,27 @@ export const findSkippedSplit = (
     .map((l) => l.workoutDayId?.toString())
     .filter(Boolean);
 
-  // Find the first training day in the plan that is not in completedDayIds
-  let skippedSplitType: string | null = null;
-  if (remainingDays > 0) {
-    const uncompletedDay = trainingPlan.days.find((day) => {
-      return (
-        day.exercises.length > 0 &&
-        !completedDayIds.includes(
-          (day._id as mongoose.Types.ObjectId)?.toString()
-        )
-      );
-    });
-    skippedSplitType = uncompletedDay?.splitType || null;
+  const firstSkippedWorkoutDay = null;
+
+  if (remainingDays <= 0) {
+    return {
+      firstUncompletedWorkoutDaySplitType: null,
+      skippedDayCount: 0
+    };
   }
 
-  return skippedSplitType;
+  //get all skipped workout days 
+  const skippedDays = trainingPlan.days.filter((day) =>
+    day.exercises.length > 0 && !completedDayIds.includes((day._id as mongoose.Types.ObjectId)?.toString())
+  );
+
+  const skippedDayCount = skippedDays.length ?? 0;
+
+  const firstUncompletedWorkoutDaySplitType = skippedDays[0]?.splitType || null;
+
+
+
+  return { firstUncompletedWorkoutDaySplitType, skippedDayCount };
 };
 
 //returns the name of the split ("PULL, PUSH, LEGS, etc")

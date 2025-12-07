@@ -23,6 +23,7 @@ export interface IWorkoutLog extends Document {
   workoutDayId?: Types.ObjectId;
   // Snapshots (at time of logging)
   dayOfWeek?: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
+  splitType?: string;
   plannedExercises?: IExercise[]; // snapshot of planned exercises
   performed: Date;
   exercises: IExerciseLog[];
@@ -55,6 +56,7 @@ const workoutLogSchema = new Schema<IWorkoutLog>(
       type: String,
       enum: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
     },
+    splitType: { type: String },
     plannedExercises: [exerciseSchema],
     performed: { type: Date, required: true },
     exercises: [exerciseLogSchema],

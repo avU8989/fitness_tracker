@@ -35,6 +35,18 @@ trainingPlanAssignmentSchema.index({ user: 1, startDate: 1 });
 //useful for finding active training plan assignment and overlap checks
 trainingPlanAssignmentSchema.index({ user: 1, startDate: 1, endDate: 1 });
 
+//IMPORTANT: prevent duplication on training plan assignments for same user
+trainingPlanAssignmentSchema.index(
+  { user: 1, trainingPlan: 1 },
+  { unique: true, }
+)
+
+//IMPORTANT: prevent multiple ACTIVE plans
+trainingPlanAssignmentSchema.index(
+  { user: 1, endDate: 1 },
+  { unique: true, partialFilterExpression: { endDate: null } }
+)
+
 const TrainingPlanAssignment: Model<ITrainingPlanAssignment> =
   mongoose.model<ITrainingPlanAssignment>(
     "TrainingPlanAssignment",
