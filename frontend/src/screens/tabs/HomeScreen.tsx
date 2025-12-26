@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from 'react';
+import React, { act, useCallback, useContext, useRef } from 'react';
 import {
     View,
     Text,
@@ -28,18 +28,39 @@ import { createPulseOximeterLog } from '../../services/pulseOximeterService';
 import { CreateSleepLogRequest, SleepStagesDTO } from '../../requests/CreateSleepLogRequest';
 import { createSleepLog } from '../../services/sleepService';
 import { CreatePhysicalActivityLogRequest } from '../../requests/CreatePhysicalActivityLogRequest';
+import { Animated, Easing } from "react-native";
+import HealthConnect, { getGrantedPermissions, getSdkStatus, Permission, SdkAvailabilityStatus } from "react-native-health-connect";
+import TodayOverviewPanel from '../../components/TodayOverviewPanel';
+import WeeklyOverviewCircles from '../../components/WeeklyOverview';
+import { isSameDay } from "date-fns";
+import {
+    initialize,
+    requestPermission,
+    readRecords,
+} from 'react-native-health-connect';
+import { useFocusEffect } from '@react-navigation/native';
+import { getActivePlan } from '../../services/planAssignmentsService';
+import { getTodayName, normalizeExercises, toDateFormatFetchActiveTrainingPlans, toUIPlan } from '../../utils/apiHelpers';
+import { PlannedExercise } from './LogScreen';
+import { Exercise, ExerciseSet, WorkoutDay } from '../../types/trainingPlan';
+import { getNextSkippedDay, getNextUpcomingWorkoutDay } from '../../services/workoutLogService';
+import { getPlanStats } from '../../utils/planStats';
+import { useTrainingPlan } from '../../context/TrainingPlanContext';
+import { LoggedExercise } from '../../types/workoutLog';
+
+
+export const GRAIN_TEXTURE = require('../../assets/home_bg_2.png');
+export const SCANLINE_TEXTURE = require('../../assets/abstract-geometric-background-shapes-texture.jpg');
 
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
     const pulseOximeterData = usePulseOximeterMonitor();
     const { token } = useContext(AuthContext);
     const [workoutsThisWeek, setWorkoutsThisWeek] = useState(null);
-    const [thisWeekVolume, setThisWeekVolume] = useState(null);
     const [lastWorkout, setLastWorkout] = useState("");
-    const [lastSplitType, setLastSplitType] = useState("");
     const [workoutStreak, setWorkoutStreak] = useState(null);
-    const [nextGoalMessage, setNextGoalMessage] = useState("");
-    const { setRemainingDays } = useWorkout();
+    const { remainingDays, setRemainingDays } = useWorkout();
+    const { loggedWorkout } = useWorkout();
     const { state, setState } = useDashboard();
     const [progress, setProgress] = useState<ProgressUI>();
     const sleepData = useSleepMonitor();
@@ -49,6 +70,33 @@ export default function HardloggerUI() {
     const lastSentRefSleep = useRef<number>(0);
     const lastSentRefPulseOximeter = useRef<number>(0);
     const lastSentRefPhysicalActivity = useRef<number>(0);
+
+    //-------------WORKOUT CONTEXT-----------------
+    const { plannedExercises, setPlannedExercises } = useWorkout();
+    const { currentExercises, setCurrentExercises } = useWorkout();
+    const { currentPlanId, setCurrentPlanId } = useWorkout();
+    const { skippedWorkout, setSkippedWorkout } = useWorkout();
+    const { currentWorkoutDayId, setCurrentWorkoutDayId } = useWorkout();
+    const { splitNamePlanned, setSplitNamePlanned } = useWorkout();
+    const { splitNameSkipped, setSplitNameSkipped } = useWorkout();
+    const { loggedExercises, loggedWorkoutSplitType, loggedWorkoutPerformed } = useWorkout();
+    const { loadTodayWorkoutStatus } = useWorkout();
+    const { nextUpcomingWorkout, setNextUpcomingWorkout } = useWorkout();
+
+    //-------------TRAININGPLAN CONTEXT------------
+    const { refreshedTrainingPlanAssignment } = useTrainingPlan();
+    const { planDeactivated } = useTrainingPlan();
+
+    //-------------TODAY WORKOUT---------------------
+    const [activePlan, setActivePlan] = useState(null);
+    const [hasSkippedWorkout, setHasSkippedWorkout] = useState<boolean>(false);
+    const [hasWorkoutToday, setHasWorkoutToday] = useState<boolean>(false);
+
+    //-------------HEALTH CONNECT API---------------------
+    const [bpmHealthConnect, setBpmHealthConnect] = useState<number>(0);
+    const [stepsHealthConnect, setStepsHealthConnect] = useState<number>(0);
+    const [totalCaloriesBurnedHealthConnect, setTotalCaloriesBurnedHealthConnect] = useState<string>();
+    const [distanceHealthConnect, setDistanceHealthConnect] = useState<number>(0);
 
     type ProgressUI = {
         topLift: {
@@ -66,45 +114,129 @@ export default function HardloggerUI() {
         }[];
     }
 
-    const GRAIN_TEXTURE = require('../../assets/home_bg_2.png');
-    const SCANLINE_TEXTURE = require('../../assets/abstract-geometric-background-shapes-texture.jpg');
-
-    const PulseBarGraph = ({ bpm }: { bpm: number | null }) => {
-        // set a baseline height from bpm
-        const baseHeight = bpm ? Math.min(bpm / 2, 100) : 20;
-        // bpm/2 means: 120 bpm ≈ 60px tall bars (cap at 100px)
-
-        return (
-            <View
-                style={{
-                    flexDirection: 'row',
-                    alignItems: 'flex-end',
-                    height: 53, // max graph height
-                }}
-            >
-                {[...Array(36)].map((_, i) => {
-                    // add random variation around base height
-                    const height = baseHeight + Math.random() * 20 - 10;
-                    return (
-                        <View
-                            key={i}
-                            style={{
-                                width: 4,
-                                height: Math.max(5, height), // min 5px
-                                backgroundColor: '#00ffcc',
-                                marginHorizontal: 1,
-                            }}
-                        />
-                    );
-                })}
-            </View>
-        );
-    };
-
     useEffect(() => {
         loadWorkoutStats();
         loadWorkoutProgress();
+
+        const grantPermission = async () => {
+            //init client
+            const isInitialized = await initialize();
+
+            const grantedPermission = await requestPermission([
+                { accessType: 'read', recordType: 'HeartRate' },
+                { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
+                { accessType: 'read', recordType: 'Steps' },
+                { accessType: 'read', recordType: 'TotalCaloriesBurned' },
+                { accessType: 'read', recordType: 'Distance' },
+                { accessType: 'read', recordType: 'ExerciseSession' },
+                { accessType: 'read', recordType: 'SleepSession' },
+                { accessType: 'read', recordType: 'Distance' },
+            ]);
+
+        }
+
+        grantPermission();
+
     }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            console.log("Syncing with Health Connect");
+
+            let intervalId: NodeJS.Timeout | null = null;
+
+            const sync = async () => {
+                await initialize();
+
+                const granted = await getGrantedPermissions();
+
+                const needed: Permission[] = [
+                    { accessType: 'read', recordType: 'HeartRate' },
+                    { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
+                    { accessType: 'read', recordType: 'Steps' },
+                    { accessType: 'read', recordType: 'TotalCaloriesBurned' },
+                    { accessType: 'read', recordType: 'Distance' },
+                    { accessType: 'read', recordType: 'ExerciseSession' },
+                    { accessType: 'read', recordType: 'SleepSession' },
+                    { accessType: 'read', recordType: 'Distance' },
+                ]
+
+                const missing = needed.filter(p => {
+                    return !granted.some(g => g.recordType === p.recordType);
+                });
+
+                if (missing.length > 0) {
+                    console.log("[Sync] Asking for missing permission");
+                    requestPermission(missing);
+                }
+
+                // ---- TIME RANGE -----------------------------------
+                const start = new Date();
+                start.setHours(0, 0, 0, 0);
+
+                const end = new Date();
+                end.setHours(23, 59, 59, 999);
+
+                const timeRange = {
+                    operator: "between" as const,
+                    startTime: start.toISOString(),
+                    endTime: end.toISOString(),
+                };
+
+                // ---- SAFE FETCH ------------------------------------
+                function safeSortByEnd(records) {
+                    return records.sort(
+                        (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
+                    );
+                }
+
+                // ---- HEART RATE -------------------------------------
+                let hr;
+                try { hr = await readRecords("HeartRate", { timeRangeFilter: timeRange }); } catch { }
+                if (hr?.records?.length && hr.records[0].samples?.length) {
+                    safeSortByEnd(hr.records);
+                    const s = hr.records[0].samples;
+                    setBpmHealthConnect(s[s.length - 1].beatsPerMinute);
+                }
+
+                // ---- STEPS -------------------------------------------
+                let steps;
+                try { steps = await readRecords("Steps", { timeRangeFilter: timeRange }); } catch { }
+                if (steps?.records?.length) {
+                    safeSortByEnd(steps.records);
+                    setStepsHealthConnect(steps.records[0].count);
+                }
+
+                // ---- DISTANCE ----------------------------------------
+                let dist;
+                try { dist = await readRecords("Distance", { timeRangeFilter: timeRange }); } catch { }
+                if (dist?.records?.length) {
+                    safeSortByEnd(dist.records);
+                    const meters = dist.records[0].distance.inMeters;
+                    setDistanceHealthConnect(meters / 1000);
+                }
+
+                // ---- TOTAL CALORIES ----------------------------------
+                let kcal;
+                try { kcal = await readRecords("TotalCaloriesBurned", { timeRangeFilter: timeRange }); } catch { }
+                if (kcal?.records?.length) {
+                    safeSortByEnd(kcal.records);
+                    setTotalCaloriesBurnedHealthConnect(kcal.records[0].energy.inKilocalories.toFixed(2));
+                }
+            }
+
+            sync();
+
+            //sync to Health Connect every 10 minutes
+            intervalId = setInterval(sync, 10 * 60 * 1000);
+
+            return () => {
+                if (intervalId) {
+                    clearInterval(intervalId);
+                }
+            };
+        }, [])
+    );
 
     async function loadWorkoutProgress() {
         try {
@@ -116,6 +248,152 @@ export default function HardloggerUI() {
             alert(err.message);
         }
     }
+
+    const loadExercises = async (): Promise<boolean> => {
+        if (!token) {
+            alert('You must be logged in to log your workout');
+            return false;
+        }
+
+        try {
+            const today = toDateFormatFetchActiveTrainingPlans(new Date());
+            const assignment = await getActivePlan(token, today);
+            const trainingPlan = assignment.trainingPlan;
+
+            if (!trainingPlan) {
+                console.log("No active training plan found");
+                setPlannedExercises([]);
+                setCurrentExercises([]);
+                return false;
+            }
+
+            setActivePlan(trainingPlan);
+            setCurrentPlanId(trainingPlan._id);
+
+            const todayName = getTodayName();
+
+            // find today's workout day
+            const todayWorkout = trainingPlan.days.find(
+                (day) => day.dayOfWeek === todayName
+            );
+
+            if (!todayWorkout) {
+                // today is not a workout day
+                setPlannedExercises([]);
+                setCurrentExercises([]);
+                return false;
+            }
+
+            // there IS a workout day today
+            setCurrentWorkoutDayId(todayWorkout._id);
+            setSplitNamePlanned(todayWorkout.splitType);
+
+            const exercises = todayWorkout.exercises ?? [];
+
+            if (exercises.length === 0) {
+                // day exists but contains no exercises
+                setPlannedExercises([]);
+                setCurrentExercises([]);
+                return false;
+            }
+
+            // success — exercises exist for today
+            setPlannedExercises(normalizeExercises(exercises));
+            setCurrentExercises(normalizeExercises(exercises));
+
+            return true;
+
+        } catch (err) {
+            console.error("Could not load exercises:", err);
+            return false;
+        }
+    };
+
+    const loadSkippedExercises = async () => {
+        if (!token) {
+            alert('You must be logged in to log your workout');
+            return false;
+        }
+
+        const today = toDateFormatFetchActiveTrainingPlans(new Date());
+        const assignment = await getActivePlan(token, today);
+        const trainingPlan = assignment.trainingPlan;
+
+        if (!trainingPlan) {
+            console.log("Could not find active trainingplan");
+            return false;
+        }
+        //set the trainingplanid to create workout logs for later
+        setCurrentPlanId(trainingPlan._id);
+
+        try {
+            const response = await getNextSkippedDay(token);
+
+            if (!response?.nextSkippedDay) {
+                return false;
+            }
+            setSkippedWorkout({
+                ...response.nextSkippedDay,
+                exercises: normalizeExercises(response.nextSkippedDay.exercises)
+            });
+            setSplitNameSkipped(response.nextSkippedDay.splitType);
+            setCurrentWorkoutDayId(response.nextSkippedDay._id);
+            console.log(currentPlanId);
+
+            return true;
+        } catch (err: any) {
+            alert(err.message);
+            return false;
+        }
+    }
+
+    useEffect(() => {
+        const load = async () => {
+            if (!token) {
+                return;
+            }
+
+            setHasWorkoutToday(false); // temporary “loading” state
+
+            if (planDeactivated) {
+                // RESET ALL STATE
+                setPlannedExercises([]);
+                setCurrentExercises([]);
+                setCurrentWorkoutDayId("");
+                setSplitNamePlanned("");
+                setSplitNameSkipped("");
+                setSkippedWorkout(null);
+                setActivePlan(null);
+                setHasSkippedWorkout(false);
+                setHasWorkoutToday(false);
+                setNextUpcomingWorkout(null);
+
+                return; // <— STOP HERE
+            }
+
+
+            const hasSkipped = await loadSkippedExercises();
+            const hasPlanned = await loadExercises(); // MUST return boolean
+
+            const response = await getNextUpcomingWorkoutDay(token);
+            console.log(response);
+
+            setNextUpcomingWorkout(response.nextUpcomingWorkout);
+            setHasSkippedWorkout(hasSkipped);
+            setHasWorkoutToday(hasPlanned);
+        };
+
+        load();
+    }, [token, refreshedTrainingPlanAssignment, planDeactivated]);
+
+    useEffect(() => {
+        if (!token) {
+            return;
+        }
+        loadTodayWorkoutStatus();
+    }, [token]);
+
+
 
     //useEffect for sending BLE data to backend
     useEffect(() => {
@@ -198,6 +476,72 @@ export default function HardloggerUI() {
         }
     }, [sleepData, token]);
 
+    const BleStatusBadge = ({ active }: { active: boolean }) => {
+        const text = active ? "LIVE" : "NO SIGNAL";
+        const color = active ? "#33ff66" : "#ff3b3b";
+
+        // Animated opacity for blink
+        const pulseAnim = useRef(new Animated.Value(1)).current;
+
+        // Start blinking only when NOT active
+        useEffect(() => {
+            if (!active) {
+                Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(pulseAnim, {
+                            toValue: 0.3,
+                            duration: 600,
+                            easing: Easing.inOut(Easing.ease),
+                            useNativeDriver: true,
+                        }),
+                        Animated.timing(pulseAnim, {
+                            toValue: 1,
+                            duration: 600,
+                            easing: Easing.inOut(Easing.ease),
+                            useNativeDriver: true,
+                        }),
+                    ])
+                ).start();
+            } else {
+                pulseAnim.setValue(1); // no blink when LIVE
+            }
+        }, [active]);
+
+        return (
+            <Animated.View
+                style={{
+                    opacity: active ? 1 : pulseAnim,
+                    paddingHorizontal: 6,
+                    paddingVertical: 1,
+                    borderWidth: 1,
+                    borderColor: color,
+                    borderRadius: 3,
+                    marginLeft: 12,
+                    backgroundColor: "rgba(0,0,0,0.25)",
+                    transform: [{ scale: 1.0 }],
+                    shadowColor: color,
+                    shadowOffset: { width: 0, height: 0 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 4,
+                }}
+            >
+                <Text
+                    style={{
+                        color,
+                        fontSize: 9,
+                        fontFamily: "monospace",
+                        letterSpacing: 1.5,
+                        textShadowColor: color,
+                        textShadowOffset: { width: 0, height: 0 },
+                        textShadowRadius: 3,
+                    }}
+                >
+                    {text}
+                </Text>
+            </Animated.View>
+        );
+    };
+
     //useEffect for sending BLE data to backend
     useEffect(() => {
         if (physicalActivityData != null && physicalActivityData.stepCounter != null && physicalActivityData != null && token) {
@@ -224,9 +568,6 @@ export default function HardloggerUI() {
         }
     }, [physicalActivityData, token]);
 
-
-
-
     async function loadWorkoutStats() {
         try {
             if (token) {
@@ -238,12 +579,18 @@ export default function HardloggerUI() {
                     lastSplitType,
                     nextGoalMessage,
                     remainingDays,
-                    skippedSplitType,
+                    firstUncompletedWorkoutDaySplitType,
                     plannedWorkoutDaysForWeek,
                 } = await getStatsOverview(token);
 
-                const date = new Date(lastWorkout);
-                const formatted = date.toLocaleDateString("en-GB");
+                let formatted;
+
+                if (lastWorkout) {
+                    const date = new Date(lastWorkout);
+                    formatted = date.toLocaleDateString("DE-de");
+
+                }
+
 
                 //update Dashboard Context
                 setState(prev => ({
@@ -254,11 +601,8 @@ export default function HardloggerUI() {
 
                 setRemainingDays(remainingDays ?? 0);
                 setWorkoutsThisWeek(workoutsThisWeek ?? 0);
-                setNextGoalMessage(nextGoalMessage ?? "");
-                setLastSplitType(lastSplitType ?? "");
-                setThisWeekVolume(thisWeekVolume ?? 0);
-                setLastWorkout(formatted ?? "");
-                setSkippedSplitType(skippedSplitType ?? "");
+                setLastWorkout(formatted ?? "[NO FEED]");
+                setSkippedSplitType(firstUncompletedWorkoutDaySplitType ?? "");
                 setWorkoutStreak(workoutStreak ?? 0);
             }
         } catch (err: any) {
@@ -266,341 +610,116 @@ export default function HardloggerUI() {
         }
     }
 
-    const recoveryCards = [
-        {
-            title: 'PULSE FEED',
-            render: () => (
-                <View>
-                    <View style={homeStyles.cardContent}>
-                        <View style={homeStyles.cardRow}>
-                            <Text style={homeStyles.cardLabel}>HEART RATE</Text>
-                            <Text style={homeStyles.cardValue}>{bpm ?? "--"} bpm</Text>
-                        </View>
-                        <View style={homeStyles.cardRow}>
-                            <Text style={homeStyles.cardLabel}>SPO₂</Text>
-                            <Text style={homeStyles.cardValue}>{pulseOximeterData?.spo2 ?? "--"} %</Text>
-                        </View>
-                    </View>
-                    <PulseBarGraph bpm={bpm} />
+    function getVolume(exercises: { sets: { reps: number; weight: number }[] }[]) {
+        if (!exercises || exercises.length === 0) return 0;
 
-                </View>
-            ),
-        },
-        {
-            title: 'REST FEED',
-            render: () => {
-                const sleepHours =
-                    sleepData.duration != null ? sleepData.duration / 60 : null;
-
-                let fatigue = "--";
-                let fatigueColor = "#BFC7D5"; // default grey
-
-                if (sleepHours != null) {
-                    if (sleepHours < 7) {
-                        fatigue = "HIGH";
-                        fatigueColor = "#ff3b3b"; // red
-                    } else if (sleepHours < 9) {
-                        fatigue = "NORMAL";
-                        fatigueColor = "#ffaa00"; // yellow/orange
-                    } else {
-                        fatigue = "LOW";
-                        fatigueColor = "#33FF66"; // green
-                    }
-                }
-
-                return (
-                    <View style={homeStyles.cardContent}>
-                        <View style={homeStyles.cardRow}>
-                            <Text style={homeStyles.cardLabel}>HEART RATE SLEEP</Text>
-                            <Text style={homeStyles.cardValue}>{sleepData.heartRate ?? "--"} bpm</Text>
-                        </View>
-                        <View style={homeStyles.cardRow}>
-                            <Text style={homeStyles.cardLabel}>SLEEP</Text>
-                            <Text style={homeStyles.cardValue}>
-                                {sleepHours != null ? sleepHours.toFixed(1) + " HRS" : "--"}
-                            </Text>
-                        </View>
-                        <View style={homeStyles.cardRow}>
-                            <Text style={homeStyles.cardLabel}>FATIGUE</Text>
-                            <Text style={[homeStyles.cardValue, { color: fatigueColor, textShadowColor: fatigueColor }]}>
-                                {fatigue}
-                            </Text>
-                        </View>
-                    </View>
-                );
-            },
-        },
-        {
-            title: 'RECOVERY STATUS',
-            lines: [
-                `SORE // ${workoutsThisWeek && workoutsThisWeek > 4 ? "HIGH" : workoutsThisWeek && workoutsThisWeek > 2 ? "MEDIUM" : "LOW"}`,
-                `CNS LOAD // ${(sleepData.duration != null && (sleepData.duration / 60) < 6) ? "HIGH" : "NORMAL"}`,
-                `MENTAL STATE // ${workoutStreak && workoutStreak > 5 ? "FOCUSED" : workoutStreak && workoutStreak > 0 ? "RECOVERING" : "UNMOTIVATED"}`
-            ]
-        },
-        {
-            title: 'STEP MONITOR',
-            render: () => (
-                <View style={homeStyles.cardContent}>
-                    <View style={homeStyles.cardRow}>
-                        <Text style={homeStyles.cardLabel}>STEPS: </Text>
-                        <Text style={homeStyles.cardValue}>{physicalActivityData.stepCounter ?? "N/A"}</Text>
-                    </View>
-                    <View style={homeStyles.cardRow}>
-                        <Text style={homeStyles.cardLabel}>DISTANCE: </Text>
-                        <Text style={homeStyles.cardValue}>{(physicalActivityData.distance && physicalActivityData.distance / 1000) ?? "N/A"} km</Text>
-                    </View>
-                    <View style={homeStyles.cardRow}>
-                        <Text style={homeStyles.cardLabel}>ENERGY EXPENDED: </Text>
-                        <Text style={homeStyles.cardValue}>{physicalActivityData.energyExpended ?? "N/A"} kJ</Text>
-                    </View>
-                </View>
-            ),
-        },
-        {
-            title: 'SLEEP STATUS',
-            render: () => (
-                <View style={homeStyles.cardContent}>
-                    <View style={homeStyles.cardRow}>
-                        <Text style={homeStyles.cardLabel}>REM %</Text>
-                        <Text style={homeStyles.cardValue}>{sleepData.remRate ?? "--"} %</Text>
-                    </View>
-                    <View style={homeStyles.cardRow}>
-                        <Text style={homeStyles.cardLabel}>LIGHT %</Text>
-                        <Text style={homeStyles.cardValue}>{sleepData.lightSleepRate ?? "--"} %</Text>
-                    </View>
-                    <View style={homeStyles.cardRow}>
-                        <Text style={homeStyles.cardLabel}>DEEP %</Text>
-                        <Text style={homeStyles.cardValue}>{sleepData.deepSleepRate ?? "--"} %</Text>
-                    </View>
-                </View>
-            ),
-        },
-        {
-            title: 'STATUS REPORT',
-            lines: [
-                `LAST WEEK VOL // ${progress?.lastWeekVolume}`,
-                `THIS WEEK VOL //  ${progress?.thisWeekVolume} kg`,
-                `VOLUME INCREASMENT // ${progress?.weeklyVolumeChange}`,
-            ],
-        },
-        {
-            title: 'POWER LEVEL',
-            render: () =>
-                progress?.pr.map((p) => (
-                    <View key={p.name} style={homeStyles.cardRow}>
-                        <Text style={homeStyles.cardLabel}>{p.name.toUpperCase()}</Text>
-                        <Text style={homeStyles.cardValue}>
-                            {p.weight} {p.unit}
-                        </Text>
-                    </View>
-                )),
-        },
-        {
-            title: 'SESSION LOG',
-            lines: [
-                `LAST PR // `,
-                `LAST ENTRY //  2 days ago`,
-
-            ],
-        },
-    ];
-
-    const trainingLoad = (() => {
-        if (!progress?.lastWeekVolume || !progress?.thisWeekVolume) return "N/A";
-
-        const ratio = progress.thisWeekVolume / progress.lastWeekVolume;
-
-        if (ratio < 0.8) return "LIGHT";
-        if (ratio < 1.2) return "MODERATE";
-        return "HEAVY";
-    })();
-
+        return exercises.reduce((sum, ex) => {
+            return sum + ex.sets.reduce((setSum, s) => {
+                const weight = s.weight ?? 0;
+                const reps = s.reps ?? 0;
+                return setSum + (weight * reps);
+            }, 0);
+        }, 0);
+    }
 
     return (
         <SafeAreaView style={homeStyles.root}>
-            <ImageBackground source={GRAIN_TEXTURE} style={homeStyles.bg} imageStyle={{ opacity: 0.1 }}>
-                <ImageBackground source={SCANLINE_TEXTURE} style={homeStyles.bg} imageStyle={{ opacity: 0.1 }}>
 
-                    <ScrollView style={homeStyles.container} contentContainerStyle={homeStyles.content}>
-                        <Image
-                            source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
-                            style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                width: 80,
-                                height: 80,
-                                opacity: 0.1,
-                            }}
-                            resizeMode="contain"
-                        />
-                        <Image
-                            source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
-                            style={{
-                                position: 'absolute',
-                                bottom: 0,
-                                right: 0,
-                                width: 80,
-                                height: 80,
-                                opacity: 0.1,
-                                transform: [{ rotate: '180deg' }],
-                            }}
-                            resizeMode="contain"
-                        />
-                        <VHSHeader />
+            <ScrollView
+                style={homeStyles.scroll}
+                contentContainerStyle={[homeStyles.scrollContent, { paddingBottom: 60 }]}
+            >
+                {/* WATERMARKS */}
+                <Image
+                    source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
+                    style={homeStyles.cornerWatermarkLeft}
+                />
+                <Image
+                    source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
+                    style={homeStyles.cornerWatermarkRight}
+                />
 
-
-                        <View style={homeStyles.overviewRow}>
-                            <Text style={homeStyles.vhsHudTitle}>▓CHANNEL 01 — WORKOUT FEED▓</Text>
-                            <View style={homeStyles.vhsHudPanel}>
-                                <View style={homeStyles.hudRow}>
-                                    <Text style={homeStyles.hudLabel}>WORKOUTS THIS WEEK:</Text>
-                                    <Text style={[homeStyles.hudValue, { color: "#00ffcc", fontWeight: "bold" }]}> {workoutsThisWeek} finished</Text>
-                                </View>
-
-                                <View style={homeStyles.hudRow}>
-                                    <Text style={homeStyles.hudLabel}>WORKOUT STREAK:</Text>
-
-                                    <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-                                        <Text style={[homeStyles.hudValue, { fontWeight: "bold" }]}>
-                                            {workoutStreak} Days
-                                        </Text>
-                                        {workoutStreak && workoutStreak > 0 && ( // add fire when workoutStreak
-                                            <Icon
-                                                name="flame"
-                                                size={18}
-                                                color="#ff3b3b"
-                                                style={{
-                                                    marginLeft: 4,
-                                                    marginBottom: -2,
-                                                    textShadowColor: "#e91109ff", // outer glow orange
-                                                    textShadowRadius: 12,            // how soft the glow looks
-                                                    textShadowOffset: { width: 0, height: 0 }, // centered glow
-                                                }}
-                                            />
-                                        )
-                                        }
-                                    </View>
+                <VHSHeader />
 
 
 
-                                </View>
+                <WeeklyOverviewCircles
+                    weeklyWorkouts={workoutsThisWeek ?? 0}
+                    remainingDays={remainingDays ?? 0}
+                    streak={workoutStreak ?? 0}
+                    totalLiftedToday={(loggedWorkoutPerformed && isSameDay(loggedWorkoutPerformed, new Date())) ? getVolume(loggedExercises) : 0}
+                    plannedVolumeToday={plannedExercises && plannedExercises.length !== 0 ? getVolume(plannedExercises) : 0}
+                    nextSplit={nextUpcomingWorkout ? nextUpcomingWorkout?.splitType : ""}
+                />
 
-                                <View style={homeStyles.hudRow}>
-                                    <Text style={homeStyles.hudLabel}>NEXT GOAL:</Text>
-
-                                    <Text style={[homeStyles.hudValue, { fontWeight: "bold" }]}>{skippedSplitType}</Text>
-                                </View>
-
-                                <Text style={homeStyles.diagnosticNote}>
-                                    {`>> ${nextGoalMessage} <<`}
-                                </Text>
-                            </View>
-
-
-                        </View>
-                        <View style={homeStyles.doubleRow}>
-                            <View style={homeStyles.halfBox}>
-                                <Text style={homeStyles.boxHeader}>LAST WORKOUT</Text>
-                                <View style={{ flex: 1, justifyContent: "center" }}>
-                                    <Text style={[homeStyles.cardValue, {
-                                        fontSize: 18, fontWeight: 'bold', color: "#BFC7D5",
-                                        textShadowColor: "#BFC7D5",
-                                        textShadowOffset: { width: 0, height: 0 },
-                                        textShadowRadius: 3,
-                                    }]}>{lastWorkout}</Text>
-                                    <Text style={[homeStyles.cardValue, { fontSize: 16, fontWeight: 'bold' }]}>{lastSplitType}</Text>
-                                </View>
-                            </View>
-
-                            <View style={homeStyles.halfBox}>
-                                <Text style={homeStyles.boxHeader}>THIS WEEK VOLUME</Text>
-                                <View style={{ flex: 1, justifyContent: "center" }}>
-                                    <Text style={[homeStyles.cardValue, {
-                                        fontSize: 26, fontWeight: 'bold', color: "#BFC7D5",
-                                        textShadowColor: "#BFC7D5",
-                                        textShadowOffset: { width: 0, height: 0 },
-                                        textShadowRadius: 3,
-                                    }]}>{thisWeekVolume} kg</Text>
-                                </View>
-                            </View>
-                        </View>
-
-
-                        <View style={homeStyles.doubleRow}>
-                            <View style={homeStyles.halfBox}>
-                                <Text style={homeStyles.boxHeader}>POWER FEED</Text>
-                                <Text style={homeStyles.bodyText}>
-                                    TOP LIFT:
-                                </Text>
-                                <Text style={[homeStyles.cardValue, { fontSize: 14 }]}>{progress?.topLift.name.toUpperCase()} {progress?.topLift.weight}{progress?.topLift.unit}</Text>
-                            </View>
-
-                            <View style={homeStyles.halfBox}>
-                                <Text style={homeStyles.boxHeader}>TRAINING STATUS</Text>
-                                <Text style={homeStyles.bodyText}>TRAINING LOAD: </Text>
-                                <Text style={[homeStyles.cardValue, { fontSize: 14 }]}>{trainingLoad}</Text>
-                            </View>
-                        </View>
-                        <VHSGlowDivider></VHSGlowDivider>
-
-                        <Text style={homeStyles.vhsHudTitle}>▓CHANNEL 02 — VITAL FEED▓</Text>
-
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }}>
-                            {recoveryCards.map((card, index) => (
-                                <View key={index} style={homeStyles.recoveryCard}>
-                                    <Text style={homeStyles.cardTitle}>{card.title}</Text>
-                                    {card.lines?.map((line, i) => {
-                                        if (!line) return null;
-                                        const [label, value] = line.split("//"); // split at //
-                                        return (
-                                            <View key={i} style={homeStyles.cardRow}>
-                                                <Text style={homeStyles.cardLabel}>{label?.trim()}</Text>
-                                                <Text style={homeStyles.cardValue}>{value?.trim()}</Text>
-                                            </View>
-                                        );
-                                    })}
-
-                                    {card.render?.()}
-                                </View>
-                            ))}
-                        </ScrollView>
-                        <Text style={homeStyles.transitionLabel}>▶ ANALYZING SYSTEM FEED...</Text>
-
-                        <View style={homeStyles.powerBarContainer}>
-                            <Text style={homeStyles.powerBarLabel}>▞ GAIN SIGNAL STRENGTH ▚</Text>
-                            <Text style={homeStyles.powerBarSubLabel}>↳ Detected Weekly Volume Progression: {progress?.weeklyVolumeChange}</Text>
-
-                            <View style={homeStyles.powerBarTrack}>
-                                <View style={[homeStyles.powerBarFill, {
-                                    width: `${Math.min(
-                                        Number(progress?.weeklyVolumeChange.replace('%', '')) || 0,
-                                        100
-                                    )
-                                        }%`
-
-                                }]} />
-                            </View>
-
-                            <View style={homeStyles.barTickRow}>
-                                <Text style={homeStyles.tickLabel}>LOW</Text>
-                                <Text style={homeStyles.tickLabel}>MED</Text>
-                                <Text style={homeStyles.tickLabel}>HIGH</Text>
-                            </View>
-
-                            <Text style={homeStyles.diagnosticNote}>
-                                &gt;&gt;STRENGTH SIGNAL LOCKED — HOLD THE LINE&lt;&lt;
-                            </Text>
-                        </View>
-                    </ScrollView>
-                </ImageBackground>
-            </ImageBackground>
-        </SafeAreaView >
+                <TodayOverviewPanel
+                    personalRecords={progress?.pr ?? null}
+                    lastWorkout={lastWorkout}
+                    loggedWorkout={loggedWorkout}
+                    plannedExercises={plannedExercises}
+                    loggedWorkoutSplitType={loggedWorkoutSplitType}
+                    todayWorkoutSplitName={splitNamePlanned}
+                    hasSkippedWorkout={hasSkippedWorkout}
+                    loggedExercises={loggedExercises}
+                    nextSkippedDay={skippedWorkout}
+                    hasWorkoutToday={hasWorkoutToday}
+                    activePlan={activePlan ? toUIPlan(activePlan) : undefined}
+                    thisWeekVolume={progress?.thisWeekVolume}
+                    lastWeekVolume={progress?.lastWeekVolume}
+                    weeklyVolumeChange={progress?.weeklyVolumeChange}
+                    readinessScore={72}
+                    steps={physicalActivityData.stepCounter ?? stepsHealthConnect}
+                    stepsGoal={10000}
+                    sleepMinutes={sleepData?.duration ?? null}
+                    calories={physicalActivityData.energyExpended ?? totalCaloriesBurnedHealthConnect}
+                    bpm={bpm ?? bpmHealthConnect}
+                    distanceKm={
+                        physicalActivityData.distance
+                            ? physicalActivityData.distance / 1000
+                            : distanceHealthConnect
+                    }
+                />
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
 export const homeStyles = StyleSheet.create({
+    scroll: {
+        flex: 1,
+        backgroundColor: 'transparent',   // IMPORTANT!
+    },
+
+    scrollContent: {
+        padding: 20,
+        paddingBottom: 40,
+    },
+
+    bgImage: {
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        opacity: 0.10,
+    },
+
+    cornerWatermarkLeft: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: 80,
+        height: 80,
+        opacity: 0.08,
+    },
+
+    cornerWatermarkRight: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 80,
+        height: 80,
+        opacity: 0.08,
+        transform: [{ rotate: '180deg' }],
+    },
     cardContent: {
         marginTop: 10,
     },
@@ -747,13 +866,15 @@ export const homeStyles = StyleSheet.create({
         fontFamily: 'monospace',
         color: '#00ffcc',
         fontSize: 18,
+        width: '100%',
+        alignContent: 'center',
         paddingVertical: 4,
         paddingHorizontal: 10,
         backgroundColor: 'rgba(0, 255, 204, 0.08)',
         borderLeftWidth: 3,
         borderLeftColor: '#00ffcc',
         borderRadius: 2,
-        letterSpacing: 0.5,
+        letterSpacing: 5,
         textTransform: 'uppercase',
         textShadowColor: '#00ffcc',
         textShadowOffset: { width: 0, height: 0 },
@@ -916,7 +1037,7 @@ export const homeStyles = StyleSheet.create({
     },
     halfBox: {
         backgroundColor: '#111622',
-        borderColor: '#00ffcc',
+        borderColor: '#rgba(0, 255, 204, 0.1)',
         borderWidth: 1.5,
         borderRadius: 10,
         padding: 14,
