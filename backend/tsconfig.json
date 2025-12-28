@@ -11,14 +11,25 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-
     "baseUrl": "./src",
     "paths": {
-      "@services/*": ["services/*"],
-      "@models/*": ["models/*"],
-      "@utils/*": ["utils/*"]
+      "@services/*": [
+        "services/*"
+      ],
+      "@models/*": [
+        "models/*"
+      ],
+      "@utils/*": [
+        "utils/*"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules", "tests"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "tests"
+  ]
 }
