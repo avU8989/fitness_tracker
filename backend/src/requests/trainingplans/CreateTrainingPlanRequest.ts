@@ -8,6 +8,7 @@ import {
   IsString,
   ValidateNested,
   IsNumber,
+  IsMongoId,
 } from "class-validator";
 import { Type } from "class-transformer";
 import "reflect-metadata";
@@ -40,17 +41,15 @@ export class SetDTO {
   unit!: Unit;
 }
 
-export class ExerciseDTO {
-  @IsString()
-  @IsNotEmpty()
-  name!: string;
+export class PlanExerciseDTO {
+  @IsMongoId()
+  exerciseId!: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SetDTO)
   sets!: SetDTO[];
 }
-
 export class WorkoutDayDTO {
   @IsEnum(DAYS_OF_WEEK)
   dayOfWeek!: DayOfWeek;
@@ -61,8 +60,8 @@ export class WorkoutDayDTO {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ExerciseDTO)
-  exercises!: ExerciseDTO[];
+  @Type(() => PlanExerciseDTO)
+  exercises!: PlanExerciseDTO[];
 }
 
 export class CreateBaseTrainingPlanRequest {
