@@ -7,17 +7,18 @@ import PowerLiftingPlan, {
   IPowerliftingPlan,
 } from "../models/PowerliftingPlan";
 import TrainingPlan, {
-  IExercise,
   ITrainingPlan,
   IWorkoutDay,
 } from "../models/TrainingPlan";
 import {
   CreateBaseTrainingPlanRequest,
   CreatePowerliftingPlanRequest,
+  WorkoutDayDTO,
 } from "../requests/trainingplans/CreateTrainingPlanRequest";
 import { UpdateExerciseRequest } from "../requests/trainingplans/UpdateExerciseRequest";
 import { UpdateWorkoutDayRequest } from "../requests/trainingplans/UpdateWorkoutDayRequest";
-import { findWorkoutDay, loadUserPlan } from "../utils/trainingPlan-helpers";
+import { findWorkoutDay, loadUserPlan, mapDaysWithExercises } from "../utils/trainingPlan-helpers";
+import { IExercise } from "../models/Exercise";
 
 export const createTrainingPlan = async (
   userId: string,
@@ -31,45 +32,55 @@ export const createTrainingPlan = async (
     user: userId,
   };
 
-  let newPlan;
   const normalizedType = type?.toLowerCase();
+  let newPlan;
 
-  if (!normalizedType) {
-    newPlan = new TrainingPlan(baseFields); // fallback
-  } else {
+  if (normalizedType === "powerlifting") {
+    if (!("weeks" in data)) {
+      throw new Error("Powerlifting plan must include weeks");
+    }
+
+    const weeks = await Promise.all(
+      data.weeks.map(async (week) => ({
+        weekNumber: week.weekNumber,
+        days: await mapDaysWithExercises(week.days),
+      }))
+    );
+
+    newPlan = new PowerLiftingPlan({
+      ...baseFields,
+      ...data,
+      weeks,
+    });
+  }
+  else {
+    if (!("days" in data) || !Array.isArray(data.days)) {
+      throw new Error("Training plan must include days");
+    }
+
+    const days = await mapDaysWithExercises(data.days);
+
     switch (normalizedType) {
-      case "powerlifting":
-        console.log("Creating Powerlifting Plan");
-        newPlan = new PowerLiftingPlan({
-          ...baseFields,
-          ...data, //includes blockPeriodization weeks, etc
-        });
-        break;
       case "crossfit":
-        console.log("Creating Crossfit Plan");
-        newPlan = new CrossfitPlan({
-          ...baseFields,
-          days: (data as CreateBaseTrainingPlanRequest).days,
-        });
+        newPlan = new CrossfitPlan({ ...baseFields, days });
         break;
       case "bodybuilding":
-        console.log("Creating Bodybuilding Plan");
-        newPlan = new BodybuildingPlan({
-          ...baseFields,
-          days: (data as CreateBaseTrainingPlanRequest).days,
-        });
+        newPlan = new BodybuildingPlan({ ...baseFields, days });
         break;
       default:
         newPlan = new TrainingPlan(baseFields);
-        break;
     }
   }
 
   return newPlan.save();
 };
 
+
 export const getTrainingPlansByUserId = async (userId: string) => {
-  return TrainingPlan.find({ user: userId });
+  return TrainingPlan.find({ user: userId }).populate({
+    path: "days.exercises.exercise",
+    select: "name primaryMuscles equipment secondaryMuscles"
+  });
 };
 
 export const getTrainingPlanById = async (trainingPlanId: string) => {
@@ -208,3 +219,4 @@ export const getWorkoutDayFromPlan = async (
 
   return null;
 };
+
