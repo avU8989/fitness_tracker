@@ -1,21 +1,31 @@
 import mongoose, { Document, Types, Schema, Model } from "mongoose";
-import { IExercise, ISet, setSchema } from "./TrainingPlan";
+import { IExercise, ISet, setSchema } from "./Exercise";
 
 export interface IExerciseLog {
   exerciseId?: Types.ObjectId;
   name: string;
   sets: ISet[];
+  warmupSets?: ISet[];
   rpe?: number;
 }
 
+//snapshot for WorkoutLog
+export interface IPlannedExerciseSnapshot {
+  exerciseId?: Types.ObjectId;
+  name?: string;
+  sets: ISet[];
+}
+
 //for snapshots
-const exerciseSchema = new Schema<IExercise>(
-  {
-    name: { type: String, required: true },
-    sets: { type: [setSchema], _id: false }, // snapshot sets won't need _id
-  },
-  { timestamps: true }
-);
+const plannedExerciseSnapshotSchema =
+  new Schema<IPlannedExerciseSnapshot>(
+    {
+      exerciseId: { type: Schema.Types.ObjectId, ref: "Exercise" },
+      name: { type: String },
+      sets: { type: [setSchema], required: true },
+    },
+    { _id: false } // snapshots do NOT need ids
+  );
 
 export interface IWorkoutLog extends Document {
   userId: Types.ObjectId;
@@ -23,7 +33,12 @@ export interface IWorkoutLog extends Document {
   workoutDayId?: Types.ObjectId;
   // Snapshots (at time of logging)
   dayOfWeek?: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
+<<<<<<< Updated upstream
   plannedExercises?: IExercise[]; // snapshot of planned exercises
+=======
+  splitType?: string;
+  plannedExercises?: IPlannedExerciseSnapshot[]; // snapshot of planned exercises
+>>>>>>> Stashed changes
   performed: Date;
   exercises: IExerciseLog[];
   duration?: number;
@@ -36,6 +51,7 @@ export interface IWorkoutLog extends Document {
 const exerciseLogSchema = new Schema<IExerciseLog>({
   exerciseId: { type: Schema.Types.ObjectId, ref: "Exercise" },
   name: { type: String, required: true },
+  warmupSets: { type: [setSchema], default: [] },
   sets: { type: [setSchema], required: true },
   rpe: { type: Number },
 });
@@ -55,7 +71,12 @@ const workoutLogSchema = new Schema<IWorkoutLog>(
       type: String,
       enum: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"],
     },
+<<<<<<< Updated upstream
     plannedExercises: [exerciseSchema],
+=======
+    splitType: { type: String },
+    plannedExercises: [plannedExerciseSnapshotSchema],
+>>>>>>> Stashed changes
     performed: { type: Date, required: true },
     exercises: [exerciseLogSchema],
     duration: Number,
