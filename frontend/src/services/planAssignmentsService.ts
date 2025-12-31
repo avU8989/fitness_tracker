@@ -1,4 +1,5 @@
 import { CreateTrainingAssignmentRequest } from "../requests/CreateTrainingAssignmentRequest";
+import { DeleteTrainingAssignmentRequest } from "../requests/DeleteTrainingAssignmentRequest";
 import { handleResponse } from "../utils/apiHelpers";
 import { API_URL } from "@env";
 
@@ -44,6 +45,30 @@ export async function createTrainingPlanAssignment(
     }
 
     return await response.json();
+  } catch (err: any) {
+    console.error("Error assigning Trainingplan:", err);
+    throw err;
+  }
+}
+
+export async function deleteTrainingPlanAssignment(
+  token: string,
+  planId: string,
+) {
+  try {
+    const response = await fetch(`${URL}/${planId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delet trainingplan assignment: ${response.status}`);
+    }
+
+    return await response.json();
+
   } catch (err: any) {
     console.error("Error assigning Trainingplan:", err);
     throw err;
