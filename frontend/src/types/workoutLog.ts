@@ -14,6 +14,7 @@ export interface LoggedSet {
 export interface LoggedExercise {
   exerciseId?: string;
   name: string;
+  warmupSets?: LoggedSet[];
   sets: LoggedSet[];
   rpe?: number;
 }
