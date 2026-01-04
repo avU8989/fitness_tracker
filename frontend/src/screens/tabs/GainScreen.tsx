@@ -20,6 +20,11 @@ import { useDashboard } from '../../context/DashboardContext';
 import { AuthContext } from '../../context/AuthContext';
 import { getDashboardOverview } from '../../services/dashboardService';
 import { WorkoutDay } from '../../types/trainingPlan';
+import TrainingTopBar from '../../components/TopBar';
+import GainsTile from '../../components/GainsTile';
+import { LineChart } from 'react-native-chart-kit';
+
+const screenWidth = Dimensions.get('window').width;
 
 const { width } = Dimensions.get('window');
 
@@ -76,10 +81,19 @@ export default function DashboardScreen() {
             if (status === "past") {
                 setTimeLeft("Workout already started!");
             } else {
-                const diff = date.getTime() - Date.now();
-                const h = Math.floor(diff / 1000 / 3600);
-                const m = Math.floor((diff / 1000 % 3600) / 60);
-                setTimeLeft(`Starts in: ${h}h ${m}m`);
+                const diffMs = date.getTime() - Date.now();
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                const diffMins = Math.floor((diffMs / (1000 * 60)) % 60);
+
+                if (diffHours > 24) {
+                    const days = Math.floor(diffHours / 24);
+                    const hours = diffHours % 24;
+                    setTimeLeft(`Starts in: ${days}d ${hours}h`);
+
+                } else {
+                    setTimeLeft(`Starts in: ${diffHours}h ${diffMins}m`);
+
+                }
             }
         };
 
@@ -180,30 +194,16 @@ export default function DashboardScreen() {
     return (
         <ScrollView
             style={[styles.root, { backgroundColor: colors.background }]}
-            contentContainerStyle={{ padding: 20 }}
+            contentContainerStyle={{ padding: 20, paddingBottom: 150 }}
         >
 
-            <View style={styles.progressMonitorContainer}>
-                <View style={[styles.progressDot, { opacity: blinkVisible ? 1 : 0.3 }]} />
-                <Text style={styles.progressMonitorText}>
-                    PROGRESS MONITOR: {weeklyProgress > 0 ? "ACTIVE" : "IDLE"}
-                </Text>
-            </View>
-
-            {/* Header */}
-            <Text style={styles.vhsHudTitle}>▓CHANNEL 05 — DASHBOARD▓</Text>
-
-            <Text style={[styles.subtitle, { color: colors.primary, opacity: 0.7 }]}>
-                Your Training Summary
-            </Text>
-
-            {/* Progress Bar */}
-            <View style={[styles.progressBarContainer, { borderColor: colors.primary }]}>
-                <View style={[styles.progressBarFill, { width: `${Math.min(weeklyProgress * 100, 100)}%`, backgroundColor: colors.primary }]} />
-                <Text style={[styles.progressText, { color: '#00ffcc' }]}>
-                    Weekly Goal: {(weeklyProgress * 100).toFixed(0)}%
-                </Text>
-            </View>
+            <TrainingTopBar title="Dashboard"
+                status={undefined}
+                blinkVisible={blinkVisible}
+                onLeftPress={() => { }}
+                onRightPress={() => {
+                    // open search
+                }}></TrainingTopBar>
 
             {/* Stats Tiles with expandable mini chart */}
             <View style={styles.statsContainer}>
@@ -228,45 +228,170 @@ export default function DashboardScreen() {
                             <Text style={[styles.statLabel, { color: colors.primary }]}>
                                 {label}
                             </Text>
-                            {isExpanded && detailData.length > 0 && (
-                                <BarChart
-                                    data={{
-                                        labels: detailData.map((_, i) => `W${i + 1}`),
-                                        datasets: [{ data: detailData }],
-                                    }}
-                                    width={width * 0.4}
-                                    height={100}
-                                    yAxisSuffix={label.includes('VOLUME') ? 'kg' : ''}
-                                    chartConfig={{
-                                        backgroundGradientFrom: colors.cardBg,
-                                        backgroundGradientTo: colors.cardBg,
-                                        color: (opacity = 1) => `rgba(0, 255, 204, ${opacity})`,
-                                        labelColor: () => colors.primary,
-                                    }}
-                                    style={{ marginTop: 10, borderRadius: 8 }} yAxisLabel={''} />
-                            )}
                         </Pressable>
                     );
                 })}
             </View>
 
-            {/* Stats Carousel */}
+            {/* BIG HERO — Planned vs Logged Volume */}
+            <View style={styles.storyCard}>
+                <LineChart
+                    data={{
+                        labels: ['W1', 'W2', 'W3', 'W4'],
+                        datasets: [
+                            { data: [12000, 15000, 13000, 17000], color: () => '#ff4444' },
+                            { data: [9000, 12500, 11000, 13860], color: () => '#4da6ff' },
+                        ],
+                    }}
+                    width={screenWidth - 64}
+                    height={260}
+                    withDots={false}
+                    withInnerLines={false}
+                    withOuterLines={false}
+                    withShadow={false}
+                    chartConfig={chartConfig}
+                    style={styles.chart}
+                />
+
+                <Text style={styles.storyTitle}>
+                    You completed 82% of your planned volume
+                </Text>
+                <Text style={styles.storySubtitle}>
+                    39,360 kg logged · Planned 48,000 kg
+                </Text>
+            </View>
+
+            {/* STORY 2 — Time Trained */}
+            <View style={styles.storyCard}>
+                <Text style={styles.bigMetric}>4h 35m</Text>
+                <Text style={styles.storyTitle}>
+                    You trained consistently this week
+                </Text>
+                <Text style={styles.storySubtitle}>
+                    +42 minutes compared to last week
+                </Text>
+            </View>
+
+            {/* STORY 3 — Muscle Distribution */}
+            <View style={styles.storyCard}>
+                {/* Drop your MuscleHeatmapPNG or SVG here */}
+                <View style={styles.heatmapPlaceholder} />
+
+                <Text style={styles.storyTitle}>
+                    Chest carried your training
+                </Text>
+                <Text style={styles.storySubtitle}>
+                    Highest total volume this week
+                </Text>
+            </View>
+
+            {/* STORY 4 — Workout History (Pressable) */}
+            <Pressable style={styles.storyCard}>
+                <Text style={styles.bigMetric}>5</Text>
+                <Text style={styles.storyTitle}>
+                    You logged 5 workouts
+                </Text>
+                <Text style={styles.storySubtitle}>
+                    Tap to view your training history
+                </Text>
+            </Pressable>
+
+            {/* STORY 5 — Top Exercise */}
+            <View style={styles.storyCard}>
+                <Text style={styles.bigMetric}>Bench Press</Text>
+                <Text style={styles.storyTitle}>
+                    Was your most trained exercise
+                </Text>
+                <Text style={styles.storySubtitle}>
+                    12,400 kg total volume
+                </Text>
+            </View>
+
+            {/* STORY — Personal Records */}
+            <View style={styles.storyCard}>
+                <Text style={styles.bigMetric}>3 PRs</Text>
+
+                <Text style={styles.storyTitle}>
+                    You set new personal records
+                </Text>
+
+                <Text style={styles.storySubtitle}>
+                    Bench Press · Squat · Shoulder Press
+                </Text>
+
+                {/* Optional PR list */}
+                <View style={{ marginTop: 12 }}>
+                    <Text style={styles.prItem}>🏋️ Bench Press — 100 kg × 5</Text>
+                    <Text style={styles.prItem}>🔥 Squat — 140 kg × 3</Text>
+                    <Text style={styles.prItem}>⚡ Shoulder Press — 60 kg × 6</Text>
+                </View>
+            </View>
+
+            {/* STORY — Volume Trend */}
+            <View style={styles.storyCard}>
+                <Text style={styles.bigMetric}>+18%</Text>
+
+                <Text style={styles.storyTitle}>
+                    Your weekly volume increased
+                </Text>
+
+                <Text style={styles.storySubtitle}>
+                    Compared to last week
+                </Text>
+            </View>
+
+            {/* STORY — Training Personality */}
+            <View style={styles.storyCard}>
+                <Text style={styles.bigMetric}>VOLUME GRINDER</Text>
+
+                <Text style={styles.storyTitle}>
+                    That’s your training style
+                </Text>
+
+                <Text style={styles.storySubtitle}>
+                    High reps · High total load
+                </Text>
+            </View>
+
+            {/* STORY — Missed Session */}
+            <View style={styles.storyCard}>
+                <Text style={styles.storyTitle}>
+                    You missed one planned session
+                </Text>
+
+                <Text style={styles.storySubtitle}>
+                    Tuesday — Push Day
+                </Text>
+            </View>
+
+
+
+
+            {/* Stats Carousel 
+            
             <StatsCarousel />
 
-            {/* Upcoming Workout Card */}
             <View style={[styles.upcomingContainer, { borderColor: colors.primary, backgroundColor: colors.cardBg }]}>
                 <Text style={[styles.upcomingTitle, { color: colors.primary }]}>NEXT WORKOUT</Text>
                 <Text style={[styles.upcomingWorkout, { color: colors.primary }]}>{upcomingWorkoutDay?.dayOfWeek} {upcomingWorkoutDay?.splitType}</Text>
                 {upcomingWorkoutDay?.exercises?.[0] && (
-                    <Text style={[styles.activityText, { color: colors.textSecondary }]}>
-                        › {upcomingWorkoutDay.exercises[0].name} — {upcomingWorkoutDay.exercises[0].sets[0].reps} x {upcomingWorkoutDay.exercises[0].sets[0].weight} {upcomingWorkoutDay.exercises[0].sets[0].unit}
-                    </Text>
+                    <View>
+                        {upcomingWorkoutDay.exercises.map((ex, idx) => (
+                            <Text key={idx} style={[styles.activityText, { color: colors.textSecondary }]}>
+                                › {ex.name} — {ex.sets.map(s => `${s.reps}x${s.weight}${s.unit}`).join(", ")}
+                            </Text>
+                        ))}
+
+                    </View>
                 )}
                 <Text style={[styles.upcomingCountdown, { color: colors.primary }]}>{timeLeft}</Text>
             </View>
 
-            {/* Recent Activity with swipe delete */}
-            <View style={[styles.activityContainer, { borderColor: colors.primary, backgroundColor: colors.cardBg }]}>
+            */}
+
+
+            {/* Recent Activity with swipe delete 
+             <View style={[styles.activityContainer, { borderColor: colors.primary, backgroundColor: colors.cardBg }]}>
                 <Text style={[styles.sectionTitle, { color: colors.primary }]}>RECENT ACTIVITY</Text>
                 <FlatList
                     data={recentActivities}
@@ -286,11 +411,80 @@ export default function DashboardScreen() {
                     scrollEnabled={false}
                 />
             </View>
+            */}
+
         </ScrollView>
     );
 }
 
 const styles = StyleSheet.create({
+    prItem: {
+        fontSize: 14,
+        color: '#BFC7D5',
+        marginTop: 6,
+        lineHeight: 20,
+    },
+
+
+    heroCard: {
+        backgroundColor: '#111622',
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: 'rgba(0,255,204,0.25)',
+        padding: 16,
+        marginBottom: 16,
+        shadowColor: '#00ffcc',
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+    },
+
+    storyCard: {
+        backgroundColor: '#111622',
+        borderRadius: 18,
+        padding: 16,
+        marginBottom: 16,
+        shadowColor: '#00ffcc',
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+    },
+
+    chart: {
+        borderRadius: 16,
+        marginBottom: 12,
+    },
+
+    storyTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#ffffff',
+        marginTop: 8,
+    },
+
+    storySubtitle: {
+        fontSize: 14,
+        color: '#9a9a9a',
+        marginTop: 6,
+        lineHeight: 20,
+    },
+
+    bigMetric: {
+        fontSize: 36,
+        fontWeight: 'bold',
+        color: '#ffffff',
+        marginBottom: 6,
+    },
+
+    heatmapPlaceholder: {
+        height: 220,
+        borderRadius: 16,
+        backgroundColor: '#2a2a2c',
+        marginBottom: 12,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: 15,
+    },
 
     progressMonitorContainer: {
         flexDirection: 'row',
@@ -383,6 +577,7 @@ const styles = StyleSheet.create({
 
     root: {
         flex: 1,
+        backgroundColor: '#0A0F1C',
     },
     headerContainer: {
         alignItems: 'center',
@@ -439,14 +634,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
         justifyContent: 'space-between',
-        paddingHorizontal: 20,
     },
     statTile: {
         width: '48%',
         paddingVertical: 20,
         paddingHorizontal: 12,
-        borderWidth: 1,
-        borderRadius: 12,
+        borderRadius: 18,
         marginBottom: 15,
         shadowOffset: { width: 0, height: 0 },
         shadowOpacity: 0.7,
@@ -566,3 +759,16 @@ const styles = StyleSheet.create({
         textShadowRadius: 10,
     },
 });
+const chartConfig = {
+    backgroundGradientFrom: '#111622',
+    backgroundGradientTo: '#0b101bff',
+    backgroundGradientFromOpacity: 1,
+    backgroundGradientToOpacity: 1,
+
+    color: () => '#9a9a9a',
+    labelColor: () => '#7a7a7a',
+
+    propsForBackgroundLines: {
+        stroke: 'rgba(255,255,255,0.04)',
+    },
+};
