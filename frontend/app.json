@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "HardLogger",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -21,8 +21,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./src/assets/icon.png",
+        "backgroundColor": "#001022"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
@@ -30,7 +30,15 @@
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.BLUETOOTH_SCAN",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.health.READ_HEART_RATE",
+        "android.permission.health.READ_STEPS",
+        "android.permission.health.WRITE_STEPS",
+        "android.permission.health.READ_DISTANCE",
+        "android.permission.health.READ_TOTAL_CALORIES_BURNED",
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_EXERCISE"
       ],
       "package": "com.anonymous.frontend"
     },
@@ -39,7 +47,23 @@
     },
     "plugins": [
       "expo-font",
+      "expo-health-connect",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 26
+          }
+        }
+      ],
       "react-native-ble-plx"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "38946c18-8157-4fb8-8046-ce541ebb3fa2"
+      }
+    }
   }
 }

@@ -85,3 +85,12 @@ export interface TrainingPlanUI {
     };
   };
 }
+
+export interface PlannedExerciseUI {
+  name: string;
+  sets: {
+    reps: number;
+    weight: number;
+    unit: string;
+  }[];
+}

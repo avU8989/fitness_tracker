@@ -1,7 +1,7 @@
 import TrainingPlanAssignment, {
   ITrainingPlanAssignment,
 } from "../models/PlanAssignment";
-import { ITrainingPlan } from "../models/TrainingPlan";
+import TrainingPlan, { ITrainingPlan } from "../models/TrainingPlan";
 import mongoose, { HydratedDocument, Document } from "mongoose";
 import { normalizeDayRange } from "../utils/controllerUtils";
 
@@ -55,6 +55,12 @@ export const createTrainingPlanAssignment = async (
   startDate: Date,
   endDate?: Date
 ): Promise<HydratedDocument<ITrainingPlanAssignment>> => {
+  const existingTrainingplan = await TrainingPlan.findById(trainingPlanId);
+
+  if (!existingTrainingplan) {
+    throw new Error("Trainingplan does not exist");
+  }
+
   const assignedPlan = await TrainingPlanAssignment.create({
     user: userId,
     trainingPlan: trainingPlanId,
@@ -81,9 +87,13 @@ export const findActiveTrainingPlanAssignment = async (
       { endDate: { $exists: false } },
       { endDate: { $gte: startOfDay } },
     ],
-  }).populate<{ trainingPlan: HydratedDocument<ITrainingPlan> }>(
-    "trainingPlan"
-  );
+  }).populate({
+    path: "trainingPlan",
+    populate: {
+      path: "days.exercises.exercise",
+      select: "name"
+    }
+  })
 
   return assignment;
 };

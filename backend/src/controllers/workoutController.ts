@@ -1,15 +1,6 @@
 import WorkoutLog from "../models/Workout";
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../middleware/auth";
-import TrainingPlan, {
-  ITrainingPlan,
-  IWorkoutDay,
-} from "../models/TrainingPlan";
-import { IBodybuildingPlan } from "../models/BodybuildingPlan";
-import { ICrossfitPlan } from "../models/CrossfitPlan";
-import { endOfWeek, startOfWeek } from "date-fns";
-import TrainingPlanAssignment from "../models/PlanAssignment";
-import mongoose, { HydratedDocument } from "mongoose";
 import { CreateWorkoutLogRequest } from "../requests/workouts/CreateWorkoutLogRequest";
 import {
   getTrainingPlanById,

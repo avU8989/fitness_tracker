@@ -41,3 +41,35 @@ export async function getNextSkippedDay(token: string) {
 
   return response.json();
 }
+
+export async function getNextUpcomingWorkoutDay(token: string) {
+  const response = await fetch(`${URL}/next-upcoming`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Fetching upcoming workout day failed");
+  }
+
+  return response.json();
+}
+
+export async function getUserWorkoutLoggedToday(token: string) {
+  const response = await fetch(`${URL}/logged/today`, {
+    method: 'GET',
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Fetching logged workout status failed");
+  }
+
+  return response.json();
+}
