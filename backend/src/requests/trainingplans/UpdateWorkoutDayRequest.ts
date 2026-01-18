@@ -10,7 +10,7 @@ import {
 import {
   DayOfWeek,
   DAYS_OF_WEEK,
-  ExerciseDTO,
+  PlanExerciseDTO,
 } from "./CreateTrainingPlanRequest";
 
 export class UpdateWorkoutDayRequest {
@@ -25,6 +25,6 @@ export class UpdateWorkoutDayRequest {
   @IsEmpty()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ExerciseDTO)
-  exercises!: ExerciseDTO[];
+  @Type(() => PlanExerciseDTO)
+  exercises!: PlanExerciseDTO[];
 }

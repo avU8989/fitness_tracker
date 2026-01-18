@@ -9,7 +9,7 @@ import {
   Min,
   ValidateNested,
 } from "class-validator";
-import { ExerciseDTO } from "../trainingplans/CreateTrainingPlanRequest";
+import { PlanExerciseDTO } from "../trainingplans/CreateTrainingPlanRequest";
 import { Type } from "class-transformer";
 export class CreateWorkoutLogRequest {
   @IsMongoId()
@@ -25,8 +25,8 @@ export class CreateWorkoutLogRequest {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ExerciseDTO)
-  exercises!: ExerciseDTO[];
+  @Type(() => PlanExerciseDTO)
+  exercises!: PlanExerciseDTO[];
 
   @IsNumber()
   @IsOptional()
