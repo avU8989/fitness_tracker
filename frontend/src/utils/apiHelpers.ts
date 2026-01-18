@@ -1,5 +1,8 @@
+import { PlannedExercise } from "../screens/tabs/LogScreen";
 import {
   DayOfWeek,
+  Exercise,
+  PlannedExerciseUI,
   PowerliftingPlanDTO,
   TrainingPlanDTO,
   TrainingPlanUI,
@@ -63,7 +66,7 @@ export function toUIPlan(
       name: plan.name,
       updatedAt,
       type: plan.type,
-      days: targetWeek?.days ?? [],
+      days: mapDaysToUI(targetWeek.days),
       meta: {
         powerlifting: {
           weeksCount,
@@ -80,6 +83,42 @@ export function toUIPlan(
     name: plan.name,
     updatedAt,
     type: plan.type,
-    days: plan.days,
+    days: mapDaysToUI(plan.days),
   };
 }
+
+function mapDaysToUI(days: any[]) {
+  return days.map((day) => ({
+    ...day,
+    exercises: day.exercises.map((ex: any) => ({
+      name: ex.exercise?.name ?? "UNKNOWN EXERCISE",
+      sets: ex.sets,
+    })),
+  }));
+}
+
+type RawPlanExercise = {
+  exercise: {
+    name: string;
+  };
+  sets: {
+    reps: number;
+    weight: number;
+    unit: "kg" | "lbs";
+  }[];
+};
+
+
+export function normalizeExercises(
+  rawExercises: RawPlanExercise[]
+): Exercise[] {
+  return rawExercises.map((ex) => ({
+    name: ex.exercise.name,
+    sets: ex.sets.map((s) => ({
+      reps: s.reps,
+      weight: s.weight,
+      unit: s.unit,
+    })),
+  }));
+}
+

@@ -1,7 +1,8 @@
-import { HydratedDocument } from "mongoose";
+import mongoose, { HydratedDocument } from "mongoose";
 import TrainingPlan from "../models/TrainingPlan";
 import PowerLiftingPlan from "../models/PowerliftingPlan";
 import TrainingPlanAssignment from "../models/PlanAssignment";
+import Exercise from "../models/Exercise";
 
 //Hydrated Document has getters, setters, change tracking,
 type PlanDoc = HydratedDocument<any>;
@@ -63,4 +64,28 @@ export function findWorkoutDay(
   // Bodybuilding/Crossfit
   const day = plan.days?.id(opts.dayId);
   return { day, container: "days" };
+}
+
+export async function mapDaysWithExercises(days: any[]) {
+  return Promise.all(
+    days.map(async (day) => ({
+      dayOfWeek: day.dayOfWeek,
+      splitType: day.splitType,
+      exercises: await Promise.all(
+        //validate for Exercise ID
+        day.exercises.map(async (ex: any) => {
+          const exercise = await Exercise.findById(ex.exerciseId).select("_id name");
+
+          if (!exercise) {
+            throw new Error("Invalid Exercise ID");
+          }
+
+          return {
+            exercise: exercise._id,
+            sets: ex.sets,
+          }
+        })
+      )
+    }))
+  )
 }

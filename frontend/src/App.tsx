@@ -11,6 +11,11 @@ import { RootStackParameterList } from './navigation/navtypes';
 import { BleProvider } from './context/BleContext';
 import { WorkoutProvider } from './context/WorkoutContext';
 import { DashboardProvider } from './context/DashboardContext';
+import DummyTrainingPlanScreen from './screens/tabs/PlanScreen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { TrainingPlanProvider } from './context/TrainingPlanContext';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 const Stack = createNativeStackNavigator<RootStackParameterList>();
 
 function RootNavigator() {
@@ -27,31 +32,46 @@ function RootNavigator() {
           <Stack.Screen name="SignUpProfile" component={SignUpProfileScreen} />
         </>
       ) : (
-        <Stack.Screen name="Main" component={AppTabs} />
-      )}
-    </Stack.Navigator >
-  )
+        <>
+          <Stack.Screen name="Main" component={AppTabs} />
 
+          {/* Add the plan detail screen */}
+          <Stack.Screen
+            name="TrainingPlanScreen"
+            component={DummyTrainingPlanScreen}
+          />
+        </>
+      )}
+    </Stack.Navigator>
+  );
 }
 export default function App() {
 
   return (
-    <AuthProvider>
-      <BleProvider>
-        <WorkoutProvider>
-          <DashboardProvider>
-            <NavigationContainer>
-              <View style={styles.appWrapper}>
-                <RootNavigator />
-              </View >
-            </NavigationContainer>
-          </DashboardProvider>
-        </WorkoutProvider>
-      </BleProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+
+      <SafeAreaProvider>
+        <AuthProvider>
+          <BleProvider>
+            <TrainingPlanProvider>
+              <WorkoutProvider>
+                <DashboardProvider>
+                  <NavigationContainer>
+                    <View style={styles.appWrapper}>
+                      <RootNavigator />
+                    </View>
+                  </NavigationContainer>
+                </DashboardProvider>
+              </WorkoutProvider>
+            </TrainingPlanProvider>
+          </BleProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 
 }
+
 
 const styles = StyleSheet.create({
   appWrapper: {

@@ -5,24 +5,32 @@ import {
     StyleSheet,
     ScrollView,
     Pressable,
-    RefreshControl,
-    Modal,
     FlatList,
 } from 'react-native';
 import TrainingPlanModal from '../../components/modals/TrainingPlanModal';
-import Ticker from '../../components/Ticker';
-import VHSGlowDivider from '../../components/VHSGlowDivider';
-import CustomDatePickerModal from '../../components/modals/CustomDatePickerModal';
-import VHSButton from '../../components/VHSButton';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../../context/AuthContext';
 import { getTrainingPlans } from '../../services/trainingPlanService';
-import { BasePlanDTO, DayOfWeek, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../types/trainingPlan';
-import * as Haptics from 'expo-haptics';
+import { DayOfWeek, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../types/trainingPlan';
 import { getActivePlan } from '../../services/planAssignmentsService';
 import { toUIPlan } from '../../utils/apiHelpers';
-import { homeStyles } from './HomeScreen';
 import { useDashboard } from '../../context/DashboardContext';
+import TrainingPlanCard from '../../components/TrainingPlanCard';
+import SettingModal from '../../components/SettingModal';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { useNavigation } from '@react-navigation/native';
+import { TrainingPlansStackParamList } from '../../navigation/navtypes';
+import DiscoverGenreCard from '../../components/TrainingplanGenreCard';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import TrainingPlanCardLong from '../../components/TrainingPlanCardLong';
+import TrainingTopBar from '../../components/TopBar';
+
+
+type Nav = StackNavigationProp<
+    TrainingPlansStackParamList,
+    "TrainingPlansScreen"
+>;
+
 
 export default function TrainingPlansScreen() {
     const { token } = useContext(AuthContext);
@@ -30,13 +38,24 @@ export default function TrainingPlansScreen() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [blinkVisible, setBlinkVisible] = useState(true);
-    const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
     const [activePlan, setActivePlan] = useState<TrainingPlanAssignment | null>(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [completedDays, setCompletedDays] = useState<DayOfWeek[]>([]);
-    const [datePickerVisible, setDatePickerVisible] = useState(false);
     const { state } = useDashboard();
+    const navigation = useNavigation<Nav>();
+    const TAGS = [
+        "All",
+        "Push",
+        "Pull",
+        "Legs",
+        "Upper Body",
+        "Full Body",
+        "Strength",
+        "Hypertrophy",
+    ];
+
+    const [selectedTag, setSelectedTag] = useState("All");
 
     const progress = state.plannedWorkoutDaysForWeek
         ? state.workoutsThisWeek / state.plannedWorkoutDaysForWeek
@@ -65,8 +84,9 @@ export default function TrainingPlansScreen() {
             const api = await getTrainingPlans(token);
             const ui = api.map(toUIPlan);
 
-
             setPlans(ui);
+            console.log(plans);
+
             setCurrentIndex(0);
             setCompletedDays([]);
 
@@ -79,95 +99,25 @@ export default function TrainingPlansScreen() {
 
     }
 
-    const [selectedDay, setSelectedDay] = useState<typeof currentPlan.days[0] | null>(null);
+    const openPlanDetails = (plan: TrainingPlanUI) => {
+        if (plan === null) {
+            return;
+        }
+
+        navigation.navigate("TrainingPlanScreen", { plan });
+    }
+
+    const [selectedPlan, setSelectedPlan] = useState<typeof plans[0] | null>(null);
     const [trainingPlanModalVisible, setTrainingPlanModalVisible] = useState(false);
+    const [currentPlan, setCurrentPlan] = useState<TrainingPlanUI | null>(null);
+    const [settingModalVisible, setSettingModalVisible] = useState(false);
 
     useEffect(() => {
         loadPlans();
-    }, [token]);
-
-
-    const currentPlan = plans[currentIndex];
-
-
-    const goPrev = () => {
-        setCurrentIndex(i => (i === 0 ? plans.length - 1 : i - 1));
-        setCompletedDays([]);
-    };
-
-    const goNext = () => {
-        setCurrentIndex(i => (i === plans.length - 1 ? 0 : i + 1));
-        setCompletedDays([]);
-    };
-
-    const totalExercises = useMemo(() => {
-        if (!currentPlan) return 0;
-
-        let sum = 0;
-        if (currentPlan.days != null) {
-            for (const day of currentPlan.days) {
-                const count = day.exercises ? day.exercises.length : 0;
-                sum += count;
-            }
+        if (activePlan !== null) {
+            setCurrentPlan(toUIPlan(activePlan?.trainingPlan));
         }
-
-        return sum;
-    }, [currentPlan]);
-
-
-    const estimatedVolume = useMemo(() => {
-        return currentPlan?.days?.reduce((acc, d) => {
-            const list = d?.exercises ?? [];
-            return acc + list.reduce((s, ex) =>
-                s + ex.sets.reduce((setAcc, set) => setAcc + set.reps * set.weight, 0)
-                , 0);
-        }, 0) ?? 0;
-    }, [currentPlan]);
-
-    const formatSplitDateRange = (startDate: Date) => {
-        const pad = (n: number) => n.toString().padStart(2, "0");
-
-        const dayStart = pad(startDate.getDate());
-        const monthStart = pad(startDate.getMonth() + 1);
-        const yearStart = startDate.getFullYear();
-
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-
-        const dayEnd = pad(endDate.getDate());
-        const monthEnd = pad(endDate.getMonth() + 1);
-        const yearEnd = endDate.getFullYear();
-
-        return {
-            rangeLine: `${dayStart}.${monthStart} — ${dayEnd}.${monthEnd}`,
-            yearLine: yearStart === yearEnd ? `${yearStart}` : `${yearStart}/${yearEnd}`,
-        };
-    };
-
-    const formatFullDateRange = (startDate: Date) => {
-        const pad = (n: number) => n.toString().padStart(2, "0");
-
-        const dayStart = pad(startDate.getDate());
-        const monthStart = pad(startDate.getMonth() + 1);
-        const yearStart = startDate.getFullYear();
-
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
-
-        const dayEnd = pad(endDate.getDate());
-        const monthEnd = pad(endDate.getMonth() + 1);
-        const yearEnd = endDate.getFullYear();
-
-        return `${dayStart}.${monthStart}.${yearStart} — ${dayEnd}.${monthEnd}.${yearEnd}`;
-    };
-
-
-
-
-
-    const { rangeLine, yearLine } = formatSplitDateRange(new Date());
-    const daysCompleted = completedDays.length;
-    const startDate = currentPlan?.updatedAt ?? new Date();
+    }, [token]);
 
     const handleSavePlan = newPlan => {
         setPlans([...plans, { ...newPlan, date: new Date() }]);
@@ -197,239 +147,350 @@ export default function TrainingPlansScreen() {
     const planStatus = getPlanStatus();
 
 
-    const handleWeekChange = async (start: Date, end: Date) => {
-        console.log(start);
+    useEffect(() => {
+        async function loadActivePlan() {
+            try {
+                if (!token) {
+                    console.log("No token provided, cannot fetch active training plan");
+                    return;
+                }
+
+                const today = new Date();
+                const queryDate = new Date().toISOString().split("T")[0];
+
+                const fetchedActivePlan = await getActivePlan(token, queryDate);
+
+                setActivePlan(fetchedActivePlan);
+            } catch (err) {
+                console.error("Failed to fetch active plan:", err);
+                setActivePlan(null);
+            }
+        }
+
+        loadActivePlan();
+    }, [token]);
+
+    function chunkIntoColumns<T>(arr: T[], size = 2): T[][] {
+        const chunks: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) {
+            chunks.push(arr.slice(i, i + size));
+        }
+        return chunks;
+    }
+
+    const inactivePlans = React.useMemo(() => {
+        if (!plans || plans.length === 0) return [];
+
+        // If you have an active plan
+        const activeId = activePlan?.trainingPlan?._id;
+
+        const filtered = activeId
+            ? plans.filter(p => p._id !== activeId)
+            : plans;
+
+        return chunkIntoColumns(filtered, 1);
+    }, [plans, activePlan]);
+
+    function showTrainingPlanModal(plan: TrainingPlanUI) {
+        setSelectedPlan(plan);
+        setTrainingPlanModalVisible(true);
+    }
+
+    function showSetting(plan: TrainingPlanUI) {
+        setSelectedPlan(plan);
+        setSettingModalVisible(true);
+    }
+
+    async function refreshActivePlan() {
+        if (!token) return;
 
         try {
-            if (!token) {
-                console.log('No token provided cannot fetch active training plan');
-                return 0;
-            }
-            const queryDate = start.toLocaleDateString("en-CA");
-
-            const fetchedActivePlan = await getActivePlan(token, queryDate);
-
+            const today = new Date().toISOString().split("T")[0];
+            const fetchedActivePlan = await getActivePlan(token, today);
             setActivePlan(fetchedActivePlan);
-        } catch (err: any) {
-            console.error("Failed to fetch active plan:", err);
+        } catch (err) {
+            console.log("No active plan → clearing UI");
             setActivePlan(null);
         }
     }
 
+
     return (
         <ScrollView style={styles.root} contentContainerStyle={styles.rootcontent}>
 
-            <View style={styles.planStatusContainer}>
-                <View
-                    style={[
-                        styles.recIndicator,
-                        {
-                            backgroundColor:
-                                planStatus === "ACTIVE"
-                                    ? "limegreen"
-                                    : planStatus === "COMPLETED"
-                                        ? "gray"
-                                        : "orange",
-                            opacity: blinkVisible ? 1 : 0.3,
-                        },
-                    ]}
-                />
-                <Text
-                    style={[
-                        styles.planStatusText,
-                        {
-                            color:
-                                planStatus === "ACTIVE"
-                                    ? "limegreen"
-                                    : planStatus === "COMPLETED"
-                                        ? "gray"
-                                        : "orange",
-                        },
-                    ]}
-                >
-                    {`TRAINING PLAN: ${planStatus}`}
-                </Text>
-            </View>
+            <TrainingTopBar title="Training Plan"
+                status={planStatus}
+                blinkVisible={blinkVisible}
+                onLeftPress={() => setModalVisible(true)}
+                onRightPress={() => {
+                    // open search
+                }}>
 
+            </TrainingTopBar>
 
-            <Text style={styles.vhsHudTitle}>▓CHANNEL 04 — TRAIN PLAN▓</Text>
-            <View style={styles.titleContainer}>
-                <Text style={styles.vhsSubHeader}>↳ {activePlan ? toUIPlan(activePlan.trainingPlan).name : currentPlan?.name ?? "No plan"} ↲</Text>
-
-                <View style={styles.dateContainer}>
-                    <Pressable
-                        onPress={() => setDatePickerVisible(true)}
-                        style={({ pressed }) => [
-                            styles.datePressable,
-                            pressed && { opacity: 0.6, backgroundColor: 'rgba(0,255,204,0.1)', borderRadius: 8 },
-                        ]}
-                        hitSlop={10}
-                        android_ripple={{ color: 'rgba(0,255,204,0.2)', borderless: false }}
-                    >
-                        <View style={styles.dateRow}>
-                            <Text style={styles.dateRangeText}>
-                                {activePlan
-                                    ? `${new Date(activePlan.startDate).toLocaleDateString("de-DE")}—${activePlan.endDate
-                                        ? new Date(activePlan.endDate).toLocaleDateString("de-DE")
-                                        : "ongoing"
-                                    }`
-                                    : formatFullDateRange(new Date())}
-                            </Text>
-
-
-                            <Ionicons name="calendar-outline" size={24} color="#00ffcc" style={styles.calendarIcon} />
+            {activePlan && (
+                <View style={styles.heroCard}>
+                    <View style={styles.heroLeft}>
+                        <View style={styles.trainingLabelRow}>
+                            <MaterialCommunityIcons
+                                name="history"
+                                size={16}
+                                color="#00ffcc"
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.heroEyebrow}>CURRENT PLAN</Text>
                         </View>
-                    </Pressable>
+                    </View>
+                    <View style={{ paddingVertical: 8 }}>
+                        <TrainingPlanCard plan={toUIPlan(activePlan.trainingPlan)}
+                            isActive={true}
+                            big
+                            onPress={() => { openPlanDetails(toUIPlan(activePlan.trainingPlan)); }}
+                            onLongPress={() => { showSetting(toUIPlan(activePlan.trainingPlan)); }}
+                            small={undefined}
+                        />
+                    </View>
+
                 </View>
-            </View>
+            )}
+            <View style={styles.heroCardYourTrainingPlans}>
+                <View style={styles.heroLeft}>
+                    <View style={styles.trainingHeaderRow}>
+                        <View style={styles.trainingLeft}>
+                            <MaterialCommunityIcons
+                                name="history"
+                                size={16}
+                                color="#00ffcc"
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.heroEyebrow}>MY TRAINING PLANS</Text>
+                        </View>
+                        <Text style={styles.sectionHint}>See All {'>'}</Text>
 
-            <CustomDatePickerModal
-                visible={datePickerVisible}
-                onClose={() => setDatePickerVisible(false)}
-                date={new Date()}
-                onChange={handleWeekChange}
-            />
-
-            <View style={styles.carouselContainer}>
+                    </View>
+                </View>
 
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.weekContainer}
                 >
-                    {(activePlan ? toUIPlan(activePlan.trainingPlan) : currentPlan)?.days.map(
-                        (day, idx) => {
-                            const isCompleted = completedDays.includes(day.dayOfWeek);
+                    <FlatList
+                        horizontal
+                        data={inactivePlans}
+                        keyExtractor={(col, idx) => idx.toString()}
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingRight: 0 }}
+                        renderItem={({ item: column }) => (
+                            <View style={styles.column}>
+                                {column.map((plan, idx) => (
+                                    <TrainingPlanCard
+                                        key={idx}
+                                        plan={plan}
+                                        small
+                                        isActive={false}
+                                        onPress={() => {
+                                            openPlanDetails(plan);
+                                        }}
+                                        onLongPress={() => {
+                                            showSetting(plan);
+                                        }} big={undefined} />
 
-                            return (
-                                <Pressable
-                                    key={idx}
-                                    onLongPress={() => {
-                                        setHighlightedIndex(idx);
-                                        setSelectedDay(day);
-                                        setTrainingPlanModalVisible(true);
-                                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                    }}
+
+                                ))}
+
+
+                            </View>
+                        )}
+                    />
+                </ScrollView>
+                {/* 
+                 <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.tagRow}
+                >
+                    {TAGS.map((tag) => {
+                        const isActive = selectedTag === tag;
+
+                        return (
+                            <Pressable
+                                key={tag}
+                                onPress={() => setSelectedTag(tag)}
+                                style={[
+                                    styles.tagPill,
+                                    isActive && styles.tagPillActive,
+                                ]}
+                            >
+                                <Text
                                     style={[
-                                        styles.dayCard,
-                                        isCompleted && styles.completedCard,
-                                        highlightedIndex === idx && styles.highlightedCard,
+                                        styles.tagText,
+                                        isActive && styles.tagTextActive,
                                     ]}
                                 >
-                                    {/* Header */}
-                                    <View style={styles.dayHeader}>
-                                        <Text style={styles.dayTitle}>{day.dayOfWeek}</Text>
-                                        <Text style={styles.splitType}>{day.splitType}</Text>
-                                    </View>
-
-                                    {/* Exercises */}
-                                    {day.exercises?.length > 0 ? (
-                                        <View style={styles.exercisePreview}>
-                                            {day.exercises.slice(0, 2).map((ex, exIdx) => (
-                                                <Text key={exIdx} style={styles.exerciseLine}>
-                                                    ▸ {ex.name} — {ex.sets[0].reps} x {ex.sets[0].weight}{ex.sets[0].unit}
-                                                </Text>
-                                            ))}
-                                            {day.exercises.length > 2 && (
-                                                <Text style={styles.moreExercises}>
-                                                    + {day.exercises.length - 2} more...
-                                                </Text>
-                                            )}
-                                        </View>
-                                    ) : (
-                                        <Text style={styles.restText}>Rest Day</Text>
-                                    )}
-                                </Pressable>
-                            );
-                        }
-                    )}
+                                    {tag}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
                 </ScrollView>
+                */}
 
-                <Modal
-                    visible={trainingPlanModalVisible}
-                    transparent
-                    animationType="fade"
-                    onRequestClose={() => {
-                        setTrainingPlanModalVisible(false)
-                        setHighlightedIndex(null);
-                    }}
-                >
-                    <View style={styles.modalBackdrop}>
-                        <Pressable
-                            onPress={() => {
-                                setTrainingPlanModalVisible(false);
-                                setHighlightedIndex(null);
-                            }}
-                            style={styles.modalCloseButton}
-                        >
-                            <Text style={styles.modalCloseText}>✕</Text>
-                        </Pressable>
+            </View>
 
-                        <View style={styles.modalHeaderText}>
-                            <Text style={styles.modalTitle}>{selectedDay?.dayOfWeek} - {selectedDay?.splitType}</Text>
+            <SettingModal
+                visible={settingModalVisible}
+                plan={selectedPlan}
+                isActive={selectedPlan?._id === activePlan?.trainingPlan?._id}
+                onClose={() => setSettingModalVisible(false)}
+                onPlanActivated={refreshActivePlan}
+            />
 
-                            <ScrollView style={styles.modalScroll}>
-                                {selectedDay?.exercises.length ? (
-                                    selectedDay.exercises.map((exercise, index) => (
-                                        <View key={index} style={styles.exerciseRow}>
-                                            <Text style={styles.exerciseText}>
-                                                ░ {exercise.name?.toUpperCase()} ░
-                                            </Text>
 
-                                            {exercise.sets.map((set, sIdx) => (
-                                                <Text key={sIdx} style={styles.exerciseDetail}>
-                                                    Set {sIdx + 1}: {set.reps} reps @ {set.weight} {set.unit.toUpperCase()}
-                                                </Text>
-                                            ))}
+            <View style={styles.heroCardSuggeestedForYou}>
 
-                                            <View style={styles.scanline} />
-                                        </View>
-                                    ))
-                                ) : (
-                                    <Text style={styles.exerciseText}>No exercises available</Text>
-                                )}
-                            </ScrollView>
+                <View style={styles.heroLeft}>
+                    <View style={styles.trainingHeaderRow}>
+                        <View style={styles.trainingLeft}>
+                            <MaterialCommunityIcons
+                                name="history"
+                                size={16}
+                                color="#00ffcc"
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.heroEyebrow}>FOR YOU</Text>
                         </View>
                     </View>
-
-                </Modal>
-            </View>
-
-            <VHSGlowDivider />
-
-
-
-            <View style={styles.powerBarContainer}>
-                <View style={styles.logFeed}>
-
-                    <Text style={styles.feedHeader}>▓ TRAINING FEED ▓</Text>
-
-                    <Text style={styles.summaryText}>Total Exercises Planned: {totalExercises}</Text>
-                    <Text style={styles.summaryText}>Estimated Volume: {estimatedVolume.toLocaleString()} kg</Text>
+                    <Text style={styles.smallLabel}>RECOMMENDED</Text>
                 </View>
 
-                <Text style={styles.powerBarSubLabel}>
-                    ↳ Workouts Completed: {state.workoutsThisWeek} / {state.plannedWorkoutDaysForWeek}
-                </Text>
-
-                <View style={styles.powerBarTrack}>
-                    <View
-                        style={[
-                            styles.powerBarFill,
-                            { width: `${Math.min(progress * 100, 100)}%` },
-                        ]}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.weekContainer}
+                >
+                    <TrainingPlanCardLong
+                        title="PUSH / PULL / LEGS"
+                        subtitle="Build strength & size"
+                        tag="RECOMMENDED"
+                        image={require("../../assets/discover/crossfit.jpg")}
+                        onPress={() => {
+                        }}
                     />
-                </View>
-
-                <View style={homeStyles.barTickRow}>
-                    <Text style={homeStyles.tickLabel}>NONE</Text>
-                    <Text style={homeStyles.tickLabel}>PLAN GOAL</Text>
-                </View>
-
-                <Text style={styles.diagnosticNote}>
-                    &gt;&gt;KEEP PUSHING — FINISH STRONG&lt;&lt;
-                </Text>
+                    <TrainingPlanCardLong
+                        title="UPPER / LOWER"
+                        subtitle="Balanced hypertrophy"
+                        image={require("../../assets/discover/bodybuilding.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+                    <TrainingPlanCardLong
+                        title="FULL BODY"
+                        subtitle="Efficient & intense"
+                        image={require("../../assets/discover/powerlifting.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+                </ScrollView>
             </View>
+
+
+            {/* DISCOVER NEW TRAINING PLANS */}
+            <View style={styles.heroCardDiscover}>
+
+                <View style={styles.heroLeft}>
+                    <View style={styles.trainingHeaderRow}>
+                        <View style={styles.trainingLeft}>
+                            <MaterialCommunityIcons
+                                name="history"
+                                size={16}
+                                color="#00ffcc"
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.heroEyebrow}>GENRE</Text>
+                        </View>
+                        <Text style={styles.sectionHint}>See All {'>'}</Text>
+
+                    </View>
+                    <Text style={styles.smallLabel}>DISCOVER</Text>
+                </View>
+
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.weekContainer}
+                >
+                    <DiscoverGenreCard
+                        title="CROSSFIT"
+                        subtitle="FUNCTIONAL • CONDITIONING"
+                        image={require("../../assets/discover/crossfit.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+
+                    <DiscoverGenreCard
+                        title="BODYBUILDING"
+                        subtitle="HYPERTROPHY • AESTHETICS"
+                        image={require("../../assets/discover/bodybuilding.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+
+                    <DiscoverGenreCard
+                        title="POWERLIFTING"
+                        subtitle="STRENGTH • BARBELL"
+                        image={require("../../assets/discover/powerlifting.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+                </ScrollView>
+            </View>
+
+            <View style={styles.heroCardSuggeestedForYou}>
+
+                <View style={styles.heroLeft}>
+                    <View style={styles.trainingHeaderRow}>
+                        <View style={styles.trainingLeft}>
+                            <MaterialCommunityIcons
+                                name="history"
+                                size={16}
+                                color="#00ffcc"
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={styles.heroEyebrow}>TRENDING</Text>
+                        </View>
+                    </View>
+                    <Text style={styles.smallLabel}>POPULAR TRAINING PLANS</Text>
+                </View>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.weekContainer}
+                >
+                    <TrainingPlanCardLong
+                        title="POWERBUILDING"
+                        subtitle="Strength + aesthetics"
+                        tag="TRENDING"
+                        image={require("../../assets/discover/crossfit.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+                    <TrainingPlanCardLong
+                        title="ATHLETIC PERFORMANCE"
+                        subtitle="Speed & power"
+                        image={require("../../assets/discover/bodybuilding.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+                    <TrainingPlanCardLong
+                        title="HYPERTROPHY FOCUS"
+                        subtitle="Muscle growth"
+                        image={require("../../assets/discover/powerlifting.jpg")}
+                        onPress={() => {
+                        }}
+                    />
+                </ScrollView>
+            </View>
+
+
+
 
 
             <View style={styles.newPlanContainer}>
@@ -449,12 +510,272 @@ export default function TrainingPlansScreen() {
                     onSave={handleSavePlan}
                 />
             </View>
-
         </ScrollView >
     );
 }
 
 const styles = StyleSheet.create({
+    headerCenter: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    headerSidePlaceholder: {
+        width: 30,
+    },
+    trainingHeaderRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        width: "100%",
+    },
+
+    trainingLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+
+    sectionHeader: {
+        marginBottom: 10,
+    },
+
+    sectionHint: {
+        fontFamily: 'monospace',
+        fontSize: 12,
+        color: '#7ACFCF',
+        opacity: 0.6,
+        letterSpacing: 1,
+        marginRight: 18,
+    },
+
+    heroHeader: {
+        marginBottom: 12,
+    },
+
+    heroEyebrow: {
+        fontFamily: "monospace",
+        fontSize: 11,
+        letterSpacing: 3,
+        color: "#00ffcc",
+        opacity: 0.7,
+        marginBottom: 4,
+    },
+
+    trainingLabelRow: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    heroLeft: {
+        paddingTop: 8,
+        paddingLeft: 8,
+    },
+    heroLabel: {
+        fontFamily: "monospace",
+        fontSize: 11,
+        color: "#00ffcc",
+        letterSpacing: 3,
+        textTransform: "uppercase",
+        marginBottom: 4,
+        opacity: 0.9,
+    },
+
+    headerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+
+    headerIconContainer: {
+        marginLeft: 50,
+        flexDirection: "row",
+    },
+
+    headerSide: {
+        paddingLeft: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    planStatusContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+
+    bigLabel: {
+        fontFamily: "monospace",
+        color: "white",
+        fontSize: 22,
+        fontWeight: "bold",
+        paddingTop: 15,
+        letterSpacing: 2,
+        marginBottom: 18,
+    },
+    smallLabel: {
+        fontWeight: "bold",
+        textAlign: "left",
+        fontFamily: "monospace",
+        color: "white",
+        fontSize: 18,
+        letterSpacing: 1.5,
+        marginTop: 6,
+    },
+
+    headerContainer: {
+        marginTop: 18,
+        marginBottom: 4,
+        alignItems: 'center',
+    },
+
+    screenBigTitle: {
+        color: '#00ffcc',
+        fontFamily: 'monospace',
+        fontSize: 22,
+        textTransform: 'uppercase',
+        letterSpacing: 3,
+        marginBottom: 6,
+        textShadowColor: '#00ffcc',
+        textShadowRadius: 8,
+    },
+
+    screenSubtitle: {
+        color: '#7ACFCF',
+        fontFamily: 'monospace',
+        fontSize: 12,
+        opacity: 0.8,
+        letterSpacing: 1,
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+
+    tagRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        padding: 8,
+        gap: 8,
+        justifyContent: "center",
+    },
+
+    tagPill: {
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 99,
+        borderWidth: 1,
+        borderColor: "#00ffcc44",
+        backgroundColor: "#0A0F1C",
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+    },
+
+    tagPillActive: {
+        backgroundColor: "rgba(0,255,204,0.15)",
+        borderColor: "#00ffcc",
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.6,
+        shadowRadius: 10,
+    },
+
+    tagText: {
+        fontFamily: "monospace",
+        fontSize: 12,
+        color: "#7ACFCF",
+        letterSpacing: 1,
+    },
+
+    tagTextActive: {
+        color: "#00ffcc",
+        fontWeight: "bold",
+        textShadowColor: "#00ffcc",
+        textShadowRadius: 6,
+    },
+
+
+    heroCard: {
+        backgroundColor: "#111622",
+        height: 275,
+        borderRadius: 18,
+        borderLeftWidth: 3,
+        borderLeftColor: "#00ffcc",
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        marginTop: 8,
+    },
+    heroCardYourTrainingPlans: {
+        backgroundColor: "#111622",
+        borderRadius: 18,
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        marginBottom: 8,
+        marginTop: 16,
+
+    },
+    heroCardDiscover: {
+        backgroundColor: "#111622",
+        borderRadius: 18,
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        marginBottom: 8,
+        marginTop: 8,
+
+    },
+    heroCardSuggeestedForYou: {
+        backgroundColor: "#111622",
+        borderRadius: 18,
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+        marginBottom: 8,
+        marginTop: 8,
+
+    },
+    weekRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginTop: 16,
+        marginBottom: 16,
+    },
+
+    dayBox: {
+        width: 42,
+        height: 42,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "#00ffcc44",
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#111622",
+    },
+
+    dayBoxDone: {
+        borderColor: "#00ff99",
+        backgroundColor: "rgba(0,255,153,0.12)",
+        shadowColor: "#00ff99",
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+    },
+
+    dayBoxToday: {
+        borderColor: "#00ffcc",
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
+    },
+
+    dayText: {
+        fontFamily: "monospace",
+        color: "#BFC7D5",
+        fontSize: 10,
+        marginBottom: 2,
+    },
+
+    column: {
+        flexDirection: 'column',
+        gap: 8,
+    },
+
     vhsSubHeader: {
         fontFamily: 'monospace',
         color: '#00ffcc',
@@ -469,23 +790,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#0A0F1C',
     },
     planStatusText: {
-        color: "#BFC7D5",
+        color: "white",
         fontFamily: "monospace",
-        fontSize: 13,
-        letterSpacing: 2,
-        textTransform: "uppercase",
-        textShadowColor: "#00ffcc",
-        textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 4,
+        fontSize: 22,
+        fontWeight: "bold",
     },
 
-    planStatusContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 30,
-        marginBottom: 10,
-        alignSelf: 'center',
-    },
     recIndicator: {
         width: 10,
         height: 10,
@@ -516,11 +826,8 @@ const styles = StyleSheet.create({
         letterSpacing: 2,
     },
     powerBarContainer: {
-        padding: 12,
-        backgroundColor: '#0A0F1C',
-        borderColor: '#rgba(0, 255, 204, 0.1)',
-        borderWidth: 1.2,
-        borderRadius: 6,
+        paddingVertical: 12,
+        borderRadius: 18,
         shadowColor: '#00ffcc',
         shadowOpacity: 0.4,
         shadowRadius: 6,
@@ -539,12 +846,19 @@ const styles = StyleSheet.create({
         marginBottom: 6,
         letterSpacing: 2,
     },
+    splitTypeText: {
+        color: '#00ffcc',
+        fontSize: 12,
+        fontFamily: 'monospace',
+        marginBottom: 6,
+        letterSpacing: 2,
+    },
     container: {
         height: 400,
     },
     weekContainer: {
         flexDirection: "row",
-        paddingVertical: 12,
+        padding: 8,
     },
     powerBarSubLabel: {
         fontFamily: 'monospace',
@@ -583,6 +897,16 @@ const styles = StyleSheet.create({
     },
 
     dayCard: {
+        width: 160,
+        height: 200,
+        marginRight: 14,
+        borderWidth: 1,
+        borderColor: "#rgba(0, 255, 204, 0.1)",
+        borderRadius: 12,
+        padding: 14,
+        backgroundColor: "#111622",
+    },
+    planCard: {
         width: 160,
         height: 200,
         marginRight: 14,
@@ -819,9 +1143,6 @@ const styles = StyleSheet.create({
         textShadowRadius: 6,
     },
 
-    headerContainer: {
-        alignItems: 'center',
-    },
     vhsHudTitle: {
         fontFamily: 'monospace',
         color: '#00ffcc',
@@ -871,7 +1192,6 @@ const styles = StyleSheet.create({
     },
     carouselContainer: {
         flex: 1,
-        alignItems: 'center',
     },
     arrowButton: {
         paddingHorizontal: 10,

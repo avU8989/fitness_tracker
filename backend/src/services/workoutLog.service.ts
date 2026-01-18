@@ -43,7 +43,10 @@ export const createWorkoutLog = async (
     dayOfWeek: workoutDay.dayOfWeek,
     //to prevent changes later when trainingplan changes, workout logs should not magically reflect those changes
     //by ensuring immutability we prevent that --> TODO still need to test it
-    plannedExercises: workoutDay.exercises.map((e) => e.toObject()),
+    plannedExercises: workoutDay.exercises.map((e) => ({
+      exerciseId: e.exercise._id,
+      sets: e.sets,
+    })),
 
     //actual log of workout
     performed: normalizedDate,
