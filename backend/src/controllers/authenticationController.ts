@@ -30,9 +30,9 @@ export const loginUser = async (
   try {
     const { email, password } = req.body;
 
-    const { token } = await authenticateUser(email, password);
+    const { token, username } = await authenticateUser(email, password);
 
-    res.status(200).json({ token });
+    res.status(200).json({ token, username });
     console.log("User successfully logged in");
   } catch (err: any) {
     next(err);
