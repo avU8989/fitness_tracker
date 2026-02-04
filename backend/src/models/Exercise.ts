@@ -2,25 +2,6 @@ import mongoose, { Document, Model, Types, Schema } from "mongoose";
 import { Muscle, MUSCLES } from "./constants/muscles";
 import { MOVEMENT_PATTERNS, MovementPattern } from "./constants/movementPattern";
 
-export interface ISet extends Document {
-    reps: number;
-    weight: number;
-    unit: "kg" | "lbs";
-}
-
-export const setSchema = new Schema<ISet>(
-    {
-        reps: { type: Number, required: true },
-        weight: { type: Number, required: true },
-        unit: {
-            type: String,
-            enum: ["kg", "lbs"],
-            default: "kg",
-        },
-    },
-    { _id: false }
-);
-
 export interface IExercise extends Document {
     name: string;
     primaryMuscles: Muscle[];

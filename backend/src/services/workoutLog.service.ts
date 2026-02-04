@@ -11,12 +11,6 @@ import { CreateWorkoutLogRequest } from "../requests/workouts/CreateWorkoutLogRe
 import { ITrainingPlan, IWorkoutDay } from "../models/TrainingPlan";
 import { IBodybuildingPlan } from "../models/BodybuildingPlan";
 import { ICrossfitPlan } from "../models/CrossfitPlan";
-import {
-  formatLocalDateYYYYMMDD,
-  normalizeDate,
-} from "../utils/controllerUtils";
-import { ITrainingPlanAssignment } from "../models/PlanAssignment";
-import { findActiveTrainingPlanAssignment } from "./trainingPlanAssignment.service";
 
 export const createWorkoutLog = async (
   userId: string,

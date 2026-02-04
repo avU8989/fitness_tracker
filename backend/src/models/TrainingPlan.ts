@@ -1,23 +1,7 @@
 import mongoose, { Document, Model, Types, Schema } from "mongoose";
-import { exerciseSchema, IExercise, ISet, setSchema } from "./Exercise";
+import { exerciseSchema, IExercise } from "./Exercise";
 import { string } from "joi";
-
-export interface IPlanExercise {
-  exercise: Types.ObjectId;
-  sets: Types.DocumentArray<ISet>;
-}
-
-const planExerciseSchema = new Schema<IPlanExercise>(
-  {
-    exercise: {
-      type: Schema.Types.ObjectId,
-      ref: "Exercise",
-      required: true,
-    },
-    sets: [setSchema],
-  },
-  { _id: false }
-);
+import { IPlanExercise, planExerciseSchema } from "./schemas/PlanExercise";
 
 export interface IWorkoutDay extends Document {
   dayOfWeek: "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
@@ -46,6 +30,8 @@ export interface ITrainingPlan extends Document {
   name: string;
   type: TrainingPlanType;
   user: Types.ObjectId;
+  //reference multiple workout templates
+  workoutTemplateIds?: Types.ObjectId[];
   imageUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -61,6 +47,7 @@ const trainingPlanBase = new Schema<ITrainingPlan>(
       enum: ["Crossfit", "Bodybuilding", "Powerlifting"],
     },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    workoutTemplateIds: { type: [{ type: Schema.Types.ObjectId, ref: "WorkoutTemplate" }], default: [] },
     imageUrl: { type: String },
   },
   {
@@ -68,6 +55,8 @@ const trainingPlanBase = new Schema<ITrainingPlan>(
     discriminatorKey: "type", //required for discriminator support in order to create Crossfit Trainingplan, Bodybuidling Trainingplan, etc
   }
 );
+
+trainingPlanBase.index({ user: 1, workoutTemplateIds: 1 });
 
 const TrainingPlan: Model<ITrainingPlan> = mongoose.model<ITrainingPlan>(
   "TrainingPlan",

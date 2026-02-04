@@ -1,5 +1,6 @@
 import mongoose, { Document, Types, Schema, Model } from "mongoose";
-import { IExercise, ISet, setSchema } from "./Exercise";
+import { IExercise } from "./Exercise";
+import { ISet, setSchema } from "./schemas/Set";
 
 export interface IExerciseLog {
   exerciseId?: Types.ObjectId;
