@@ -2,3 +2,20 @@
 
 # dependencies
 node_modules/
+
+# Expo prebuild native output
+ios/
+android/
+
+# EAS build artifacts
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+
+# Expo build cache
+.expo/
+.expo-shared/
+
+# Metro / build
+node_modules/

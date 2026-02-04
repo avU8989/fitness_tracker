@@ -10,6 +10,8 @@
 - Basic UI screens for login, signup, profile setup, and training plans built and connected
 - Build an intuitive and stylish interface for logging and tracking workouts.
 - Separate API calls into service layers for cleaner code and easier testing.  
+- Filled up Database with various exercises
+- Changed Schema so exercises are not embedded into trainingplans instead, they are referenced --> so we are able to implement a search function for exercises
 
 ### Possible Ideas
 
@@ -54,6 +56,33 @@ endgame- user has enough rivals and legendary rivals, joins a guild --> guild be
 ---
 
 ### TODOs / Refactoring & Improvements
+- **Important**
+  - Need to add a LoadingContext to load every data before logging in, so there is no need to request every api call again --> mostly recommendable --> but need to 
+    figure out what is always requested and can be stored upon app usage
+
+- **Features to be implemented**
+  - To let the user have individual workouts and reuse them, it would make sense to add another collection to the backend ("workout templates"), so the user can 
+    train after a plan but also include workouts offplan 
+  - After clicking on a Workout day, there needs to be a screen showing exercises, duration, etc
+  - To let the user see what exercises are, there needs to be atleast a picture --> need to fill up the database with according exercise picture
+  - Need to add more features on analytics API endpoint, to allow user to see workout history, hours trained, muscle type used, workouts logged this month, prs, volume
+    increase, missed sessions
+  - Need to fill up the database with training plans 
+  - Need to style the Search Screen accordingly
+  - Add feature in HomeScreen for when user don't know what to train? --> Add questionare and baseed on questionaire recommend the user trainingplans or workouts they
+    can train right now
+  - Add feature in HomeScreen for when user is currently recovering --> Add questionare and based on questionaire recommend rehabilitation exercises and warmups
+  - Add Exercise Screen showing information to the exercise --> Would be good to have a video with scrolling down seeing information on how the exercise is done and 
+    what muscle groups the exercise targets
+  - Need to change the style for adding new training plans (currently modal needs to be redone)
+  - Stopwatch/Timer after reaching the time needs to buzz
+  - Add Notifications (e.g. Workout logged, Missed workout..., reminder for upcoming workout, etc)
+  - Needs to have a confirmation modal showing the user what was logged today (volume or volume increasment compared to planned one - only viable if user trains after
+    trainingplan otherwise show what exercises were logged and if there are prs )
+  - LogScreen needs to be updated for Rest Days 
+  - Need to figure out how to display metrics received from HealthConnect on HomeScreen (maybe toggle mode, maybe new card)
+  - Need to redesign ProfileScreen
+
 
 - **Refactor**  
   - Improve state management for authentication and user data.  
