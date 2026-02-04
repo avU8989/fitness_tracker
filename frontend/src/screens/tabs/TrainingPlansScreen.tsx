@@ -1,14 +1,10 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
     View,
-    Text,
     StyleSheet,
     ScrollView,
-    Pressable,
     FlatList,
 } from 'react-native';
-import TrainingPlanModal from '../../components/modals/TrainingPlanModal';
-import Ionicons from 'react-native-vector-icons/Ionicons';
 import { AuthContext } from '../../context/AuthContext';
 import { getTrainingPlans } from '../../services/trainingPlanService';
 import { DayOfWeek, TrainingPlanAssignment, TrainingPlanUI, WorkoutDay } from '../../types/trainingPlan';
@@ -20,11 +16,11 @@ import SettingModal from '../../components/SettingModal';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useNavigation } from '@react-navigation/native';
 import { TrainingPlansStackParamList } from '../../navigation/navtypes';
-import DiscoverGenreCard from '../../components/TrainingplanGenreCard';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import TrainingPlanCardLong from '../../components/TrainingPlanCardLong';
-import TrainingTopBar from '../../components/TopBar';
-
+import TrainingTopBar, { TOP_BAR_TITLES } from '../../components/TopBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { homeStyles } from './HomeScreen';
+import ExerciseChip from '../../components/ExerciseChip';
+import VHSGlowDivider from '../../components/VHSGlowDivider';
 
 type Nav = StackNavigationProp<
     TrainingPlansStackParamList,
@@ -44,6 +40,7 @@ export default function TrainingPlansScreen() {
     const [completedDays, setCompletedDays] = useState<DayOfWeek[]>([]);
     const { state } = useDashboard();
     const navigation = useNavigation<Nav>();
+
     const TAGS = [
         "All",
         "Push",
@@ -61,14 +58,6 @@ export default function TrainingPlansScreen() {
         ? state.workoutsThisWeek / state.plannedWorkoutDaysForWeek
         : 0;
 
-    // Blink animation for session status
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setBlinkVisible((v) => !v);
-        }, 600);
-        return () => clearInterval(interval);
-    }, []);
-
     const loadPlans = async () => {
         if (!token) {
             setError('Missing auth token');
@@ -85,8 +74,6 @@ export default function TrainingPlansScreen() {
             const ui = api.map(toUIPlan);
 
             setPlans(ui);
-            console.log(plans);
-
             setCurrentIndex(0);
             setCompletedDays([]);
 
@@ -170,31 +157,6 @@ export default function TrainingPlansScreen() {
         loadActivePlan();
     }, [token]);
 
-    function chunkIntoColumns<T>(arr: T[], size = 2): T[][] {
-        const chunks: T[][] = [];
-        for (let i = 0; i < arr.length; i += size) {
-            chunks.push(arr.slice(i, i + size));
-        }
-        return chunks;
-    }
-
-    const inactivePlans = React.useMemo(() => {
-        if (!plans || plans.length === 0) return [];
-
-        // If you have an active plan
-        const activeId = activePlan?.trainingPlan?._id;
-
-        const filtered = activeId
-            ? plans.filter(p => p._id !== activeId)
-            : plans;
-
-        return chunkIntoColumns(filtered, 1);
-    }, [plans, activePlan]);
-
-    function showTrainingPlanModal(plan: TrainingPlanUI) {
-        setSelectedPlan(plan);
-        setTrainingPlanModalVisible(true);
-    }
 
     function showSetting(plan: TrainingPlanUI) {
         setSelectedPlan(plan);
@@ -214,97 +176,56 @@ export default function TrainingPlansScreen() {
         }
     }
 
+    const activePlanId = activePlan?.trainingPlan?._id;
+
 
     return (
-        <ScrollView style={styles.root} contentContainerStyle={styles.rootcontent}>
+        <SafeAreaView style={homeStyles.root}>
 
-            <TrainingTopBar title="Training Plan"
-                status={planStatus}
-                blinkVisible={blinkVisible}
-                onLeftPress={() => setModalVisible(true)}
-                onRightPress={() => {
-                    // open search
-                }}>
+            <View style={styles.root} >
 
-            </TrainingTopBar>
+                <TrainingTopBar title={TOP_BAR_TITLES.TrainingPlansScreen}
+                    onLeftPress={() => setModalVisible(true)}
+                    onRightPress={() => {
+                        // open search
+                    }}>
 
-            {activePlan && (
-                <View style={styles.heroCard}>
-                    <View style={styles.heroLeft}>
-                        <View style={styles.trainingLabelRow}>
-                            <MaterialCommunityIcons
-                                name="history"
-                                size={16}
-                                color="#00ffcc"
-                                style={{ marginRight: 6 }}
-                            />
-                            <Text style={styles.heroEyebrow}>CURRENT PLAN</Text>
-                        </View>
-                    </View>
-                    <View style={{ paddingVertical: 8 }}>
-                        <TrainingPlanCard plan={toUIPlan(activePlan.trainingPlan)}
-                            isActive={true}
-                            big
-                            onPress={() => { openPlanDetails(toUIPlan(activePlan.trainingPlan)); }}
-                            onLongPress={() => { showSetting(toUIPlan(activePlan.trainingPlan)); }}
-                            small={undefined}
-                        />
-                    </View>
-
-                </View>
-            )}
-            <View style={styles.heroCardYourTrainingPlans}>
-                <View style={styles.heroLeft}>
-                    <View style={styles.trainingHeaderRow}>
-                        <View style={styles.trainingLeft}>
-                            <MaterialCommunityIcons
-                                name="history"
-                                size={16}
-                                color="#00ffcc"
-                                style={{ marginRight: 6 }}
-                            />
-                            <Text style={styles.heroEyebrow}>MY TRAINING PLANS</Text>
-                        </View>
-                        <Text style={styles.sectionHint}>See All {'>'}</Text>
-
-                    </View>
-                </View>
+                </TrainingTopBar>
 
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.weekContainer}
+                    contentContainerStyle={styles.tagRow}
                 >
-                    <FlatList
-                        horizontal
-                        data={inactivePlans}
-                        keyExtractor={(col, idx) => idx.toString()}
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingRight: 0 }}
-                        renderItem={({ item: column }) => (
-                            <View style={styles.column}>
-                                {column.map((plan, idx) => (
-                                    <TrainingPlanCard
-                                        key={idx}
-                                        plan={plan}
-                                        small
-                                        isActive={false}
-                                        onPress={() => {
-                                            openPlanDetails(plan);
-                                        }}
-                                        onLongPress={() => {
-                                            showSetting(plan);
-                                        }} big={undefined} />
-
-
-                                ))}
-
-
-                            </View>
-                        )}
-                    />
+                    <ExerciseChip label="Push" icon="arrow-up-outline" />
+                    <ExerciseChip label="Pull" icon="arrow-down-outline" />
+                    <ExerciseChip label="Legs" icon="walk-outline" />
+                    <ExerciseChip label="Core" icon="body-outline" />
+                    <ExerciseChip label="Cardio" icon="heart-outline" />
+                    <ExerciseChip label="Mobility" icon="move-outline" />
                 </ScrollView>
-                {/* 
+
+                <VHSGlowDivider></VHSGlowDivider>
+
+                <FlatList
+                    data={plans}
+                    keyExtractor={(p) => p._id}
+                    renderItem={({ item }) => {
+                        const isActive = item._id === activePlanId
+
+                        return (
+                            <TrainingPlanCard
+                                plan={item}
+                                isActive={isActive}
+                                onPress={() => openPlanDetails(item)}
+                                onLongPress={() => showSetting(item)}
+                            />
+                        );
+
+                    }}>
+                </FlatList>
+
+                {/*
                  <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -336,181 +257,16 @@ export default function TrainingPlansScreen() {
                 </ScrollView>
                 */}
 
-            </View>
 
-            <SettingModal
-                visible={settingModalVisible}
-                plan={selectedPlan}
-                isActive={selectedPlan?._id === activePlan?.trainingPlan?._id}
-                onClose={() => setSettingModalVisible(false)}
-                onPlanActivated={refreshActivePlan}
-            />
-
-
-            <View style={styles.heroCardSuggeestedForYou}>
-
-                <View style={styles.heroLeft}>
-                    <View style={styles.trainingHeaderRow}>
-                        <View style={styles.trainingLeft}>
-                            <MaterialCommunityIcons
-                                name="history"
-                                size={16}
-                                color="#00ffcc"
-                                style={{ marginRight: 6 }}
-                            />
-                            <Text style={styles.heroEyebrow}>FOR YOU</Text>
-                        </View>
-                    </View>
-                    <Text style={styles.smallLabel}>RECOMMENDED</Text>
-                </View>
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.weekContainer}
-                >
-                    <TrainingPlanCardLong
-                        title="PUSH / PULL / LEGS"
-                        subtitle="Build strength & size"
-                        tag="RECOMMENDED"
-                        image={require("../../assets/discover/crossfit.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-                    <TrainingPlanCardLong
-                        title="UPPER / LOWER"
-                        subtitle="Balanced hypertrophy"
-                        image={require("../../assets/discover/bodybuilding.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-                    <TrainingPlanCardLong
-                        title="FULL BODY"
-                        subtitle="Efficient & intense"
-                        image={require("../../assets/discover/powerlifting.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-                </ScrollView>
-            </View>
-
-
-            {/* DISCOVER NEW TRAINING PLANS */}
-            <View style={styles.heroCardDiscover}>
-
-                <View style={styles.heroLeft}>
-                    <View style={styles.trainingHeaderRow}>
-                        <View style={styles.trainingLeft}>
-                            <MaterialCommunityIcons
-                                name="history"
-                                size={16}
-                                color="#00ffcc"
-                                style={{ marginRight: 6 }}
-                            />
-                            <Text style={styles.heroEyebrow}>GENRE</Text>
-                        </View>
-                        <Text style={styles.sectionHint}>See All {'>'}</Text>
-
-                    </View>
-                    <Text style={styles.smallLabel}>DISCOVER</Text>
-                </View>
-
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.weekContainer}
-                >
-                    <DiscoverGenreCard
-                        title="CROSSFIT"
-                        subtitle="FUNCTIONAL • CONDITIONING"
-                        image={require("../../assets/discover/crossfit.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-
-                    <DiscoverGenreCard
-                        title="BODYBUILDING"
-                        subtitle="HYPERTROPHY • AESTHETICS"
-                        image={require("../../assets/discover/bodybuilding.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-
-                    <DiscoverGenreCard
-                        title="POWERLIFTING"
-                        subtitle="STRENGTH • BARBELL"
-                        image={require("../../assets/discover/powerlifting.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-                </ScrollView>
-            </View>
-
-            <View style={styles.heroCardSuggeestedForYou}>
-
-                <View style={styles.heroLeft}>
-                    <View style={styles.trainingHeaderRow}>
-                        <View style={styles.trainingLeft}>
-                            <MaterialCommunityIcons
-                                name="history"
-                                size={16}
-                                color="#00ffcc"
-                                style={{ marginRight: 6 }}
-                            />
-                            <Text style={styles.heroEyebrow}>TRENDING</Text>
-                        </View>
-                    </View>
-                    <Text style={styles.smallLabel}>POPULAR TRAINING PLANS</Text>
-                </View>
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.weekContainer}
-                >
-                    <TrainingPlanCardLong
-                        title="POWERBUILDING"
-                        subtitle="Strength + aesthetics"
-                        tag="TRENDING"
-                        image={require("../../assets/discover/crossfit.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-                    <TrainingPlanCardLong
-                        title="ATHLETIC PERFORMANCE"
-                        subtitle="Speed & power"
-                        image={require("../../assets/discover/bodybuilding.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-                    <TrainingPlanCardLong
-                        title="HYPERTROPHY FOCUS"
-                        subtitle="Muscle growth"
-                        image={require("../../assets/discover/powerlifting.jpg")}
-                        onPress={() => {
-                        }}
-                    />
-                </ScrollView>
-            </View>
-
-
-
-
-
-            <View style={styles.newPlanContainer}>
-                <Pressable
-                    onPress={() => setModalVisible(true)}
-                    style={({ pressed }) => [
-                        styles.endButton,
-                        pressed && { opacity: 0.7 }, // little feedback when pressed
-                    ]}
-                >
-                    <Text style={styles.endButtonText}>■ CREATE NEW PLAN</Text>
-                </Pressable>
-
-                <TrainingPlanModal
-                    visible={modalVisible}
-                    onClose={() => setModalVisible(false)}
-                    onSave={handleSavePlan}
+                <SettingModal
+                    visible={settingModalVisible}
+                    plan={selectedPlan}
+                    isActive={selectedPlan?._id === activePlan?.trainingPlan?._id}
+                    onClose={() => setSettingModalVisible(false)}
+                    onPlanActivated={refreshActivePlan}
                 />
-            </View>
-        </ScrollView >
+            </View >
+        </SafeAreaView >
     );
 }
 
@@ -649,11 +405,12 @@ const styles = StyleSheet.create({
 
     tagRow: {
         flexDirection: "row",
-        flexWrap: "wrap",
-        padding: 8,
+        paddingTop: 8,
         gap: 8,
-        justifyContent: "center",
+        alignItems: "center",
+        justifyContent: "flex-start",
     },
+
 
     tagPill: {
         paddingHorizontal: 14,
@@ -691,18 +448,16 @@ const styles = StyleSheet.create({
 
 
     heroCard: {
-        backgroundColor: "#111622",
+        backgroundColor: "#0A0F1C",
         height: 275,
         borderRadius: 18,
-        borderLeftWidth: 3,
-        borderLeftColor: "#00ffcc",
         shadowColor: "#00ffcc",
         shadowOpacity: 0.35,
         shadowRadius: 10,
         marginTop: 8,
     },
     heroCardYourTrainingPlans: {
-        backgroundColor: "#111622",
+        backgroundColor: "#0A0F1C",
         borderRadius: 18,
         shadowColor: "#00ffcc",
         shadowOpacity: 0.35,
@@ -712,7 +467,7 @@ const styles = StyleSheet.create({
 
     },
     heroCardDiscover: {
-        backgroundColor: "#111622",
+        backgroundColor: "#0A0F1C",
         borderRadius: 18,
         shadowColor: "#00ffcc",
         shadowOpacity: 0.35,
@@ -722,7 +477,7 @@ const styles = StyleSheet.create({
 
     },
     heroCardSuggeestedForYou: {
-        backgroundColor: "#111622",
+        backgroundColor: "#0A0F1C",
         borderRadius: 18,
         shadowColor: "#00ffcc",
         shadowOpacity: 0.35,
@@ -786,7 +541,7 @@ const styles = StyleSheet.create({
         opacity: 0.6,
     },
     root: {
-        flex: 1,
+        padding: 20,
         backgroundColor: '#0A0F1C',
     },
     planStatusText: {
@@ -856,10 +611,7 @@ const styles = StyleSheet.create({
     container: {
         height: 400,
     },
-    weekContainer: {
-        flexDirection: "row",
-        padding: 8,
-    },
+
     powerBarSubLabel: {
         fontFamily: 'monospace',
         fontSize: 11,
@@ -1019,6 +771,7 @@ const styles = StyleSheet.create({
 
     rootcontent: {
         padding: 20,
+        paddingBottom: 80,
     },
 
     modalBackdrop: {
