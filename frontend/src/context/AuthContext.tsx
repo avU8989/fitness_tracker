@@ -3,8 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
     isLoggedIn: boolean;
-    login: (token: string) => Promise<void>;
+    login: (token: string, username: string) => Promise<void>;
     logout: () => Promise<void>;
+    username: string | null;
     token: string | null;
 }
 
@@ -17,6 +18,7 @@ export const AuthContext = createContext<AuthContextType>({
     isLoggedIn: false,
     login: async () => { },
     logout: async () => { },
+    username: null,
     token: null,
 });
 
@@ -27,7 +29,7 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [token, setToken] = useState<string | null>(null);
-
+    const [username, setUsername] = useState<string | null>(null);
     useEffect(() => {
         //as I'm relatively new to TypeScript --> was my question: "Why do we define a function inside a useEffect and not outside"
         //on mount load token from AsyncStorage
@@ -36,9 +38,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         //if you define function outside without handling the latest values, you rsik using stale data inside your async calls
         const loadToken = async () => {
             const savedToken = await AsyncStorage.getItem('authToken');
+            const savedUsername = await AsyncStorage.getItem('username');
 
             if (savedToken) {
                 setToken(savedToken);
+            }
+
+            if (savedUsername) {
+                setUsername(savedUsername);
             }
 
         };
@@ -60,20 +67,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }, []);
     */
 
-    const login = async (newToken: string) => {
+    const login = async (newToken: string, username: string) => {
         //save Token persistently
-        await AsyncStorage.setItem('authToken', newToken);
+        await AsyncStorage.multiSet([
+            ["authToken", newToken],
+            ["username", username],
+        ]);
 
         //update in-memory state
         setToken(newToken);
+        setUsername(username);
     }
 
     const logout = async () => {
         //remove Token persistently
-        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.multiRemove(["authToken", "username"]);
 
         //clear in-memory state
         setToken(null);
+        setUsername(null);
     }
 
     return (
@@ -84,6 +96,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             value={{
                 isLoggedIn: !!token, //true if token exists, false otherwise
                 login,
+                username,
                 logout,
                 token,
             }}>

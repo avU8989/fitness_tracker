@@ -39,7 +39,7 @@ export default function LoginScreen({ navigation }: Props) {
         try {
             setError('');
             const data = await login(email, password);
-            await contextLogin(data.token);
+            await contextLogin(data.token, data.username);
         } catch (err: any) {
             setError(err.message);
         }
