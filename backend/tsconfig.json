@@ -11,18 +11,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": "./src",
-    "paths": {
-      "@services/*": [
-        "services/*"
-      ],
-      "@models/*": [
-        "models/*"
-      ],
-      "@utils/*": [
-        "utils/*"
-      ]
-    }
+    "baseUrl": "./src"
   },
   "include": [
     "src/**/*"

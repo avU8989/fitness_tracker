@@ -92,6 +92,8 @@ export function usePhysicalActivityMonitor() {
     energyExpended: null,
     met: null,
   });
+  const lastUpdateRef = useRef(0);
+
 
   useEffect(() => {
     console.log("[Hook] useSleepMonitor mounted");
@@ -116,6 +118,37 @@ export function usePhysicalActivityMonitor() {
         console.warn("[InitialRead] Failed:", err);
       }
     })();
+
+    // --- Subscribe for continuous updates ---
+    const sub = device.monitorCharacteristicForService(
+      PHYSICAL_ACTIVITY_SERVICE,
+      STEP_COUNTER,
+      (err, characteristic: Characteristic | null) => {
+        if (err) {
+          console.warn("[Monitor] Could not monitor StepsActivity:", err);
+          return;
+        }
+        const now = Date.now();
+        if (now - lastUpdateRef.current < 1000) {
+          console.log("[Monitor] Skipping update (too soon)");
+          return;
+        }
+        lastUpdateRef.current = now;
+
+        handleCharacteristic(
+          characteristic,
+          parsePhysicalActivity,
+          (parsed) => setData(parsed),
+          "Notify"
+        );
+      }
+    );
+
+    return () => {
+      console.log("[Hook] Cleaning up subscription for Sleep Monitor");
+      sub?.remove();
+    };
+
   }, [device]);
 
   return physicalActivityData;
