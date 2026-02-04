@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, ImageSourcePropType } from "react-native";
+import { Image, View, Text, StyleSheet, ScrollView, Dimensions, ImageSourcePropType, TouchableOpacity, ImageBackground, Pressable } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Animated, Easing } from "react-native";
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -10,6 +10,8 @@ import { LoggedExercise } from '../types/workoutLog';
 import { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import { GoalCard } from './GoalCard';
 import { ProgressRing } from './WeeklyOverview';
+import { GoalCardImage } from './GoalCardv2';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface PersonalRecord {
     name: string,
@@ -533,13 +535,13 @@ const TodayOverviewPanel: React.FC<TodayOverviewProps> = ({
                 }}
             >
                 <View style={{ width: CARD_WIDTH }}>
-                    <GoalCard
+                    <GoalCardImage
                         title="GOALS"
                         label="STEPS"
                         current={steps ?? 0}
                         target={stepsGoal}
-                        tone="teal"
-                        illustration={require("../assets/discover/bodybuilding.jpg")}
+                        tone="blue"
+                        image={require("../assets/f2901b7c-05dd-4fec-98a4-8e4afba4b822.png")}
                         onPress={() => { }}
                     />
                 </View>
@@ -552,38 +554,69 @@ const TodayOverviewPanel: React.FC<TodayOverviewProps> = ({
                         current={loggedWorkout ? 1 : 0}
                         target={4}
                         tone="blue"
-                        illustration={require("../assets/discover/bodybuilding.jpg")}
                         onPress={() => { }}
                     />
                 </View>
             </ScrollView >
 
-            <View style={todayOverViewStyle.heroCard}>
-                <View style={todayOverViewStyle.heroLeft}>
-                    <Text style={todayOverViewStyle.heroLabel}>LAST WORKOUT</Text>
-                    <Text style={todayOverViewStyle.heroTitle}>ACTIVITY</Text>
+            <View style={todayOverViewStyle.functionCard}>
+                <ImageBackground
+                    source={require('../assets/b4a57825-9103-4822-9687-6b4709c8ab3e.png')} // or { uri: 'https://...' }
+                    resizeMode="cover"
+                    style={todayOverViewStyle.heroImage}
+                >
 
-                    <View style={todayOverViewStyle.statusRow}>
-                        <View style={todayOverViewStyle.iconCircleLoggedWorkout}>
-                            <MaterialCommunityIcons
-                                name="calendar-refresh"
-                                size={20}
-                                color="rgba(0,0,0,0.45)"
-                            />
-                        </View>
-                        <Text style={todayOverViewStyle.statusLabel}>LAST WORKOUT</Text>
-                        <Text style={todayOverViewStyle.statusValue}>
-                            {lastWorkout ? timeAgo(lastWorkout) : "--"}
-                        </Text>
+                    <LinearGradient
+                        colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.5)']}
+                        style={StyleSheet.absoluteFill}
+                    />
+
+                    <View style={todayOverViewStyle.functionCardSection}>
+                        <Text style={todayOverViewStyle.heroTitle}>Don't know what to train?</Text>
+
+                        <Pressable style={todayOverViewStyle.button}>
+                            <Text style={todayOverViewStyle.statValue}>fsdfsd</Text>
+
+                        </Pressable>
                     </View>
 
-                </View>
+                    <View style={todayOverViewStyle.heroLeft}>
+
+                    </View>
+                </ImageBackground>
+            </View>
+
+            <View style={todayOverViewStyle.functionCard}>
+                <ImageBackground
+                    source={require('../assets/b4a57825-9103-4822-9687-6b4709c8ab3e.png')} // or { uri: 'https://...' }
+                    resizeMode="cover"
+                    style={todayOverViewStyle.heroImage}
+                >
+
+                    <LinearGradient
+                        colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.5)']}
+                        style={StyleSheet.absoluteFill}
+                    />
+
+                    <View style={todayOverViewStyle.functionCardSection}>
+                        <Text style={todayOverViewStyle.heroTitle}>Currently recovering from injury ?</Text>
+
+                        <Pressable style={todayOverViewStyle.button}>
+                            <Text style={todayOverViewStyle.statValue}>fsdfsd</Text>
+
+                        </Pressable>
+                    </View>
+
+                    <View style={todayOverViewStyle.heroLeft}>
+
+                    </View>
+                </ImageBackground>
             </View>
 
 
-            {/* GRID CARDS (Fitbit Today style) */}
+
+            {/* GRID CARDS (Fitbit Today style) 
             < View style={todayOverViewStyle.grid} >
-                {/* Card 1 – Steps & Distance */}
                 < View style={todayOverViewStyle.card} >
                     <View style={todayOverViewStyle.cardHeaderRow}>
                         <Ionicons name="walk" size={16} color="#00ffcc" />
@@ -597,7 +630,6 @@ const TodayOverviewPanel: React.FC<TodayOverviewProps> = ({
                     </Text>
                 </View >
 
-                {/* Card 2 – Sleep */}
                 < View style={todayOverViewStyle.card} >
                     <View style={todayOverViewStyle.cardHeaderRow}>
                         <Ionicons name="moon-outline" size={16} color="#b38aff" />
@@ -607,7 +639,6 @@ const TodayOverviewPanel: React.FC<TodayOverviewProps> = ({
                     <Text style={todayOverViewStyle.cardSub}>LAST NIGHT</Text>
                 </View >
 
-                {/* Card 3 – Calories */}
                 < View style={todayOverViewStyle.card} >
                     <View style={todayOverViewStyle.cardHeaderRow}>
                         <Ionicons name="flame" size={16} color="#ff8800" />
@@ -617,7 +648,6 @@ const TodayOverviewPanel: React.FC<TodayOverviewProps> = ({
                     <Text style={todayOverViewStyle.cardSub}>KCAL BURNED</Text>
                 </View >
 
-                {/* Card 4 – Heart Rate */}
                 < View style={todayOverViewStyle.card} >
                     <View style={todayOverViewStyle.cardHeaderRow}>
                         <Ionicons name="heart" size={16} color="#ff3b3b" />
@@ -627,60 +657,73 @@ const TodayOverviewPanel: React.FC<TodayOverviewProps> = ({
                     <Text style={todayOverViewStyle.cardSub}>LIVE FEED</Text>
                 </View >
             </View >
-
-            <View style={todayOverViewStyle.prCard}>
-                <View style={todayOverViewStyle.cardHeaderRow}>
-                    <MaterialCommunityIcons name="kettlebell" size={16} color="#00ccff" />
-                    <Text style={todayOverViewStyle.cardTitle}>Personal Records</Text>
-                </View>
-
-                {/* Mocked Top 3 Lifts */}
-
-                <View style={todayOverViewStyle.prRow}>
-
-                    {personalRecords?.map((pr) => (
-                        <View style={todayOverViewStyle.prItem}>
-                            {/*TODO add different icons per exercise*/}
-                            <Text style={todayOverViewStyle.heroSub}>{pr.name.toUpperCase()}:{" "}
-                                <Text style={todayOverViewStyle.heroSubHighlight}>{pr.weight} {pr.unit} </Text>
-
-                            </Text >
-                        </View >
-
-                    ))}
-                </View>
-
-            </View>
-
-            {/* Card 6 – Muscle Split 
-            <View style={todayOverViewStyle.heroCard}>
-                <View style={todayOverViewStyle.cardHeaderRow}>
-                    <Ionicons name="body-outline" size={16} color="#66aaff" />
-                    <Text style={todayOverViewStyle.cardTitle}>MUSCLE SPLIT</Text>
-                </View>
-
-            <Text style={todayOverViewStyle.cardSub}>UPPER • 60%</Text>
-            <View style={todayOverViewStyle.muscleBarTrack}>
-                <View style={[todayOverViewStyle.muscleBarFill, { width: "60%" }]} />
-            </View>
-
-            <Text style={todayOverViewStyle.cardSub}>LOWER • 30%</Text>
-            <View style={todayOverViewStyle.muscleBarTrack}>
-                <View style={[todayOverViewStyle.muscleBarFill, { width: "30%" }]} />
-            </View>
-
-            <Text style={todayOverViewStyle.cardSub}>CORE • 10%</Text>
-            <View style={todayOverViewStyle.muscleBarTrack}>
-                <View style={[todayOverViewStyle.muscleBarFill, { width: "10%" }]} />
-            </View>
-            </View>
             */}
+
 
         </View >
     );
 };
 
 export const todayOverViewStyle = StyleSheet.create({
+
+    cardContainer: {
+        width: '100%',
+        height: 220, // your card height
+        position: 'relative',
+        borderRadius: 20,
+    },
+
+    cardContent: {
+        flex: 1,
+        padding: 0,
+        overflow: 'visible',
+        justifyContent: 'space-between',
+    },
+
+    frame: {
+        position: 'absolute',
+        top: -20,
+        left: -45,
+        right: -20,
+        bottom: -20,
+        width: '124%',
+        height: '120%',
+    },
+
+    button: {
+        marginTop: 25,
+        backgroundColor: "#2563eb", // blue-600
+        paddingVertical: 16,
+        paddingHorizontal: 22,
+        borderRadius: 14,
+        alignItems: "center",
+        justifyContent: "center",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 6, // Android shadow
+    },
+
+    functionCardSection: {
+        width: '50%',
+        paddingTop: 50,
+        paddingHorizontal: 20,
+    },
+
+    functionCard: {
+        height: 220,
+        marginBottom: 20,
+    },
+
+    heroImage: {
+        width: '100%',
+        height: 220,          // 👈 pick a size you like
+        borderRadius: 18,
+        overflow: 'hidden',
+        justifyContent: 'flex-end',
+    },
+
     smallCircleWrapper: {
         width: "32%",
         alignItems: "center",
@@ -1226,6 +1269,7 @@ export const todayOverViewStyle = StyleSheet.create({
     heroCard: {
         flexDirection: "row",
         justifyContent: "space-between",
+        overflow: "hidden",
         padding: 16,
         borderRadius: 18,
         backgroundColor: "#111622",
@@ -1269,7 +1313,7 @@ export const todayOverViewStyle = StyleSheet.create({
         fontSize: 18,
         color: "white",
         fontWeight: "bold",
-        letterSpacing: 2,
+        letterSpacing: 1,
         marginBottom: 6,
     },
 

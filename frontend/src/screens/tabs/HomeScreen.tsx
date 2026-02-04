@@ -47,6 +47,7 @@ import { getNextSkippedDay, getNextUpcomingWorkoutDay } from '../../services/wor
 import { getPlanStats } from '../../utils/planStats';
 import { useTrainingPlan } from '../../context/TrainingPlanContext';
 import { LoggedExercise } from '../../types/workoutLog';
+import TrainingTopBar, { TOP_BAR_TITLES } from '../../components/TopBar';
 
 
 export const GRAIN_TEXTURE = require('../../assets/home_bg_2.png');
@@ -55,7 +56,7 @@ export const SCANLINE_TEXTURE = require('../../assets/abstract-geometric-backgro
 export default function HardloggerUI() {
     const bpm = useHeartRateMonitor();
     const pulseOximeterData = usePulseOximeterMonitor();
-    const { token } = useContext(AuthContext);
+    const { token, username } = useContext(AuthContext);
     const [workoutsThisWeek, setWorkoutsThisWeek] = useState(null);
     const [lastWorkout, setLastWorkout] = useState("");
     const [workoutStreak, setWorkoutStreak] = useState(null);
@@ -70,6 +71,7 @@ export default function HardloggerUI() {
     const lastSentRefSleep = useRef<number>(0);
     const lastSentRefPulseOximeter = useRef<number>(0);
     const lastSentRefPhysicalActivity = useRef<number>(0);
+    const [blinkVisible, setBlinkVisible] = useState(true);
 
     //-------------WORKOUT CONTEXT-----------------
     const { plannedExercises, setPlannedExercises } = useWorkout();
@@ -97,6 +99,11 @@ export default function HardloggerUI() {
     const [stepsHealthConnect, setStepsHealthConnect] = useState<number>(0);
     const [totalCaloriesBurnedHealthConnect, setTotalCaloriesBurnedHealthConnect] = useState<string>();
     const [distanceHealthConnect, setDistanceHealthConnect] = useState<number>(0);
+
+    //---TOPBAR---
+    const displayTitle = username
+        ? `${TOP_BAR_TITLES.HomeScreen}, ${username}`
+        : TOP_BAR_TITLES.HomeScreen;
 
     type ProgressUI = {
         topLift: {
@@ -476,72 +483,6 @@ export default function HardloggerUI() {
         }
     }, [sleepData, token]);
 
-    const BleStatusBadge = ({ active }: { active: boolean }) => {
-        const text = active ? "LIVE" : "NO SIGNAL";
-        const color = active ? "#33ff66" : "#ff3b3b";
-
-        // Animated opacity for blink
-        const pulseAnim = useRef(new Animated.Value(1)).current;
-
-        // Start blinking only when NOT active
-        useEffect(() => {
-            if (!active) {
-                Animated.loop(
-                    Animated.sequence([
-                        Animated.timing(pulseAnim, {
-                            toValue: 0.3,
-                            duration: 600,
-                            easing: Easing.inOut(Easing.ease),
-                            useNativeDriver: true,
-                        }),
-                        Animated.timing(pulseAnim, {
-                            toValue: 1,
-                            duration: 600,
-                            easing: Easing.inOut(Easing.ease),
-                            useNativeDriver: true,
-                        }),
-                    ])
-                ).start();
-            } else {
-                pulseAnim.setValue(1); // no blink when LIVE
-            }
-        }, [active]);
-
-        return (
-            <Animated.View
-                style={{
-                    opacity: active ? 1 : pulseAnim,
-                    paddingHorizontal: 6,
-                    paddingVertical: 1,
-                    borderWidth: 1,
-                    borderColor: color,
-                    borderRadius: 3,
-                    marginLeft: 12,
-                    backgroundColor: "rgba(0,0,0,0.25)",
-                    transform: [{ scale: 1.0 }],
-                    shadowColor: color,
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 4,
-                }}
-            >
-                <Text
-                    style={{
-                        color,
-                        fontSize: 9,
-                        fontFamily: "monospace",
-                        letterSpacing: 1.5,
-                        textShadowColor: color,
-                        textShadowOffset: { width: 0, height: 0 },
-                        textShadowRadius: 3,
-                    }}
-                >
-                    {text}
-                </Text>
-            </Animated.View>
-        );
-    };
-
     //useEffect for sending BLE data to backend
     useEffect(() => {
         if (physicalActivityData != null && physicalActivityData.stepCounter != null && physicalActivityData != null && token) {
@@ -625,24 +566,17 @@ export default function HardloggerUI() {
     return (
         <SafeAreaView style={homeStyles.root}>
 
-            <ScrollView
-                style={homeStyles.scroll}
-                contentContainerStyle={[homeStyles.scrollContent, { paddingBottom: 60 }]}
-            >
-                {/* WATERMARKS */}
-                <Image
-                    source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
-                    style={homeStyles.cornerWatermarkLeft}
-                />
-                <Image
-                    source={require('../../assets/bfc0a832-85f1-48f9-a766-9426b2947a94.png')}
-                    style={homeStyles.cornerWatermarkRight}
-                />
+            {/* if beginner say not sure where to start ? guide to a survey, to assume training style and pick random training plan for user*/}
+            {/* if user has already a goal --> new section saying good for your goal*/}
 
-                <VHSHeader />
+            <ScrollView style={homeStyles.container} contentContainerStyle={homeStyles.content}>
+                <TrainingTopBar title={TOP_BAR_TITLES.HomeScreen}
+                    onLeftPress={() => { }}
+                    onRightPress={() => {
+                        // open search
+                    }}></TrainingTopBar>
 
-
-
+                {/* Session Status */}
                 <WeeklyOverviewCircles
                     weeklyWorkouts={workoutsThisWeek ?? 0}
                     remainingDays={remainingDays ?? 0}
@@ -680,20 +614,25 @@ export default function HardloggerUI() {
                     }
                 />
             </ScrollView>
-        </SafeAreaView>
+        </SafeAreaView >
     );
 }
 
 export const homeStyles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
     scroll: {
         flex: 1,
-        backgroundColor: 'transparent',   // IMPORTANT!
+        backgroundColor: 'transparent',
     },
 
-    scrollContent: {
+    content: {
         padding: 20,
-        paddingBottom: 40,
+        minHeight: "100%",
+        paddingBottom: 140,
     },
+
 
     bgImage: {
         width: '100%',
@@ -997,14 +936,7 @@ export const homeStyles = StyleSheet.create({
         backgroundColor: '#0A0F1C',
     },
     bg: { flex: 1 },
-    container: {
-        flex: 1,
-        backgroundColor: 'transparent',
-    },
-    content: {
-        padding: 20,
-        paddingBottom: 35,
-    },
+
     overviewRow: {
         marginBottom: 0,
     },

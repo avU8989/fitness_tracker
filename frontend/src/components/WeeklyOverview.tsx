@@ -1,8 +1,9 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import VHSGlowDividerSmall from "./VHSGlowDividerSmall";
 
 interface Props {
     weeklyWorkouts: number;
@@ -13,6 +14,24 @@ interface Props {
     plannedVolumeToday: number;
 }
 
+function Divider() {
+    return (
+        <View style={styles.innerDivider} />
+    );
+}
+
+
+const RING_PRIMARY = "#7CFFE5";
+const RING_BG = "rgba(124,255,229,0.15)";
+
+const gradientStops: Record<string, [string, string]> = {
+    "#7CFFE5": ["#9FFFEF", "#7CFFE5"], // mint
+    "#ff3b3b": ["#FF8A8A", "#ff3b3b"], // red
+    "#66aaff": ["#9FC4FF", "#66aaff"], // blue
+    "#fbff0a": ["#FFFF8A", "#fbff0a"], // yellow
+};
+
+
 /* GENERIC CIRCLE RING COMPONENT */
 export function ProgressRing({
     size,
@@ -20,24 +39,43 @@ export function ProgressRing({
     progress,
     color,
     backgroundColor,
+    gradientId,
     children,
 }: {
     size: number;
     strokeWidth: number;
-    progress: number; // 0–100
+    progress: number;
     color: string;
     backgroundColor: string;
+    gradientId: string;
     children?: React.ReactNode;
 }) {
     const radius = (size - strokeWidth) / 2;
     const circumference = 2 * Math.PI * radius;
     const dash = circumference * (progress / 100);
 
+    const [startColor, endColor] = gradientStops[color] ?? [color, color];
+
+
     return (
         <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
             <Svg width={size} height={size}>
+                <Defs>
+                    <LinearGradient
+                        id={gradientId}
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="0%"
+                        gradientUnits="userSpaceOnUse"
+                        gradientTransform={`rotate(90 ${size / 2} ${size / 2})`}
+                    >
+                        <Stop offset="0%" stopColor={startColor} />
+                        <Stop offset="100%" stopColor={endColor} />
+                    </LinearGradient>
+                </Defs>
 
-                {/* BACKGROUND RING */}
+                {/* BACKGROUND */}
                 <Circle
                     stroke={backgroundColor}
                     cx={size / 2}
@@ -47,9 +85,9 @@ export function ProgressRing({
                     fill="none"
                 />
 
-                {/* PROGRESS RING */}
+                {/* PROGRESS */}
                 <Circle
-                    stroke={color}
+                    stroke={`url(#${gradientId})`}
                     cx={size / 2}
                     cy={size / 2}
                     r={radius}
@@ -64,7 +102,7 @@ export function ProgressRing({
 
             {/* CENTER CONTENT */}
             <View style={styles.centerContent}>{children}</View>
-        </View>
+        </View >
     );
 }
 
@@ -92,23 +130,27 @@ export default function WeeklyOverviewCircles({
 
             {/* BIG CIRCLE */}
             <View style={styles.bigCircleCard}>
-                <Text style={styles.bigLabel}>WEEKLY WORKOUTS</Text>
-
 
                 <ProgressRing
-                    size={150}
-                    strokeWidth={10}
+                    size={180}
+                    strokeWidth={12}
                     progress={pct}
-                    color="#00ffcc"
-                    backgroundColor="rgba(0,255,204,0.15)"
+                    color={RING_PRIMARY}
+                    gradientId="weeklyGradient"
+                    backgroundColor={RING_BG}
                 >
-                    <View style={{ alignItems: "center" }}>
-                        <MaterialCommunityIcons name="weight-lifter" size={32} color="#00ffcc" />
-                        <Text style={styles.bigCircleValue}>{weeklyWorkouts}/{weeklyGoal}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+                        <Text style={styles.bigPrimaryValue}>{weeklyWorkouts}</Text>
+                        <Text style={styles.bigSecondaryValue}>/{weeklyGoal}</Text>
                     </View>
 
-                </ProgressRing>
+                    <VHSGlowDividerSmall></VHSGlowDividerSmall>
 
+                    <Text style={styles.bigSubLabel}>WORKOUT LOGGED</Text>
+
+
+
+                </ProgressRing>
             </View>
 
             {/* TWO SMALL CIRCLES */}
@@ -117,31 +159,37 @@ export default function WeeklyOverviewCircles({
 
                 {/* STREAK CIRCLE */}
                 <View style={styles.smallCircleWrapper}>
-                    <Text style={styles.smallLabel}>STREAK</Text>
                     <ProgressRing
-                        size={90}
-                        strokeWidth={7}
+                        size={108}
+                        strokeWidth={8}
+                        gradientId="streakGradient"
                         progress={streakPct}
                         color="#ff3b3b"
                         backgroundColor="rgba(255,80,80,0.15)"
                     >
                         <Ionicons name="flame" size={22} color="#ff3b3b" />
+                        <VHSGlowDividerSmall></VHSGlowDividerSmall>
+                        <Text style={styles.bigSubLabel}>STREAK</Text>
+
                     </ProgressRing>
                     <Text style={[styles.smallValue, { color: "#ff3b3b" }]}>{streak} DAYS</Text>
                 </View>
 
                 {/* NEXT SPLIT CIRCLE */}
                 <View style={styles.smallCircleWrapper}>
-                    <Text style={styles.smallLabel}>UPCOMING</Text>
-
+                    {/*TODO ADD COMPLETED */}
                     <ProgressRing
-                        size={90}
-                        strokeWidth={7}
+                        size={108}
+                        gradientId="upcomingGradient"
+                        strokeWidth={8}
                         progress={100}
                         color="#fbff0aff"
                         backgroundColor="rgba(0,255,204,0.15)"
                     >
                         <Ionicons name="barbell" size={22} color="#fbff0aff" />
+                        <VHSGlowDividerSmall></VHSGlowDividerSmall>
+                        <Text style={styles.bigSubLabel}>UPCOMING</Text>
+
                     </ProgressRing>
 
                     <Text style={[styles.smallValue, { color: "#fbff0aff" }]}>
@@ -152,16 +200,19 @@ export default function WeeklyOverviewCircles({
 
                 {/* WEIGHT CIRCLE */}
                 <View style={styles.smallCircleWrapper}>
-                    <Text style={styles.smallLabel}>TODAY</Text>
 
                     <ProgressRing
-                        size={90}
-                        strokeWidth={7}
+                        size={108}
+                        gradientId="todayGradient"
+                        strokeWidth={8}
                         progress={todayPct}
                         color="#66aaff"
                         backgroundColor="rgba(102,170,255,0.15)"
                     >
                         <MaterialCommunityIcons name="weight-kilogram" size={26} color="#66aaff" />
+                        <VHSGlowDividerSmall></VHSGlowDividerSmall>
+                        <Text style={styles.bigSubLabel}>TODAY</Text>
+
                     </ProgressRing>
 
 
@@ -179,6 +230,43 @@ export default function WeeklyOverviewCircles({
 
 /* --- STYLES --- */
 const styles = StyleSheet.create({
+
+    innerDivider: {
+        width: 60,                 // short
+        height: 1,
+        backgroundColor: "rgba(124,255,229,0.35)",
+        opacity: 0.2,
+        marginVertical: 6,
+        borderRadius: 1,
+    },
+
+    bigSubLabel: {
+        fontFamily: "monospace",
+        fontSize: 12,
+        fontWeight: "semibold",
+        color: "rgba(255,255,255,0.6)",
+        marginTop: 2,
+        letterSpacing: 1,
+    },
+
+    bigPrimaryValue: {
+        fontFamily: "monospace",
+        fontSize: 39,
+        transform: [{ scaleX: 1.08 }],
+        fontWeight: "400",
+        color: "#7CFFE5", // main mint
+        lineHeight: 38,
+    },
+
+    bigSecondaryValue: {
+        fontFamily: "monospace",
+        fontSize: 18,
+        fontWeight: "400",
+        color: "#9FFFEF", // softer mint
+        marginLeft: 2,
+        letterSpacing: 0.5,
+        marginBottom: 4,
+    },
     nextSplitCircle: {
         width: 90,
         height: 90,
@@ -199,9 +287,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-
-
-    container: { marginBottom: 20 },
+    container: { marginBottom: 30 },
 
     centerContent: {
         position: "absolute",
@@ -210,15 +296,15 @@ const styles = StyleSheet.create({
     },
 
     /* BIG CIRCLE */
-    bigCircleCard: { alignItems: "center", marginBottom: 16 },
+    bigCircleCard: { alignItems: "center", marginBottom: 16, marginTop: 20 },
 
     bigLabel: {
         fontFamily: "monospace",
         color: "white",
-        fontSize: 26,
+        fontSize: 22,
         fontWeight: "bold",
         paddingTop: 15,
-        letterSpacing: 2,
+        letterSpacing: 3,
         marginBottom: 18,
     },
 
@@ -237,9 +323,9 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         gap: 8,
-        marginTop: 6,
+        marginTop: 36,
+        marginBottom: 20,
     },
-
 
     smallCard: {
         width: "48%",
@@ -264,6 +350,7 @@ const styles = StyleSheet.create({
     smallValue: {
         fontFamily: "monospace",
         fontSize: 12,
+        textAlign: "center",
         alignItems: "center",
         color: "#00ffcc",
         fontWeight: "bold",

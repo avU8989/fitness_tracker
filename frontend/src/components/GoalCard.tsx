@@ -9,6 +9,7 @@ import {
     ImageSourcePropType,
 } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const clamp = (n: number, min = 0, max = 1) => Math.max(min, Math.min(max, n));
 
@@ -21,15 +22,72 @@ const fmtInt = (n: number) => {
     }
 };
 
-type GoalTone = "teal" | "blue" | "purple" | "orange" | "green";
-
-const TONES: Record<GoalTone, { accent: string; border: string; track: string; glow: string }> = {
-    teal: { accent: "#00ffcc", border: "rgba(0,255,204,0.32)", track: "rgba(0,255,204,0.14)", glow: "#00ffcc" },
-    blue: { accent: "#66AAFF", border: "rgba(102,170,255,0.30)", track: "rgba(102,170,255,0.14)", glow: "#66AAFF" },
-    purple: { accent: "#b38aff", border: "rgba(179,138,255,0.28)", track: "rgba(179,138,255,0.12)", glow: "#b38aff" },
-    orange: { accent: "#ff8800", border: "rgba(255,136,0,0.28)", track: "rgba(255,136,0,0.12)", glow: "#ff8800" },
-    green: { accent: "#00FF99", border: "rgba(0,255,153,0.28)", track: "rgba(0,255,153,0.12)", glow: "#00FF99" },
+type ToneGradient = {
+    accent: string;
+    border: string;
+    glow: string;
+    track: {
+        start: string;
+        mid: string;
+        end: string;
+    };
 };
+
+const TONES: Record<GoalTone, ToneGradient> = {
+    teal: {
+        accent: "#00ffcc",
+        border: "rgba(0,255,204,0.32)",
+        glow: "#00ffcc",
+        track: {
+            start: "rgba(0,255,204,0.28)",
+            mid: "rgba(0,255,204,0.12)",
+            end: "rgba(0,255,204,0.02)",
+        },
+    },
+    blue: {
+        accent: "#66AAFF",
+        border: "rgba(102,170,255,0.30)",
+        glow: "#66AAFF",
+        track: {
+            start: "rgba(102,170,255,0.28)",
+            mid: "rgba(102,170,255,0.12)",
+            end: "rgba(102,170,255,0.02)",
+        },
+    },
+    purple: {
+        accent: "#b38aff",
+        border: "rgba(179,138,255,0.28)",
+        glow: "#b38aff",
+        track: {
+            start: "rgba(179,138,255,0.26)",
+            mid: "rgba(179,138,255,0.11)",
+            end: "rgba(179,138,255,0.02)",
+        },
+    },
+    orange: {
+        accent: "#ff8800",
+        border: "rgba(255,136,0,0.28)",
+        glow: "#ff8800",
+        track: {
+            start: "rgba(255,136,0,0.30)",
+            mid: "rgba(255,136,0,0.14)",
+            end: "rgba(255,136,0,0.03)",
+        },
+    },
+    green: {
+        accent: "#00FF99",
+        border: "rgba(0,255,153,0.28)",
+        glow: "#00FF99",
+        track: {
+            start: "rgba(0,255,153,0.26)",
+            mid: "rgba(0,255,153,0.12)",
+            end: "rgba(0,255,153,0.02)",
+        },
+    },
+};
+
+
+type GoalTone = "teal" | "blue" | "purple" | "orange" | "green";
 
 export const GoalCard = ({
     title,
@@ -100,56 +158,83 @@ export const GoalCard = ({
                 },
             ]}
         >
-            <View style={{ flex: 1, paddingRight: 12 }}>
-                <View style={styles.topRow}>
+
+            <LinearGradient
+                colors={[
+                    colors.track.start,
+                    colors.track.mid,
+                    "#111622",
+                    "#0A0F1C",
+                ]}
+                locations={[0, 0.35, 0.7, 1]}
+                start={{ x: 0, y: 1 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.bg}
+            >
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                    <View style={styles.topRow}>
+                        <Text style={styles.goalLabel}>{label}</Text>
+                        {done && (
+                            <View style={[styles.badge, { borderColor: colors.border }]}>
+                                <Ionicons name="checkmark" size={12} color={colors.accent} />
+                                <Text style={[styles.badgeText, { color: colors.accent }]}>DONE</Text>
+                            </View>
+                        )}
+                    </View>
                     <Text style={styles.heroTitle}>{title}</Text>
 
-                    {done && (
-                        <View style={[styles.badge, { borderColor: colors.border }]}>
-                            <Ionicons name="checkmark" size={12} color={colors.accent} />
-                            <Text style={[styles.badgeText, { color: colors.accent }]}>DONE</Text>
-                        </View>
-                    )}
-                </View>
-
-                <Text style={styles.goalLabel}>{label}</Text>
-
-                <View style={{ flexDirection: "row", alignItems: "baseline", marginTop: 6, gap: 8 }}>
-                    <Text style={[styles.currentBig, { color: colors.accent }]}>{fmtInt(current)}</Text>
-                    <Text style={styles.targetSmall}>
-                        of {fmtInt(target)} {unit ?? ""}
-                    </Text>
-                </View>
-
-                <View style={styles.volumeBarTrack}>
-                    <View
-                        style={[
-                            styles.volumeBarFill,
-                            { width: `${pct}%` },
-                        ]}
-                    />
-                </View>
-
-
-                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, justifyContent: "space-between" }}>
-                    <Text style={styles.goalSub}>{helper}</Text>
-                </View>
-            </View>
-
-            <View style={[styles.goalImageWrap, { borderColor: colors.border, backgroundColor: colors.track, shadowColor: colors.glow }]}>
-                {illustration ? (
-                    <Image source={illustration} style={styles.goalImage} resizeMode="cover" />
-                ) : (
-                    <View style={styles.goalImagePlaceholder}>
-                        <Ionicons name="fitness-outline" size={26} color="rgba(191,199,213,0.55)" />
+                    <View style={{ flexDirection: "row", alignItems: "baseline", marginTop: 6, gap: 8 }}>
+                        <Text style={[styles.currentBig, { color: colors.accent }]}>{fmtInt(current)}</Text>
+                        <Text style={styles.targetSmall}>
+                            of {fmtInt(target)} {unit ?? ""}
+                        </Text>
                     </View>
-                )}
-            </View>
+
+                    <View style={styles.volumeBarTrack}>
+                        <View
+                            style={[
+                                styles.volumeBarFill,
+                                { width: `${pct}%` },
+                            ]}
+                        />
+                    </View>
+
+
+                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 8, justifyContent: "space-between" }}>
+                        <Text style={styles.goalSub}>{helper}</Text>
+                    </View>
+                </View>
+            </LinearGradient>
         </Pressable>
     );
 };
 
 const styles = StyleSheet.create({
+
+    runnerWrap: {
+        width: 96,
+        alignItems: "flex-end",
+        justifyContent: "flex-end",
+    },
+
+    runnerImage: {
+        width: 180,
+        height: 180,
+        opacity: 0.8,
+
+        // subtle lift
+        transform: [{ translateY: 2 }],
+
+        // optional soft glow blend
+        tintColor: undefined,
+    },
+
+    bg: {
+        flex: 1,
+        flexDirection: "row",
+        padding: 16,
+    },
+
     volumeBarTrack: {
         marginTop: 8,
         height: 8,
@@ -175,12 +260,9 @@ const styles = StyleSheet.create({
     goalCard: {
         flexDirection: "row",
         justifyContent: "space-between",
-        padding: 16,
-        backgroundColor: "#111622",
+        backgroundColor: "transparent",
         borderRadius: 18,
-        shadowColor: "#00ffcc",
-        shadowOpacity: 0.35,
-        shadowRadius: 10,
+        overflow: "hidden",
         marginBottom: 16,
     },
 
@@ -189,13 +271,13 @@ const styles = StyleSheet.create({
     heroTitle: {
         fontFamily: "monospace",
         fontSize: 18,
+        paddingTop: 8,
         color: "white",
         fontWeight: "bold",
         letterSpacing: 2,
     },
 
     goalLabel: {
-        marginTop: 6,
         fontFamily: "monospace",
         fontSize: 11,
         color: "#BFC7D5",
