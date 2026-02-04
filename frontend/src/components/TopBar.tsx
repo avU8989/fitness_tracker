@@ -1,50 +1,155 @@
 import React from "react";
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
-
-type PlanStatus = "ACTIVE" | "COMPLETED" | "UPCOMING";
+import ExerciseChip from "./ExerciseChip";
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { RootStackParameterList } from "../navigation/navtypes";
+import { SearchMode } from "../screens/tabs/SearchScreen";
 
 type TrainingTopBarProps = {
     title: string;
-    status?: PlanStatus;
-    blinkVisible?: boolean;
+    iconImage?: any;
+    iconName?: string;
+    activeChip?: SearchMode;
+    onChipChange?: (mode: SearchMode) => void;
     onLeftPress: () => void;
     onRightPress: () => void;
 };
 
+export const TOP_BAR_TITLES = {
+    HomeScreen: "Weekly Overview",
+    LogScreen: "Today's Workout",
+    TrainingPlansScreen: "Training Split",
+    SearchScreen: "Search",
+} as const;
+
+
+
 export default function TrainingTopBar({
     title,
-    status = "UPCOMING",
-    blinkVisible = true,
+    iconImage,
+    iconName = "barbell-outline",
+    onChipChange,
+    activeChip,
     onLeftPress,
     onRightPress,
 }: TrainingTopBarProps) {
+
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParameterList>>();
+
+
+    function navigateToProfileScreen() {
+        navigation.navigate("ProfileScreen");
+    }
+
     return (
         <View style={styles.headerContainer}>
             <View style={styles.headerRow}>
-                {/* CENTER */}
-                <Text style={styles.planStatusText}>{title}</Text>
 
-                <View style={styles.headerSidePlaceholder} />
+                <View style={styles.titleRow} >
+                    <Pressable style={styles.iconCircle} onPress={navigateToProfileScreen}>
+                        {iconImage ? (
+                            <Image source={iconImage} style={styles.iconImage} />
+                        ) : (
+                            <Ionicons name={iconName} size={18} color="#0A0F1C" />
+                        )}
+                    </Pressable>
+                    {title === TOP_BAR_TITLES.SearchScreen ? (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.tagRow}
+                        >
+                            <ExerciseChip label="All"
+                                active={(activeChip === "all")}
+                                onPress={() => onChipChange?.("all")}
+                            />
+                            <ExerciseChip label="Style"
+                                active={(activeChip === "style")}
+                                onPress={() => onChipChange?.("style")}
+                            />
+                            <ExerciseChip label="Muscles"
+                                active={(activeChip === "muscles")}
+                                onPress={() => onChipChange?.("muscles")}
+                            />
+                            <ExerciseChip label="Goals"
+                                active={(activeChip === "goals")}
+                                onPress={() => onChipChange?.("goals")}
+                            />
+                            <ExerciseChip label="Recovery"
+                                active={(activeChip === "recovery")}
+                                onPress={() => onChipChange?.("recovery")}
+                            />
+                            <ExerciseChip label="Challenge"
+                                active={(activeChip === "challenges")}
+                                onPress={() => onChipChange?.("challenges")}
+                            />
+                        </ScrollView>
+                    ) : (
+                        <Text style={styles.planStatusText}>{title}</Text>
+                    )}
+
+                </View>
+
+                {/* CENTER */}
 
                 {/* RIGHT ICONS */}
-                <View style={styles.headerIconContainer}>
-                    <Pressable onPress={onLeftPress} style={styles.headerSide}>
-                        <Ionicons name="add-outline" size={33} color="white" />
-                    </Pressable>
+                {title === TOP_BAR_TITLES.TrainingPlansScreen && (
+                    <View style={styles.headerIconContainer}>
+                        <Pressable onPress={onLeftPress} style={styles.headerSide}>
+                            <Ionicons name="add-outline" size={33} color="white" />
+                        </Pressable>
 
-                    <Pressable onPress={onRightPress} style={styles.headerSide}>
-                        <Ionicons name="search-outline" size={26} color="white" />
-                    </Pressable>
-                </View>
+                        <Pressable onPress={onRightPress} style={styles.headerSide}>
+                            <Ionicons name="search-outline" size={26} color="white" />
+                        </Pressable>
+                    </View>
+                )}
             </View>
         </View>
     );
 }
 
 const styles = StyleSheet.create({
+
+    tagRow: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        paddingVertical: 10,
+        paddingLeft: 6,
+        gap: 8,
+        justifyContent: "center",
+    },
+
+    titleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+
+    iconCircle: {
+        width: 34,
+        height: 34,
+        borderRadius: 17,
+        backgroundColor: "#00ffcc",
+        justifyContent: "center",
+        alignItems: "center",
+        marginRight: 10,
+
+        // subtle glow
+        shadowColor: "#00ffcc",
+        shadowOpacity: 0.6,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 0 },
+    },
+
+    iconImage: {
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+    },
+
     headerContainer: {
-        marginTop: 18,
         marginBottom: 4,
         alignItems: "center",
     },
@@ -59,16 +164,12 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
     },
-    headerSidePlaceholder: {
-        width: 30,
-    },
-
 
     headerIconContainer: {
         flexDirection: "row",
     },
     headerSide: {
-        paddingLeft: 18,
+        paddingLeft: 8,
         alignItems: "center",
         justifyContent: "center",
     },
