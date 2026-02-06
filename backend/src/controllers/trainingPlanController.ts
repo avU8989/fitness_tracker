@@ -12,9 +12,13 @@ import {
   updateExercise,
   removeTrainingPlan,
   fetchTotalPlans,
+  attachWorkoutTemplateToPlan,
+  fetchWorkoutTemplatesFromPlan,
 } from "../services/trainingPlan.service";
 import { UpdateExerciseRequest } from "../requests/trainingplans/UpdateExerciseRequest";
 import { UpdateWorkoutDayRequest } from "../requests/trainingplans/UpdateWorkoutDayRequest";
+import { CreateWorkoutTemplateRequest } from "../requests/workout_templates/CreateWorkoutTemplateRequest";
+import { createWorkoutTemplate } from "../services/workoutTemplate.service";
 
 export const postTrainingPlan = async (
   req: AuthenticatedRequest & {
@@ -44,6 +48,78 @@ export const postTrainingPlan = async (
   }
 };
 
+// POST - /training-plans/:planId/workout-templates
+export const postWorkoutTemplateInTrainingPlan = async (
+  req: AuthenticatedRequest & {
+    body: CreateWorkoutTemplateRequest
+  },
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { planId } = req.params;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: User ID missing" });
+      return;
+    }
+
+    if (!planId) {
+      res.status(400).json({ message: "Trainingplan id is missing" });
+      return;
+    }
+
+
+    const workoutTemplate = await createWorkoutTemplate(userId, req.body);
+
+    console.log(workoutTemplate);
+
+
+    const { ok } = await attachWorkoutTemplateToPlan(userId, planId, workoutTemplate.id);
+
+    if (ok) {
+      res.status(201).json({ message: "Workout Template created in Training plan succesfully", workoutTemplate: workoutTemplate })
+      return;
+    }
+  } catch (err: any) {
+    res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    });
+  }
+};
+
+// GET - /training-plans/:planId/workout-templates
+export const getWorkoutTemplatesFromTrainingPlan = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  try {
+
+
+    const userId = req.user?.id;
+    const { planId } = req.params;
+
+    if (!userId) {
+      res.status(401).json({ message: "Unauthorized: User ID missing" });
+      return;
+    }
+
+    if (!planId) {
+      res.status(400).json({ message: "Trainingplan id is missing" });
+      return;
+    }
+
+    const { workoutTemplates } = await fetchWorkoutTemplatesFromPlan(userId, planId);
+
+    res.status(200).json({ workoutTemplates: workoutTemplates });
+  }
+  catch (err: any) {
+    res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    })
+  }
+}
+
 export const getTrainingPlans = async (
   req: AuthenticatedRequest,
   res: Response,
@@ -61,10 +137,10 @@ export const getTrainingPlans = async (
 
     const plans = await getTrainingPlansByUserId(req.user.id);
     res.status(200).json(plans);
-  } catch (error: any) {
+  } catch (err: any) {
     res.status(500).json({
       message: "Internal server error",
-      error: error.message,
+      error: err.message,
     });
   }
 };

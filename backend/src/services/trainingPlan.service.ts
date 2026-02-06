@@ -19,6 +19,9 @@ import { UpdateExerciseRequest } from "../requests/trainingplans/UpdateExerciseR
 import { UpdateWorkoutDayRequest } from "../requests/trainingplans/UpdateWorkoutDayRequest";
 import { findWorkoutDay, loadUserPlan, mapDaysWithExercises } from "../utils/trainingPlan-helpers";
 import { IExercise } from "../models/Exercise";
+import WorkoutTemplate from "../models/WorkoutTemplate";
+
+class NotFoundError extends Error { };
 
 export const createTrainingPlan = async (
   userId: string,
@@ -84,6 +87,8 @@ export const getTrainingPlansByUserId = async (userId: string) => {
 };
 
 export const getTrainingPlanById = async (trainingPlanId: string) => {
+  //actually need to populate the referenced objects before fetching the whole trainingplan --> TODO 
+  //add user verification here --> does the trainingplan belong to the user ? --> TODO
   return TrainingPlan.findById(trainingPlanId);
 };
 
@@ -219,4 +224,53 @@ export const getWorkoutDayFromPlan = async (
 
   return null;
 };
+
+//if user wants to attach workout template e.g. from setting to another training plan
+export const attachWorkoutTemplateToPlan = async (
+  userId: string,
+  trainingPlanId: string,
+  workoutTemplateId: string
+) => {
+  //ensure the workout template exist and belongs to user
+  const workoutTemplate = await WorkoutTemplate.findOne({
+    _id: workoutTemplateId,
+    user: userId
+  }).select("_id");
+
+  if (!workoutTemplate) {
+    throw new NotFoundError("Workout template not found");
+  }
+
+  //attach to training plan owned by user --> prevents attaching to other user's plans
+  const result = await TrainingPlan.updateOne(
+    { _id: trainingPlanId, user: userId },
+    { $addToSet: { workoutTemplateIds: workoutTemplate._id } }
+  );
+
+  console.log(result);
+
+  if (result.matchedCount === 0) {
+    throw new NotFoundError("Training plan not found");
+  }
+
+  return { ok: true };
+}
+
+//fetch workout templates assigned to the specific training plan
+export const fetchWorkoutTemplatesFromPlan = async (
+  userId: string,
+  trainingPlanId: string
+) => {
+  const trainingPlan = await TrainingPlan.findOne({ _id: trainingPlanId, user: userId })
+    .select("workoutTemplateIds")
+    .populate({ path: "workoutTemplateIds", select: "name splitType exercises updatedAt" })
+    .lean();
+
+  if (!trainingPlan) {
+    throw new NotFoundError("Training plan not found");
+  }
+
+  //return the full populated workout templates
+  return { workoutTemplates: trainingPlan.workoutTemplateIds };
+}
 

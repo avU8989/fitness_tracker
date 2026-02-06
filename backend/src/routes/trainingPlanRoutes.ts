@@ -2,8 +2,10 @@ import { Express, Router } from "express";
 import {
   deleteTrainingPlan,
   getTotalPlans,
+  getWorkoutTemplatesFromTrainingPlan,
   patchExercise,
   postTrainingPlan,
+  postWorkoutTemplateInTrainingPlan,
   putWorkoutDay,
 } from "../controllers/trainingPlanController";
 import { getTrainingPlans } from "../controllers/trainingPlanController";
@@ -22,5 +24,7 @@ trainingPlanRouter.delete("/:planId", deleteTrainingPlan);
 trainingPlanRouter.patch("/:planId/exercises/:exerciseId", patchExercise);
 trainingPlanRouter.put("/:planId/days/:dayId", putWorkoutDay);
 trainingPlanRouter.get("/total", getTotalPlans);
+trainingPlanRouter.post("/:planId/workout-templates", postWorkoutTemplateInTrainingPlan);
+trainingPlanRouter.get("/:planId/workout-templates", getWorkoutTemplatesFromTrainingPlan);
 
 export default trainingPlanRouter;
