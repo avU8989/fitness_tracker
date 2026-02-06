@@ -1,6 +1,5 @@
-import TrainingPlan from "models/TrainingPlan";
-import WorkoutTemplate from "models/WorkoutTemplate";
-import { CreateWorkoutTemplateRequest } from "requests/workout_templates/CreateWorkoutTemplateRequest";
+import WorkoutTemplate from "../models/WorkoutTemplate";
+import { CreateWorkoutTemplateRequest } from "../requests/workout_templates/CreateWorkoutTemplateRequest";
 
 //error helpers --> TODO add global error handling for better maintenace
 class NotFoundError extends Error { };
@@ -29,33 +28,4 @@ export const createWorkoutTemplate = async (
         throw err;
     }
 };
-
-//if user wants to attach workout template e.g. from setting to another training plan
-export const attachWorkoutTemplateToPlan = async (
-    userId: string,
-    trainingPlanId: string,
-    workoutTemplateId: string
-) => {
-    //ensure the workout template exist and belongs to user
-    const workoutTemplate = await WorkoutTemplate.findOne({
-        _id: workoutTemplateId,
-        user: userId
-    }).select("_id");
-
-    if (!workoutTemplate) {
-        throw new NotFoundError("Workout template not found");
-    }
-
-    //attach to training plan owned by user --> prevents attaching to other user's plans
-    const result = await TrainingPlan.updateOne(
-        { _id: trainingPlanId, user: userId },
-        { $addToSet: { workoutTemplateIds: workoutTemplate._id } }
-    );
-
-    if (result.matchedCount === 0) {
-        throw new NotFoundError("Training plan not found");
-    }
-
-    return { ok: true };
-}
 

@@ -20,6 +20,7 @@ import pulseOximeterLogRouter from "./routes/pulseOximeterLogRoutes";
 import sleepLogRouter from "./routes/sleepLogRoutes";
 import dashboardRouter from "./routes/dashboardRoutes";
 import fs from 'fs';
+import workoutTemplatesRouter from "./routes/workoutTemplateRoutes";
 
 
 const app = express();
@@ -54,6 +55,7 @@ app.use("/healthdata", authMiddleware, physicalActivityRouter);
 app.use("/healthdata", authMiddleware, pulseOximeterLogRouter);
 app.use("/healthdata", authMiddleware, sleepLogRouter);
 app.use("/dashboard", authMiddleware, dashboardRouter);
+app.use("/workout-templates", authMiddleware, workoutTemplatesRouter);
 console.log("AYEE WE STARTING");
 
 // connect to mongodb

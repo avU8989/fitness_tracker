@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "middleware/auth";
-import { CreateWorkoutTemplateRequest } from "requests/workout_templates/CreateWorkoutTemplateRequest";
-import { createWorkoutTemplate } from "services/workoutTemplate.service";
+import { CreateWorkoutTemplateRequest } from "../requests/workout_templates/CreateWorkoutTemplateRequest";
+import { createWorkoutTemplate } from "../services/workoutTemplate.service";
 
 
 //POST /workout-templates - Create a new workout template
@@ -20,7 +20,8 @@ export const postWorkoutTemplate = async (
 
         const workoutTemplate = await createWorkoutTemplate(userId, req.body);
 
-        res.status(201).json({ message: "Workout Template created succesfully", workoutTemplate: workoutTemplate })
+        res.status(201).json({ message: "Workout Template created succesfully", workoutTemplate: workoutTemplate });
+        return;
 
     } catch (err: any) {
         //for now no global error handling
